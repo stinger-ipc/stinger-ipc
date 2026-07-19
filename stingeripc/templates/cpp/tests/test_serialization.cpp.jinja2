@@ -6,7 +6,7 @@ Unit tests for the {{stinger.name}} interface.  These exercise the (de)serializa
 round-trip and schema-validation code paths of the generated payload structures without
 requiring a broker connection.
 
-LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+{%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 */
 
 #include <gtest/gtest.h>

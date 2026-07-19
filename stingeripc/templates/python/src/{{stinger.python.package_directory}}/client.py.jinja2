@@ -4,8 +4,7 @@ on the next generation.
 
 This is the Client for the {{stinger.name}} interface.
 
-LICENSE: This generated code is not subject to any license restrictions from the generator itself.
-TODO: Get license text from stinger file
+{%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 """
 {% import "partials/imports.jinja2" as imports %}
 from typing import Dict, Callable, List, Any, Optional, Union

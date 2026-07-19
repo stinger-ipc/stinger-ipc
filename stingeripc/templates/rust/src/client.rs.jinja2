@@ -8,8 +8,7 @@ on the next generation.
 
 This is the Client for the {{stinger.name}} interface.
 
-LICENSE: This generated code is not subject to any license restrictions from the generator itself.
-TODO: Get license text from stinger file
+{%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 */
 #[cfg(feature = "client")]
 use stinger_mqtt_trait::{Mqtt5PubSub};

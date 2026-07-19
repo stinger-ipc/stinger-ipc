@@ -9,7 +9,7 @@ stinger-cpp-utils to drive the server without a real MQTT broker:
   - a simulated incoming method request invokes the registered handler and publishes a response,
   - setting a property publishes its value, and a simulated update request is re-published.
 
-LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+{%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 */
 
 #include <gtest/gtest.h>

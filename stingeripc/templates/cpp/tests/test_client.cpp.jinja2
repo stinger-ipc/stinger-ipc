@@ -9,7 +9,7 @@ stinger-cpp-utils to drive the client without a real MQTT broker:
   - updating a (writable) property publishes an update request,
   - a simulated incoming signal message invokes the registered callback.
 
-LICENSE: This generated code is not subject to any license restrictions from the generator itself.
+{%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 */
 
 #include <gtest/gtest.h>

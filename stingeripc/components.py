@@ -81,6 +81,7 @@ class StingerSpec:
         self._summary = interface.get("summary")
         self._title = interface.get("title")
         self._documentation = interface.get("documentation")
+        self._license = interface.get("license")
 
         self.signals: dict[str, IpcSignal] = {}
         self.properties: dict[str, IpcProperty] = {}
@@ -127,6 +128,10 @@ class StingerSpec:
     @property
     def documentation(self) -> str:
         return self._documentation or ""
+
+    @property
+    def license(self) -> str:
+        return self._license or ""
 
     def add_signal(self, signal: IpcSignal):
         from stingeripc.ipc_signal import IpcSignal
