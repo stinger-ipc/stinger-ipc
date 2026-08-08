@@ -12,6 +12,12 @@ if TYPE_CHECKING:
 
 
 class IpcSignal(InterfaceComponent):
+    """A signal published by the interface.
+
+    Signals are fire-and-forget messages: a server emits them and any client
+    subscribed to the signal's topic receives the payload.  A signal carries an
+    ordered list of arguments (its payload) and may declare a ``version``.
+    """
 
     def __init__(self, name: str, root: StingerSpec):
         InterfaceComponent.__init__(self, name, root)
@@ -20,6 +26,10 @@ class IpcSignal(InterfaceComponent):
         self._version: Optional[str] = None
 
     def add_arg(self, arg: Arg) -> IpcSignal:
+        """Append an argument to the signal's payload and return self.
+
+        Duplicate argument names are rejected.
+        """
         if arg.name in [a.name for a in self._arg_list]:
             raise InvalidStingerStructure(f"An arg named '{arg.name}' has been added.")
         self._arg_list.append(arg)
@@ -27,13 +37,20 @@ class IpcSignal(InterfaceComponent):
 
     @property
     def version(self) -> Optional[str]:
+        """Version of the signal, or None if not declared."""
         return self._version
 
     @property
     def arg_list(self) -> list[Arg]:
+        """The ordered list of arguments that make up the signal's payload."""
         return self._arg_list
 
     def topic(self, **kwargs) -> str:
+        """Return the topic that signal messages are published on.
+
+        The topic is derived from the configured ``signals`` topic template,
+        with the interface name and signal name filled in.
+        """
         template_topic = self._config.topics.signals
         template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, signal_name=self.name, **kwargs)
         return template_topic

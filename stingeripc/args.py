@@ -19,6 +19,12 @@ from .exceptions import InvalidStingerStructure
 
 
 class ArgType(Enum):
+    """The kinds of values an :class:`Arg` can represent.
+
+    This distinguishes the overall shape of an argument: a primitive value, an
+    enum, a struct, a datetime, a duration, binary data, or an array.
+    """
+
     UNKNOWN = 0
     PRIMITIVE = 1
     ENUM = 2
@@ -39,6 +45,10 @@ class ArgPrimitiveType(Enum):
 
     @classmethod
     def from_string(cls, arg_type: str) -> ArgPrimitiveType:
+        """Return the ArgPrimitiveType whose name matches ``arg_type`` (case-insensitive).
+
+        Raises :class:`InvalidStingerStructure` if no such type exists.
+        """
         if hasattr(cls, arg_type.upper()):
             return getattr(cls, arg_type.upper())
         else:
@@ -46,6 +56,7 @@ class ArgPrimitiveType(Enum):
 
     @classmethod
     def to_python_type(cls, arg_type: ArgPrimitiveType, optional: bool = False) -> str:
+        """Return the Python type annotation string for ``arg_type`` (e.g. ``int``)."""
         if optional:
             return f"Optional[{cls.to_python_type(arg_type, optional=False)}]"
         if arg_type == cls.BOOLEAN:
@@ -60,6 +71,7 @@ class ArgPrimitiveType(Enum):
 
     @classmethod
     def to_rust_type(cls, arg_type: ArgPrimitiveType, optional: bool = False) -> str:
+        """Return the Rust type string for ``arg_type`` (e.g. ``i32``)."""
         if optional:
             return f"Option<{cls.to_rust_type(arg_type, optional=False)}>"
         if arg_type == cls.BOOLEAN:
@@ -74,6 +86,7 @@ class ArgPrimitiveType(Enum):
 
     @classmethod
     def to_json_type(cls, arg_type: ArgPrimitiveType) -> str:
+        """Return the JSON schema type string for ``arg_type`` (e.g. ``integer``)."""
         if arg_type == cls.BOOLEAN:
             return "boolean"
         elif arg_type == cls.INTEGER:
@@ -86,6 +99,7 @@ class ArgPrimitiveType(Enum):
 
     @classmethod
     def to_cpp_type(cls, arg_type: ArgPrimitiveType, optional: bool = False) -> str:
+        """Return the C++ type string for ``arg_type`` (e.g. ``int``)."""
         if arg_type == cls.BOOLEAN:
             if optional:
                 return "std::optional<bool>"
@@ -110,6 +124,7 @@ class ArgPrimitiveType(Enum):
 
     @classmethod
     def to_cpp_rapidjson_type_str(cls, arg_type: ArgPrimitiveType) -> str:
+        """Return the RapidJSON type name for ``arg_type`` (e.g. ``Int``)."""
         if arg_type == cls.BOOLEAN:
             return "Bool"
         elif arg_type == cls.INTEGER:

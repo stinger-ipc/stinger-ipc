@@ -53,11 +53,13 @@ class Arg(BaseModel):
     )
 
     def try_set_description_from_spec(self, spec: Mapping[str, Any]) -> "Arg":
+        """Set ``description`` from a parsed spec dict if it has a string value."""
         if "description" in spec and isinstance(spec["description"], str):
             self.description = spec["description"].strip()
         return self
 
     def try_set_schema_from_spec(self, spec: Mapping[str, Any]) -> "Arg":
+        """Set ``value_schema`` from a parsed spec dict's ``schema`` block if present."""
         if "schema" in spec and isinstance(spec["schema"], Mapping):
             self.value_schema = dict(spec["schema"])
         return self
@@ -67,6 +69,13 @@ class Arg(BaseModel):
 
     @classmethod
     def new_arg_from_stinger(cls, arg_spec: YamlArg, stinger_spec: Optional[StingerSpec] = None) -> Arg:
+        """Build the appropriate Arg subclass from a parsed Stinger arg spec dict.
+
+        Dispatches on the ``type`` key to construct primitives, enums, structs,
+        datetimes, durations, binary, and array arguments.  Enum and struct args
+        require the owning :class:`StingerSpec` to resolve their referenced
+        enum/struct definitions.
+        """
         # arg_spec may be an immutable Mapping; copy to mutable dict for validation/mutation
         spec: dict[str, Any]
         if isinstance(arg_spec, dict):
@@ -181,10 +190,17 @@ class Arg(BaseModel):
 
     @abstractmethod
     def get_random_example_value(self, lang="python", seed: int = 0):
+        """Return a randomly generated example value for this argument.
+
+        The returned value is expressed as a code snippet in the requested
+        target ``lang`` (e.g. ``'python'``, ``'rust'``, ``'c++'``, or
+        ``'json'``) and is used by demos, tests, and documentation.
+        """
         pass
 
 
 class ArgEnum(Arg):
+    """An argument whose value is restricted to one of an enum's members."""
 
     enum: InterfaceEnum = Field(..., description="The InterfaceEnum that restricts the values this ArgEnum represents.")
     arg_type: ArgType = Field(default=ArgType.ENUM, description="The type of the argument, which is 'enum' for this class")
@@ -193,6 +209,7 @@ class ArgEnum(Arg):
         LanguageSymbolMixin.enhance(self)
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str:
+        """Return a randomly chosen enum member expressed for the target language."""
         random_state = random.getstate()
         random.seed(seed)
         random_enum_item = random.choice(self.enum.items)
@@ -219,6 +236,7 @@ class ArgEnum(Arg):
 
 
 class ArgPrimitive(Arg):
+    """An argument whose value is a single primitive (boolean, integer, float, or string)."""
 
     arg_type: ArgType = Field(default=ArgType.PRIMITIVE, description="The type of the argument, which is 'primitive' for this class")
     primitive_type: ArgPrimitiveType = Field(..., description="The specific primitive type that this argument represents (e.g. boolean, integer, float, string)")
@@ -228,17 +246,21 @@ class ArgPrimitive(Arg):
 
     @property
     def type(self) -> ArgPrimitiveType:
+        """The primitive type of this argument (alias for ``primitive_type``)."""
         return self.primitive_type
 
     @property
     def protobuf_type(self) -> str:
+        """The protocol buffer type string for this argument (e.g. ``int32``)."""
         return ArgPrimitiveType.to_protobuf_type(self.primitive_type)
 
     @property
     def json_type(self) -> str:
+        """The JSON schema type string for this argument (e.g. ``integer``)."""
         return ArgPrimitiveType.to_json_type(self.primitive_type)
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | float | int | bool | None:
+        """Return a random example value for this primitive in the target language."""
         random_state = random.getstate()
         random.seed(seed)
         retval: str | float | int | bool | None = None
@@ -266,6 +288,11 @@ class ArgPrimitive(Arg):
 
     @classmethod
     def new_arg_primitive_from_stinger(cls, arg_spec: Mapping[str, Any]) -> ArgPrimitive:
+        """Build an ArgPrimitive from a parsed Stinger arg spec dict.
+
+        The ``type`` key must name one of the supported primitive types (e.g.
+        ``boolean``, ``integer``, ``float``, ``string``).
+        """
         if "type" not in arg_spec:
             raise InvalidStingerStructure("No 'type' in arg structure")
         if "name" not in arg_spec:
@@ -284,6 +311,7 @@ class ArgPrimitive(Arg):
 
 
 class ArgStruct(Arg):
+    """An argument whose value is an instance of a named struct."""
 
     interface_struct: InterfaceStruct = Field(..., description="The InterfaceStruct that defines the structure used for this argument.")
     arg_type: ArgType = Field(default=ArgType.STRUCT, description="The type of the argument, which is 'struct' for this class")
@@ -293,13 +321,16 @@ class ArgStruct(Arg):
 
     @property
     def struct(self) -> InterfaceStruct:
+        """The InterfaceStruct this argument references (alias for ``interface_struct``)."""
         return self.interface_struct
 
     @property
     def members(self) -> list[Arg]:
+        """The members of the referenced struct."""
         return self.interface_struct.members
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
+        """Return a random example struct value expressed in the target language."""
         # Build a dict of example values keyed appropriately depending on language.
         example_list: dict[str, str]
         if lang in ["rust", "python"]:
@@ -332,6 +363,7 @@ class ArgStruct(Arg):
 
 
 class ArgDateTime(Arg):
+    """An argument whose value is a date/time instant."""
 
     arg_type: ArgType = Field(default=ArgType.DATETIME, description="The type of the argument, which is 'datetime' for this class")
 
@@ -339,6 +371,7 @@ class ArgDateTime(Arg):
         LanguageSymbolMixin.enhance(self)
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
+        """Return a random datetime example expressed in the target language."""
         if lang == "python":
             if self.optional and random.choice([True, False, False, False]):
                 return "None"
@@ -363,12 +396,15 @@ class ArgDateTime(Arg):
 
 
 class ArgDuration(Arg):
+    """An argument whose value is a duration (a span of time)."""
+
     arg_type: ArgType = Field(default=ArgType.DURATION, description="The type of the argument, which is 'duration' for this class")
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
+        """Return a random duration example expressed in the target language."""
         random_state = random.getstate()
         random.seed(seed)
         retval = None
@@ -402,6 +438,7 @@ class ArgDuration(Arg):
 
 
 class ArgBinary(Arg):
+    """An argument whose value is arbitrary binary data (e.g. a file)."""
 
     arg_type: ArgType = Field(default=ArgType.BINARY, description="The type of the argument, which is 'binary' for this class")
     content_type: Optional[str] = Field(default=None, description="The MIME content type of the binary data. Required for schema version 0.2+, optional for earlier versions.")
@@ -410,6 +447,7 @@ class ArgBinary(Arg):
         LanguageSymbolMixin.enhance(self)
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
+        """Return a random binary example expressed in the target language."""
         if lang == "python":
             return f'b"example binary data"'
         elif lang == "rust":
@@ -436,6 +474,7 @@ class ArgBinary(Arg):
 
 
 class ArgArray(Arg):
+    """An argument whose value is a list of elements of a single element type."""
 
     element: Arg = Field(..., description="The type of the elements in the array")
     arg_type: ArgType = Field(default=ArgType.ARRAY, description="The type of the argument, which is 'array' for this class")
@@ -444,6 +483,7 @@ class ArgArray(Arg):
         LanguageSymbolMixin.enhance(self)
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
+        """Return a random array example expressed in the target language."""
         example_value = self.element.get_random_example_value(lang, seed=seed)
         example_value2 = self.element.get_random_example_value(lang, seed=seed + 1)
         example_value3 = self.element.get_random_example_value(lang, seed=seed + 2)

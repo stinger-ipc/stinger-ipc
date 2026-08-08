@@ -48,6 +48,12 @@ class ISymbolsProvider:
 
 
 class ModelSymbols:
+    """Base class for symbol providers that wrap a single model object.
+
+    Subclasses expose language-specific computed names and types as properties,
+    keeping a reference to the wrapped ``model`` so they can derive symbols from
+    it lazily.
+    """
 
     def __init__(self, model):
         self._model = model
