@@ -22,3 +22,4 @@ build/
 .infisical.json
 
 pytest-warnings.json
+docs/_build/

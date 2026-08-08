@@ -1,0 +1,30 @@
+# .readthedocs.yaml
+# Read the Docs configuration file
+# See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
+
+# Required
+version: 2
+
+# Set the OS, Python version and other tools you might need
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.12"
+  jobs:
+    # Install the project (and dev dependencies) with uv, then let the
+    # default `sphinx-build -b html` command do the build.
+    post_create_environment:
+      - pip install uv
+    post_install:
+      - uv pip install --system ".[dev]"
+
+# Build documentation in the "docs/" directory with Sphinx
+sphinx:
+  configuration: docs/conf.py
+  # Fail the build if there are any warnings
+  # fail_on_warning: true
+
+# Optionally build your docs in additional formats such as PDF and ePub
+# formats:
+#   - pdf
+#   - epub

@@ -449,6 +449,24 @@ tasks:
       - task: web:generate
       - task: protobuf:generate
 
+  docs:
+    desc: Build the Sphinx (Read the Docs style) documentation
+    sources:
+      - docs/**/*.rst
+      - docs/**/*.md
+      - docs/conf.py
+      - stingeripc/**/*.py
+    generates:
+      - docs/_build/html/**
+    cmds:
+      - uv run sphinx-build -b html docs/ docs/_build/html/
+    silent: false
+
+  docs:clean:
+    desc: Remove the built documentation
+    cmds:
+      - rm -rf docs/_build
+
   clean:
     desc: Clean all generated files
     cmds:
