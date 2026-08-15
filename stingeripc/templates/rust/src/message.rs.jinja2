@@ -126,8 +126,8 @@ pub fn stable_property_update_response<T: Serialize>(topic: &str, payload: &T, c
     let msg = builder.build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;
     Ok(msg)
 }
-{%endif%}
-{%endif%}
+{%endif%}{# end any stable properties #}
+{%endif%}{# end any properties #}
 {%if stinger.methods|length > 0%}
 #[cfg(feature = "client")]
 pub fn request<T: Serialize>(topic: &str, payload: &T, correlation_id: Uuid, response_topic: String) -> Result<MqttMessage, MethodReturnCode> {
@@ -171,23 +171,6 @@ pub fn response<T: Serialize>(topic: &str, payload: &T, correlation_data: Bytes,
     Ok(msg)
 }
 
-#[cfg(feature = "server")]
-pub fn error_response(topic: &str, correlation_data: Option<Bytes>, return_code: MethodReturnCode) -> Result<MqttMessage, MethodReturnCode> {
-    let (code_num, debug_info) = return_code.to_code();
-    let mut builder = MqttMessageBuilder::default();
-    builder
-        .topic(topic)
-        .payload("{}")
-        .qos(QoS::AtLeastOnce)
-        .retain(false)
-        .correlation_data(correlation_data)
-        .user_property("ReturnCode", code_num.to_string());
-    if let Some(info) = debug_info {
-        builder.user_property("DebugInfo", info);
-    }
-    let msg = builder.build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;
-    Ok(msg)
-}
 {%if stinger.methods.values()|selectattr('version')|list|length > 0 %}
 #[cfg(feature = "client")]
 pub fn stable_request<T: Serialize>(topic: &str, payload: &T, correlation_id: Uuid, response_topic: String, version: &str) -> Result<MqttMessage, MethodReturnCode> {
@@ -251,8 +234,27 @@ pub fn stable_error_response(topic: &str, correlation_data: Option<Bytes>, retur
     let msg = builder.build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;
     Ok(msg)
 }
-{%endif%}
-{%endif%}
+{%endif%}{# end if has any stable methods #}
+{%endif%}{# end if has any methods#}
+{%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
+#[cfg(feature = "server")]
+pub fn error_response(topic: &str, correlation_data: Option<Bytes>, return_code: MethodReturnCode) -> Result<MqttMessage, MethodReturnCode> {
+    let (code_num, debug_info) = return_code.to_code();
+    let mut builder = MqttMessageBuilder::default();
+    builder
+        .topic(topic)
+        .payload("{}")
+        .qos(QoS::AtLeastOnce)
+        .retain(false)
+        .correlation_data(correlation_data)
+        .user_property("ReturnCode", code_num.to_string());
+    if let Some(info) = debug_info {
+        builder.user_property("DebugInfo", info);
+    }
+    let msg = builder.build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;
+    Ok(msg)
+}
+{%endif%}{#end any methods or properties#}
 {%if stinger.signals|length > 0 %}
 #[cfg(feature = "server")]
 pub fn signal<T: Serialize>(topic: &str, payload: &T) -> Result<MqttMessage, MethodReturnCode> {
@@ -264,7 +266,7 @@ pub fn signal<T: Serialize>(topic: &str, payload: &T) -> Result<MqttMessage, Met
         .build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;
     Ok(msg)
 }
-{%endif%}
+{%endif%}{# end has any signals#}
 {%if stinger.signals.values()|selectattr('version')|list|length > 0 %}
 #[cfg(feature = "server")]
 pub fn stable_signal<T: Serialize>(topic: &str, payload: &T, version: &str) -> Result<MqttMessage, MethodReturnCode> {
@@ -277,4 +279,4 @@ pub fn stable_signal<T: Serialize>(topic: &str, payload: &T, version: &str) -> R
         .build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;
     Ok(msg)
 }
-{%endif%}
+{%endif%}{# end has any stable signals#}

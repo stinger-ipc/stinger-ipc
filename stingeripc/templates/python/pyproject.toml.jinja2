@@ -53,5 +53,8 @@ module = [
 ]
 ignore_missing_imports = true
 
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+
 [project.entry-points."stinger_python_utils.mcp_plugins"]
 {{stinger.name|snake_case}} = "{{stinger.python.package_directory}}.mcp:{{stinger.name|UpperCamelCase}}MCPPlugin"
