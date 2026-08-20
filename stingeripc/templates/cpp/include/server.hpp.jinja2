@@ -4,8 +4,7 @@ on the next generation.
 
 It contains enumerations used by the {{stinger.name}} interface.
 
-LICENSE: This generated code is not subject to any license restrictions from the generator itself.
-TODO: Get license text from stinger file
+{%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 */
 {% import 'partials/properties.jinja2' as pr %}
 
@@ -43,16 +42,16 @@ public:
     static constexpr const char NAME[] = "{{stinger.name}}";
     static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
 
-    {{stinger.cpp.server_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId, {%for topic_param in config.topics.params %}const std::string& {{topic_param | lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+    {{stinger.cpp.server_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId{%for topic_param in config.topics.params %}, const std::string& {{topic_param | lowerCamelCase}}{%endfor%});
 
     virtual ~{{stinger.cpp.server_class_name}}();
 
     {%for sig_name, sig in stinger.signals.items()%}
-    std::future<bool> emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp_func_param_type}}{%if not loop.last%}, {%endif%}{%endfor%});
+    std::future<bool> emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp.func_param_type}}{%if not loop.last%}, {%endif%}{%endfor%});
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
-    void register{{method_name | UpperCamelCase}}Handler(std::function<{{method.return_value_cpp_class}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func);
+    void register{{method_name | UpperCamelCase}}Handler(std::function<{{method.cpp.return_value_class}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func);
     {%endfor%}
 
     {%for prop_name, prop in stinger.properties.items()%}
@@ -70,7 +69,7 @@ private:
 
     {%for method_name, method in stinger.methods.items()%}
     void _call{{method_name | UpperCamelCase}}Handler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
-    std::function<{{method.return_value_cpp_class}}({%for arg in method.arg_list%}{{arg.cpp_temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{method_name | camelCase}}Handler;
+    std::function<{{method.cpp.return_value_class}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{method_name | camelCase}}Handler;
     int _{{method_name | camelCase}}MethodSubscriptionId;
     {%endfor%}
 

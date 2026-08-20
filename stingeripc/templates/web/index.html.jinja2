@@ -8,8 +8,7 @@
     <link rel="stylesheet" href="./styles.css" />
     <!--
     This is automatically generated code.
-    LICENSE: This generated content is not subject to any license restrictions.
-    TODO: Get license text from stinger file
+    {%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
     -->
   </head>
   {%macro arglist(arg_list, model_parts, read_only) -%}
@@ -25,7 +24,15 @@
       </td>
       <td class="arg-value-cell">
         {%if arg.arg_type|lower == "argtype.primitive"%}
+        {%if arg.primitive_type|lower == "argprimitivetype.integer"%}
+        <input {%if read_only%}disabled {%endif%}type="number" step="1" ng-model="{{modelpath}}.{{arg.name}}" />
+        {%elif arg.primitive_type|lower == "argprimitivetype.float"%}
+        <input {%if read_only%}disabled {%endif%}type="number" step="any" ng-model="{{modelpath}}.{{arg.name}}" />
+        {%elif arg.primitive_type|lower == "argprimitivetype.boolean"%}
+        <input {%if read_only%}disabled {%endif%}type="checkbox" ng-model="{{modelpath}}.{{arg.name}}" />
+        {%else%}
         <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}" />
+        {%endif%}
         {%elif arg.arg_type|lower == "argtype.enum"%}
         <select {%if read_only%}disabled {%endif%}ng-model="{{modelpath}}.{{arg.name}}" ng-options="n.id as n.name for n in enums.{{arg.enum.name|lowerCamelCase}}">
         </select>
@@ -37,11 +44,56 @@
           {{ arglist(arg.members, new_model_parts, read_only) }}
         </div>
         {%elif arg.arg_type|lower == "argtype.binary"%}
+        {%if arg.content_type and arg.content_type.startswith('image/')%}
+        <img class="binary-image" ng-if="{{modelpath}}.{{arg.name}}" ng-src="data:{{arg.content_type}};base64,{{ '{{' }}{{modelpath}}.{{arg.name}}{{ '}}' }}" alt="{{arg.name}}" />
+        {%if not read_only%}
+        <input type="text" ng-model="{{modelpath}}.{{arg.name}}" placeholder="base64 image data" />
+        {%endif%}
+        {%else%}
         Binary: <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}" />
+        {%endif%}
         {%elif arg.arg_type|lower == "argtype.array"%}
+        {%if arg.element.arg_type|lower == "argtype.struct"%}
+        <table class="arglist array-of-struct">
+          <thead>
+            <tr>
+              {%for member in arg.element.members %}
+              <th class="arg-name">{{ member.name }}</th>
+              {%endfor%}
+              {%if not read_only%}<th></th>{%endif%}
+            </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="(index, item) in {{modelpath}}.{{arg.name}} track by $index" class="argrow">
+              {%for member in arg.element.members %}
+              <td class="arg-value-cell">
+                {%if member.arg_type|lower == "argtype.enum"%}
+                <select {%if read_only%}disabled {%endif%}ng-model="{{modelpath}}.{{arg.name}}[index].{{member.name}}" ng-options="n.id as n.name for n in enums.{{member.enum.name|lowerCamelCase}}"></select>
+                {%else%}
+                <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}[index].{{member.name}}" />
+                {%endif%}
+              </td>
+              {%endfor%}
+              {%if not read_only%}
+              <td><button type="button" class="publish-button" ng-click="{{modelpath}}.{{arg.name}}.splice(index, 1)">✕</button></td>
+              {%endif%}
+            </tr>
+          </tbody>
+          {%if not read_only%}
+          <tfoot>
+            <tr>
+              <td colspan="{{ arg.element.members|length + 1 }}">
+                <button type="button" class="publish-button" ng-click="{{modelpath}}.{{arg.name}}.push({})">+ Add row</button>
+              </td>
+            </tr>
+          </tfoot>
+          {%endif%}
+        </table>
+        {%else%}
         <span ng-repeat="(index, item) in {{modelpath}}.{{arg.name}} track by $index">
           <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}[index]" />
         </span>
+        {%endif%}
         {%else%}
         <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}" placeholder="(unknown type)" />
         {%endif%} 
@@ -62,33 +114,60 @@
       {%endmarkdown%}
       </p>
     </div>
+
+    <!------------- TAB BAR ------------->
+    <div class="tab-bar">
+      {%if stinger.signals %}
+      <button class="tab-btn" ng-class="{'active': activeTab === 'signals'}" ng-click="activeTab = 'signals'">
+        <span class="mdi mdi-bell-outline"></span> Signals
+      </button>
+      {%endif%}
+      {%if stinger.properties %}
+      <button class="tab-btn" ng-class="{'active': activeTab === 'properties'}" ng-click="activeTab = 'properties'">
+        <span class="mdi mdi-tune"></span> Properties
+      </button>
+      {%endif%}
+      {%if stinger.methods %}
+      <button class="tab-btn" ng-class="{'active': activeTab === 'methods'}" ng-click="activeTab = 'methods'">
+        <span class="mdi mdi-function"></span> Methods
+      </button>
+      {%endif%}
+    </div>
+
     <!------------- SIGNALS ------------->
+    <div ng-show="activeTab === 'signals'">
     {%for sig_name, sig in stinger.signals.items() %}
     <div class="component-box signal-box" id="signal-box-{{ sig_name }}">
-        <h3 class="component-title signal-title">Signal: {{ sig_name }}</h3>
-        <div class="component-doc signal-doc">{%if sig.documentation %}
+        <h3 class="component-title signal-title" ng-class="{'flash': signals['{{ sig_name | lowerCamelCase }}'].flash}"><span class="mdi mdi-bell-outline"></span> {{ sig_name }}</h3>
+        {%if sig.documentation %}
+        <details class="component-doc signal-doc">
+          <summary>Documentation</summary>
 {%markdown%}
 {{ sig.documentation }}
 {%endmarkdown%}
+        </details>
         {%endif%}
-        </div>
-        <!--<div class="signal-topic topic">Subscribe: {{ sig.topic }}</div>-->
+        <!--<div class="signal-topic topic">Subscribe: {{ sig.topic() }}</div>-->
         <div class="last-received signal-value">
         {{ arglist(sig.arg_list, ['signals', sig_name, 'received'], true) | indent(8) }}
         </div>
     </div>
     {%endfor%}{# end signals loop #}
+    </div>
 
     <!------------- PROPERTIES ------------->
+    <div ng-show="activeTab === 'properties'">
     {%for prop_name, prop in stinger.properties.items() %}
     <div class="component-box prop-box" id="prop-box-{{ prop_name }}">
-        <h3 class="component-title prop-title">Property: {{ prop_name }}</h3>
-        <div class="component-doc prop-doc">{%if prop.documentation %}
+        <h3 class="component-title prop-title" ng-class="{'flash': properties['{{ prop_name | lowerCamelCase }}'].flash}"><span class="mdi mdi-tune"></span> {{ prop_name }}</h3>
+        {%if prop.documentation %}
+        <details class="component-doc prop-doc">
+          <summary>Documentation</summary>
 {%markdown%}
 {{ prop.documentation }}
 {%endmarkdown%}
+        </details>
         {%endif%}
-        </div>
         <!--<div class="property-topic topic">Subscribe: {{ prop.value_topic }}</div>-->
         <div class="last-received property-value">
           {{ arglist(prop.arg_list, ['properties', prop_name, 'received'], prop.read_only) | indent(8) }}
@@ -98,17 +177,21 @@
         {%endif%}
     </div>
     {%endfor%} {# end properties loop #}
+    </div>
 
     <!------------- METHODS ------------->
+    <div ng-show="activeTab === 'methods'">
     {%for method_name, method in stinger.methods.items() %}
     <div class="component-box method-box" id="method-box-{{ method_name }}">
-        <h3 class="component-title method-title">Method: {{ method_name }}</h3>
-        <div class="component-doc method-doc">{%if method.documentation %}
+        <h3 class="component-title method-title"><span class="mdi mdi-function"></span> {{ method_name }}</h3>
+        {%if method.documentation %}
+        <details class="component-doc method-doc">
+          <summary>Documentation</summary>
 {%markdown%}
 {{ method.documentation }}
 {%endmarkdown%}
+        </details>
         {%endif%}
-        </div>
         <!--<div class="method-topic topic">Publish: {{ method.topic }}</div>-->
         <div class="method-form-box">
             <form ng-submit="callMethod(methods.{{method_name|lowerCamelCase}})">
@@ -116,11 +199,15 @@
                 <button type="submit" class="publish-button">Call {{ method_name }}</button>
             </form>
         </div>
-        <div class="last-received method-response" ng-bind="methods['{{ method_name | lowerCamelCase }}'].received">
+        <div class="last-received method-response" ng-show="methods['{{ method_name | lowerCamelCase }}'].received_time">
+            <div class="method-response-status"><span class="mdi mdi-check-circle-outline"></span> Response received at <span ng-bind="methods['{{ method_name | lowerCamelCase }}'].received_time | date:'HH:mm:ss'"></span></div>
+        {%if method.return_values %}
         {{ arglist(method.return_values, ['methods', method_name, 'received'], true) | indent(8) }}
+        {%endif%}
         </div>
     </div>
     {%endfor%} {# end methods loop #}
+    </div>
 
     {%raw%}
     <div id="console" ng-class="{ 'expanded' : (console.showing) }">
@@ -131,7 +218,7 @@
         <p ng-repeat="msg in console.requests" class="entry">
           <strong>{{msg.name}}:</strong> <em>{{msg.topic}}</em> <span class="elapsedTime" ng-show="msg.responseTime">{{msg.responseTime - msg.requestTime}}ms</span><span class="elapsedTime" ng-show="msg.eventTime">{{msg.eventTime}}</span>
           <span class="outgoing" ng-show="msg.payload">{{msg.payload}}</span>
-          <span class="incoming" ng-show="msg.response">{{msg.response}}</span>
+          <span class="incoming" ng-show="msg.responseTime">{{ (msg.response === null || msg.response === undefined) ? '(empty response)' : msg.response }}</span>
           <span ng-repeat="result in msg.results" class="action-result">{{result}}</span>
         </p>
       </div>

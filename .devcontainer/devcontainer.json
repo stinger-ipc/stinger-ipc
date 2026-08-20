@@ -3,10 +3,11 @@
 {
 	"name": "Python 3",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/python:2-3.12-bullseye",
+	"image": "mcr.microsoft.com/devcontainers/python:3-3.12-bookworm",
 	"features": {
 		"ghcr.io/devcontainers/features/rust:1": {},
-		"ghcr.io/devcontainers-extra/features/apt-packages:1": {}
+		"ghcr.io/devcontainers-extra/features/apt-packages:1": {},
+		"ghcr.io/devcontainers-extra/features/uv:1": {}
 	},
 	"customizations": {
 		"vscode": {

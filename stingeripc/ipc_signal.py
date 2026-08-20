@@ -1,0 +1,83 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional
+
+from .components import InterfaceComponent, Arg
+from .lang_symb import LanguageSymbolMixin
+from .exceptions import InvalidStingerStructure
+from . import topic_util
+
+if TYPE_CHECKING:
+    from .components import StingerSpec
+
+
+class IpcSignal(InterfaceComponent):
+    """A signal published by the interface.
+
+    Signals are fire-and-forget messages: a server emits them and any client
+    subscribed to the signal's topic receives the payload.  A signal carries an
+    ordered list of arguments (its payload) and may declare a ``version``.
+    """
+
+    def __init__(self, name: str, root: StingerSpec):
+        InterfaceComponent.__init__(self, name, root)
+        LanguageSymbolMixin.enhance(self, self._config)
+        self._arg_list: list[Arg] = []
+        self._version: Optional[str] = None
+
+    def add_arg(self, arg: Arg) -> IpcSignal:
+        """Append an argument to the signal's payload and return self.
+
+        Duplicate argument names are rejected.
+        """
+        if arg.name in [a.name for a in self._arg_list]:
+            raise InvalidStingerStructure(f"An arg named '{arg.name}' has been added.")
+        self._arg_list.append(arg)
+        return self
+
+    @property
+    def version(self) -> Optional[str]:
+        """Version of the signal, or None if not declared."""
+        return self._version
+
+    @property
+    def arg_list(self) -> list[Arg]:
+        """The ordered list of arguments that make up the signal's payload."""
+        return self._arg_list
+
+    def topic(self, **kwargs) -> str:
+        """Return the topic that signal messages are published on.
+
+        The topic is derived from the configured ``signals`` topic template,
+        with the interface name and signal name filled in.
+        """
+        template_topic = self._config.topics.signals
+        template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, signal_name=self.name, **kwargs)
+        return template_topic
+
+    @classmethod
+    def new_signal_from_stinger(
+        cls,
+        name: str,
+        signal_spec: dict[str, Any],
+        stinger_spec: StingerSpec,
+    ) -> IpcSignal:
+        """Alternative constructor from a Stinger signal structure."""
+        signal = cls(name, stinger_spec)
+        if "payload" not in signal_spec:
+            raise InvalidStingerStructure("Signal specification must have 'payload'")
+        if not isinstance(signal_spec["payload"], list):
+            raise InvalidStingerStructure(f"Payload must be a list.  It is '{type(signal_spec['payload'])}' ")
+
+        for arg_spec in signal_spec["payload"]:
+            if "name" not in arg_spec or "type" not in arg_spec:
+                raise InvalidStingerStructure("Arg must have name and type.")
+            new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)
+            signal.add_arg(new_arg)
+
+        if "version" in signal_spec:
+            signal._version = signal_spec["version"]
+
+        signal.try_set_documentation_from_spec(signal_spec)
+
+        return signal

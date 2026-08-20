@@ -4,8 +4,7 @@ on the next generation.
 
 It contains enumerations used by the {{stinger.name}} interface.
 
-LICENSE: This generated code is not subject to any license restrictions from the generator itself.
-TODO: Get license text from stinger file
+{%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 */
 
 #pragma once
@@ -28,7 +27,7 @@ struct {{istruct_name | UpperCamelCase }} {
     static {{istruct_name | UpperCamelCase }} FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     {%-for value in istruct.members %}
-    {{value.cpp_temp_type}} {{value.name|lowerCamelCase}};
+    {{value.cpp.temp_type}} {{value.name|lowerCamelCase}};
     {%-endfor%}
 };
 {%endfor%}

@@ -1,17 +1,22 @@
 import unittest
 import os.path
 import jsonschema_rs
+from ruamel.yaml import YAML
 
 from stingeripc.loading import parse_yaml_file
 
 example_stinger_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../example_interfaces"))
-schema_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../schemas/schema.yaml"))
+schema_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../schemas/0.2/schema.yaml"))
 
 
 class SchemaValidation:
 
     def test_validates(self):
-        schema_obj = parse_yaml_file(schema_path)
+        # Load the schema with plain YAML so $ref/$defs are left intact for
+        # jsonschema_rs to resolve (parse_yaml_file would expand the recursive
+        # jsonSchema definition and recurse forever).
+        with open(schema_path) as f:
+            schema_obj = YAML(typ="safe").load(f)
         validator = jsonschema_rs.validator_for(schema_obj)
 
         param_only_path = os.path.join(example_stinger_path, self.directory, self.stinger_name)

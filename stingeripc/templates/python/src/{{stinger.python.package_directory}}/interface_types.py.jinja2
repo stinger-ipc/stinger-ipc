@@ -4,46 +4,20 @@ on the next generation.
 
 It contains enumerations used by the {{stinger.name}} interface.
 
-LICENSE: This generated code is not subject to any license restrictions from the generator itself.
-TODO: Get license text from stinger file
+{%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 """
 
-{%macro field_list(arg_list)%}
-model_config = ConfigDict(populate_by_name=True, strict=True, extra='forbid')
-{%for arg in arg_list-%}
-{%set field_desc %}Field({%if arg.description%}description="{{arg.description}}", {%endif%}{%if (arg.name|snake_case) != arg.name %}alias="{{arg.name}}"{%endif%}){%endset%}
-{%-if arg.arg_type.name.lower() == 'primitive' -%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}, {{field_desc}}]
-{%elif arg.arg_type.name.lower() == 'enum'-%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}, {{field_desc}}]
-{%elif arg.arg_type.name.lower() == 'struct'-%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}, {{field_desc}}]
-{%elif arg.arg_type.name.lower() == 'datetime'-%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[datetime]{%else%}datetime{%endif%}, {{field_desc}}]
-{%elif arg.arg_type.name.lower() == 'duration'-%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[timedelta]{%else%}timedelta{%endif%}, {{field_desc}}]
-{%elif arg.arg_type.name.lower() == 'binary'-%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[bytes]{%else%}bytes{%endif%}, {{field_desc}}, PlainValidator(base64_decode_if_str), PlainSerializer(lambda v: base64.b64encode(v).decode('utf-8'){%if arg.optional%} if v is not None else None{%endif%})]
-{%elif arg.arg_type.name.lower() == 'array'-%}
-{%if arg.element.arg_type.name.lower() == 'binary'-%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[List[bytes]]{%else%}List[bytes]{%endif%}, {{field_desc}}, PlainValidator(lambda arr: [base64_decode_if_str(v) for v in arr]), PlainSerializer(lambda arr: [base64.b64encode(v).decode("utf-8") for v in arr])]
-
-{%else%}
-{{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[List[{{arg.element.python_local_type}}]]{%else%}List[{{arg.element.python_local_type}}]{%endif%}, {{field_desc}}]
-{%endif%}{# end array element cases #}
-
-{%endif-%}
-{%endfor%}
-{%endmacro%}
-
+{% import "partials/imports.jinja2" as imports %}
+{% import "partials/payloads.jinja2" as payloads %}
 
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
-from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{%else%}timezone{%endif%}
-{%if config.python.python37 %}
-UTC = timezone.utc
-{%endif%}
-from typing import Optional, Union, List
+{{ imports.datetime_types(config) }}
+from typing import Optional, Union, List, Dict
 import base64
+{%if stinger.uses_schemas()%}import json
+import jsonschema
+from pydantic import model_validator
+{%endif%}
 {%if stinger.uses_enums()%}from enum import IntEnum{%endif%}
 
 {%- if config.python.python37 %}
@@ -68,6 +42,7 @@ class {{stinger.name|UpperCamelCase}}InterfaceInfo(BaseModel):
     interface_name: str = Field(default="{{stinger.name}}")
     title: str = Field(default="{{stinger.title or stinger.name}}")
     version: str = Field(default="{{stinger.version}}")
+    methods: Dict[str, str] = Field(default_factory=dict, description="Maps method names to their version string, for methods that declare a version.")
     instance: str
     connection_topic: str
     timestamp: str
@@ -90,7 +65,8 @@ class {{ie_name | UpperCamelCase }}(IntEnum):
 {%-for istruct_name, istruct in stinger.structs.items() %}
 class {{istruct_name | UpperCamelCase }}(BaseModel):
     """ Interface struct `{{istruct_name}}`. """
-    {{field_list(istruct.members)|indent(4)}}
+    {{payloads.field_list(istruct.members)|indent(4)}}
+    {{payloads.validate_schema_method(istruct.members)|indent(4)}}
 {%endfor%}
 
 # There are {{stinger.signals|length}} signal definitions
@@ -100,7 +76,8 @@ class {{signal_name|UpperCamelCase}}SignalPayload(BaseModel):
     
     {{signal.documentation}}{%endif%}
     """
-    {{field_list(signal.arg_list)|indent(4)}}
+    {{payloads.field_list(signal.arg_list)|indent(4)}}
+    {{payloads.validate_schema_method(signal.arg_list)|indent(4)}}
 {%endfor%}
 
 # There are {{stinger.properties|length}} property definitions
@@ -110,22 +87,25 @@ class {{prop.python.model_class_name}}(BaseModel):
     
     {{prop.documentation}}{%endif%}
     """
-    {{field_list(prop.arg_list)|indent(4)}}
+    {{payloads.field_list(prop.arg_list)|indent(4)}}
+    {{payloads.validate_schema_method(prop.arg_list)|indent(4)}}
 {%endfor%}
 
 # There are {{stinger.methods|length}} method definitions
 {%- for method_name, method in stinger.methods.items()%}
-class {{method_name|UpperCamelCase}}MethodRequest(BaseModel):
+class {{method.python.request_class_name}}(BaseModel):
     """ Interface method `{{method_name}}` request object. {%if method.documentation%}
 
     {{method.documentation}}{%endif%}
     """
-    {{field_list(method.arg_list)|indent(4)}}
+    {{payloads.field_list(method.arg_list)|indent(4)}}
+    {{payloads.validate_schema_method(method.arg_list)|indent(4)}}
 
-class {{method_name|UpperCamelCase}}MethodResponse(BaseModel):
+class {{method.python.response_class_name}}(BaseModel):
     """ Interface method `{{method_name}}` response object. {%if method.documentation%}
 
     {{method.documentation}}{%endif%}
     """
-    {{field_list(method.return_arg_list)|indent(4)}}
+    {{payloads.field_list(method.return_arg_list)|indent(4)}}
+    {{payloads.validate_schema_method(method.return_arg_list)|indent(4)}}
 {%endfor%}

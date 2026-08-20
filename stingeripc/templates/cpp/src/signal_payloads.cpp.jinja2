@@ -1,8 +1,11 @@
 
 #include "signal_payloads.hpp"
+#include <rapidjson/document.h>
+#include <rapidjson/schema.h>
 
 {% import "partials/deserialize.jinja2"  as deser %}
 {% import "partials/serialize.jinja2" as ser %}
+{% import "partials/validate.jinja2" as val %}
 
 {%for ns in config.cpp.namespace%}
 namespace {{ns}} {
@@ -25,6 +28,7 @@ void {{signal_name | UpperCamelCase}}Payload::AddToRapidJsonObject(rapidjson::Va
     {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
     {%- endfor %}
 }
+{{ val.validate_schema_body((signal_name | UpperCamelCase) ~ "Payload", signal.arg_list) }}
 {% endfor %}
 
 } // namespace {{stinger.name|snake_case}}

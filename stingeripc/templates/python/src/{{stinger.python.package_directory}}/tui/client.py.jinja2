@@ -146,7 +146,7 @@ class PropertyEditModal(ModalScreen[bool]):
                 {%if prop.arg_list[0].arg_type.name == 'ENUM'%}
                 enum_options = [
                     (f"{member.name} ({member.value})", member.value)
-                    for member in {{prop.arg_list[0].enum.python_type}}
+                    for member in {{prop.arg_list[0].enum.python.type}}
                 ]
                 yield Select(options=enum_options, value=self.current_value.value if self.current_value is not None else None, id="property_input")
                 {%elif prop.arg_list[0].arg_type.name == 'STRUCT'%}
@@ -168,7 +168,7 @@ class PropertyEditModal(ModalScreen[bool]):
                     {%if arg.arg_type.name == 'STRUCT'%}
                     yield TextArea.code_editor(language="json", text=f"{self.current_value.{{arg.name|snake_case}}.model_dump_json()}", id="property_input_{{arg.name|snake_case}}")
                     {%elif arg.arg_type.name == 'ARRAY'%}
-                    type_adapter = TypeAdapter({{arg.python_annotation}})
+                    type_adapter = TypeAdapter({{arg.python.annotation}})
                     yield TextArea.code_editor(language="json", text=f"{type_adapter.dump_json(self.current_value.{{arg.name|snake_case}}).decode('utf-8')}", id="property_input_{{arg.name|snake_case}}")
                     {%else%}
                     yield Input(placeholder=f"{{arg.name}} value", value=str(self.current_value.{{arg.name|snake_case}}), classes="property_input_value", id="property_input_{{arg.name|snake_case}}")
@@ -189,8 +189,8 @@ class PropertyEditModal(ModalScreen[bool]):
 {%-elif arg.type.name == 'FLOAT'%}float({{value}})
 {%-elif arg.type.name == 'STRING'%}str({{value}})
 {%-else%}{{value}}{%endif%}
-{%-elif arg.arg_type.name == 'ENUM'%}{{arg.enum.python_type}}({{value}})
-{%-elif arg.arg_type.name == 'STRUCT'%}{{arg.struct.python_type}}.model_validate_json({{value}})
+{%-elif arg.arg_type.name == 'ENUM'%}{{arg.enum.python.type}}({{value}})
+{%-elif arg.arg_type.name == 'STRUCT'%}{{arg.struct.python.type}}.model_validate_json({{value}})
 {%-elif arg.arg_type.name == 'DATETIME'%}datetime.fromisoformat({{value}})
 {%-elif arg.arg_type.name == 'DURATION'%}isodate.parse_duration({{value}})
 {%-elif arg.arg_type.name == 'BINARY'%}{{value}}.encode('utf-8')
@@ -207,7 +207,7 @@ class PropertyEditModal(ModalScreen[bool]):
                     {%-if prop.arg_list|length == 1%}
                     input_widget = self.query_one("#property_input")
                     {%if prop.arg_list[0].arg_type.name == 'ARRAY'%}
-                    type_adapter = TypeAdapter({{prop.arg_list[0].python_annotation}})
+                    type_adapter = TypeAdapter({{prop.arg_list[0].python.annotation}})
                     new_{{prop_name|snake_case}}_value = type_adapter.validate_json(input_widget.text.strip())
                     {%else%}
                     new_{{prop_name|snake_case}}_value = {{from_input_string(prop.arg_list[0], "input_widget.value")}}
@@ -217,7 +217,7 @@ class PropertyEditModal(ModalScreen[bool]):
                     input_widget_{{arg.name|snake_case}} = self.query_one("#property_input_{{arg.name|snake_case}}", {% if arg.arg_type.name in ['ARRAY', 'STRUCT'] %}TextArea{% else %}Input{% endif %})
                     # {{arg.name}} should be {{arg.type}}
                     {%if arg.arg_type.name == 'ARRAY'%}
-                    type_adapter = TypeAdapter({{arg.python_annotation}})
+                    type_adapter = TypeAdapter({{arg.python.annotation}})
                     new_{{prop_name|snake_case}}_value_{{arg.name|snake_case}} = type_adapter.validate_json(input_widget_{{arg.name|snake_case}}.text.strip())
                     {%else%}
                     new_{{prop_name|snake_case}}_value_{{arg.name|snake_case}} = {{from_input_string(arg, "input_widget_" + arg.name|snake_case + ".value")}}
@@ -403,14 +403,14 @@ class MethodCallModal(ModalScreen[Optional[str]]):
                     return
                 {% endif %} {# non-optional check #}
                 try:
-                    {{method_name|snake_case}}_{{arg.name|snake_case}}_value = {{arg.python_type}}.model_validate_json({{method_name|snake_case}}_{{arg.name|snake_case}}_widget_text_value)
+                    {{method_name|snake_case}}_{{arg.name|snake_case}}_value = {{arg.python.type}}.model_validate_json({{method_name|snake_case}}_{{arg.name|snake_case}}_widget_text_value)
                 except Exception as e:
                     self.result_widget.update(f"[red]Error parsing JSON for parameter {{arg.name}}: {e}[/red]")
                     return
                 else:
                     kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                 {% elif arg.arg_type.name == 'ARRAY' %}
-                type_adapter = TypeAdapter({{arg.python_annotation}})
+                type_adapter = TypeAdapter({{arg.python.type}})
 
                 try:
                     {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", TextArea)
@@ -453,7 +453,7 @@ class MethodCallModal(ModalScreen[Optional[str]]):
                 kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                  {% elif arg.arg_type.name == 'ENUM'%}
                 {{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget = self.query_one(f"#input_{{arg.name|snake_case}}", Select)
-                {{method_name|snake_case}}_{{arg.name|snake_case}}_value = {{arg.enum.python_type}}(int({{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value))
+                {{method_name|snake_case}}_{{arg.name|snake_case}}_value = {{arg.enum.python.type}}(int({{method_name|snake_case}}_{{arg.name|snake_case}}_input_widget.value))
                 kwargs["{{arg.name|snake_case}}"] = {{method_name|snake_case}}_{{arg.name|snake_case}}_value
                 {% endif %}{# arg type switch#}
                 {%endfor-%} {# for each arg #}
@@ -615,7 +615,7 @@ class ClientScreen(Screen):
         # Define all methods with their parameters
         methods = {
         {%-for method_name, method in stinger.methods.items()%}
-            "{{method_name|snake_case}}": { {% for arg in method.arg_list %}"{{arg.name|snake_case}}": {{arg.python_annotation}}, {%endfor%} }, 
+            "{{method_name|snake_case}}": { {% for arg in method.arg_list %}"{{arg.name|snake_case}}": {{arg.python.annotation}}, {%endfor%} }, 
         {%endfor%}
         } # type: Dict[str, Dict[str, Any]]
         
@@ -685,7 +685,7 @@ class ClientScreen(Screen):
             
             {%for prop_name, prop in stinger.properties.items() %}
             {%if not loop.first%}el{%endif%}if prop_name == "{{prop_name|snake_case}}":
-                def on_{{prop_name|snake_case}}_updated(value: {{prop.python_annotation}}):
+                def on_{{prop_name|snake_case}}_updated(value: {{prop.python.annotation}}):
                     prop_widget.current_value = value
                     
                     values = []

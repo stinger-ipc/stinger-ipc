@@ -2,7 +2,9 @@
 #include "method_payloads.hpp"
 {% import "partials/deserialize.jinja2"  as deser %}
 {% import "partials/serialize.jinja2" as ser %}
+{% import "partials/validate.jinja2" as val %}
 #include <rapidjson/document.h>
+#include <rapidjson/schema.h>
 #include <stinger/utils/conversions.hpp>
 
 {%for ns in config.cpp.namespace%}
@@ -26,6 +28,7 @@ void {{method_name | UpperCamelCase}}RequestArguments::AddToRapidJsonObject(rapi
     {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
     {%- endfor %}
 }
+{{ val.validate_schema_body((method_name | UpperCamelCase) ~ "RequestArguments", method.arg_list) }}
 
 // --- (De-)Serialization for {{method_name}} method return type ---
 {{method_name | UpperCamelCase}}ReturnValues {{method_name | UpperCamelCase}}ReturnValues::FromRapidJsonObject(const rapidjson::Value& jsonObj)
@@ -42,6 +45,7 @@ void {{method_name | UpperCamelCase}}ReturnValues::AddToRapidJsonObject(rapidjso
     {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
     {%- endfor %}
 }
+{{ val.validate_schema_body((method_name | UpperCamelCase) ~ "ReturnValues", method.return_arg_list) }}
 {% endfor %}
 
 } // namespace {{stinger.name|snake_case}}

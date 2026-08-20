@@ -1,7 +1,10 @@
+import logging
+import os
 import sys
 from pathlib import Path
 
 from rich import print
+from ruamel.yaml import YAML
 from typing_extensions import Annotated
 from typing import Optional
 import jsonschema_rs
@@ -9,7 +12,8 @@ import typer
 from stingeripc.loading import parse_yaml_file
 
 from stingeripc import filtering
-from stingeripc.config import StingerConfig
+from stingeripc.asyncapi import stinger_to_asyncapi
+from stingeripc.config import StingerConfig, load_config
 from stingeripc.interface import StingerInterface
 
 from . import generic_generator
@@ -55,16 +59,74 @@ def generate(
 
 
 @app.command()
+def asyncapi(
+    input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)],
+    output_dir: Annotated[Path, typer.Argument(..., file_okay=False, dir_okay=True, writable=True, readable=True)],
+    consumer: Annotated[Optional[str], typer.Option("--consumer", help="Consumer name/identifier")] = None,
+    config: Annotated[list[Path], typer.Option("--config", help="TOML configuration file(s) - later files override earlier ones", exists=True, file_okay=True, dir_okay=False, readable=True)] = [],
+):
+    """Generate an AsyncAPI specification from a Stinger interface.
+
+    INPUT_FILE is the .stinger.yaml file
+    OUTPUT_DIR is the directory that will receive the generated asyncapi.yaml
+    """
+    input_obj = parse_yaml_file(input_file)
+
+    config_obj = StingerConfig()
+    if config:
+        for config_file in config:
+            print(f"⚙️  [bold cyan]CONFIG:[/bold cyan] {config_file}")
+            file_config = load_config(config_file)
+            # Merge configs - later files override earlier ones
+            # Use model_validate to ensure nested models are properly instantiated
+            merged_dict = config_obj.model_dump(exclude_unset=True)
+            merged_dict.update(file_config.model_dump(exclude_unset=True))
+            config_obj = StingerConfig.model_validate(merged_dict)
+    assert isinstance(config_obj, StingerConfig), "Config not a Stinger Config"
+    for k, v in config_obj.model_dump().items():
+        print(f"🔧{k:>10.10}: {v}")
+
+    print(f"🟢   [bold cyan]LOAD:[/bold cyan] {input_file}")
+    if consumer:
+        print(f"💠 CONSUMER {consumer}")
+        stinger_yaml = filtering.filter_by_consumer(input_obj, consumer)
+    else:
+        stinger_yaml = input_obj
+    stinger = StingerInterface.from_dict(stinger_yaml, config_obj)
+
+    result = stinger_to_asyncapi(stinger, config_obj)
+
+    if not output_dir.is_dir():
+        os.makedirs(output_dir)
+
+    output_file = output_dir / "asyncapi.yaml"
+    yaml = YAML(typ="safe")
+    yaml.default_flow_style = False
+    yaml.allow_unicode = True
+    with output_file.open("w") as f:
+        yaml.dump(result, f)
+
+    print(f"✅  [bold green]AsyncAPI specification written to {output_file}[/bold green]")
+
+
+@app.command()
 def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)]):
     """Validate a Stinger interface YAML file.
 
     INPUT_FILE is the .stinger.yaml file
     """
-    schema_file = Path(__file__).parent.parent / "schema" / "schema.yaml"
-    schema_obj = parse_yaml_file(schema_file)
-    validator = jsonschema_rs.validator_for(schema_obj)
-
     input_obj = parse_yaml_file(input_file)
+    stingeripc_version = (input_obj.get("stingeripc") or {}).get("version")
+    if not stingeripc_version:
+        print(f"❌  [bold red]Missing required 'stingeripc.version' field in {input_file}[/bold red]")
+        sys.exit(1)
+    schema_dir = Path(__file__).parent.parent / "schema"
+    schema_compat = "0.2" if stingeripc_version.startswith("0.2") else "0.1"
+    schema_file = schema_dir / schema_compat / "schema.yaml"
+    yaml = YAML(typ="safe")
+    with schema_file.open("r") as f:
+        schema_obj = yaml.load(f)
+    validator = jsonschema_rs.validator_for(schema_obj)
 
     error_count = 0
     for error in validator.iter_errors(input_obj):
@@ -100,6 +162,7 @@ def hello():
 
 
 def run():
+    logging.getLogger("stevedore").setLevel(logging.WARNING)
     app()
 
 

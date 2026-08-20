@@ -15,9 +15,31 @@ tasks:
       - task: python:unittest
       - task: cpp:compile
       - task: rust:unittest
+      - task: asyncapi:generate
       - task: markdown:generate
       - task: web:generate
       - task: protobuf:check
+
+  python:
+    desc: Generate, test, and type check all Python interfaces
+    deps:
+      - task: python:generate
+      - task: python:unittest
+      - task: python:mypy
+
+  cpp:
+    desc: Generate, compile, and test all C++ interfaces
+    deps:
+      - task: cpp:generate
+      - task: cpp:compile
+      - task: cpp:unittest
+
+  rust:
+    desc: Generate, check, and test all Rust interfaces
+    deps:
+      - task: rust:generate
+      - task: rust:check
+      - task: rust:unittest
 
   validate:*:
     desc: Validate a specific interface schema
@@ -109,8 +131,10 @@ tasks:
     sources:
       - example_interfaces/{{.IFACE}}/python/tests/**
       - example_interfaces/{{.IFACE}}/python/src/**
+    generates:
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/python/tests/junit.xml"
     cmds:
-      - uv run pytest -vv
+      - uv run pytest -vv --junit-xml=junit.xml
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -191,9 +215,10 @@ tasks:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/include/**"
       - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/src/**"
       - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/cmake/**"
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/tests/**"
     cmds:
       - uv run stinger generate {{.CLI_ARGS}} --language cpp --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/"
-      - clang-format --style=file:clang-format-config.yaml {{.GENERATED_DIR}}/{{.IFACE}}/cpp/include/*.hpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/src/*.cpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/examples/*.cpp -i
+      - clang-format --style=file:clang-format-config.yaml {{.GENERATED_DIR}}/{{.IFACE}}/cpp/include/*.hpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/src/*.cpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/examples/*.cpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/tests/*.cpp -i
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -220,7 +245,24 @@ tasks:
     deps:
       - for: { var: INTERFACES }
         task: cpp:compile:{{ .ITEM }}
-  
+
+  cpp:unittest:*:
+    desc: Run C++ unit tests for an interface
+    deps:
+      - task: cpp:compile:{{index .MATCH 0}}
+    sources:
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/**"
+    cmds:
+      - cd "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/build" && ctest --output-on-failure
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  cpp:unittest:
+    desc: Run C++ unit tests for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: cpp:unittest:{{ .ITEM }}
+
   rust:generate:*:
     desc: Generate Rust code for an interface
     sources:
@@ -283,6 +325,28 @@ tasks:
     deps:
       - for: { var: INTERFACES }
         task: rust:unittest:{{ .ITEM }}
+
+  asyncapi:generate:*:
+    desc: Generate AsyncAPI documentation for an interface
+    deps:
+      - task: validate:{{index .MATCH 0}}
+    sources:
+      - stingeripc/**/*.py
+      - example_interfaces/topic_prefix.toml
+      - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
+    generates:
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/asyncapi/**"
+    cmds:
+      - mkdir -p "{{.GENERATED_DIR}}/{{.IFACE}}/asyncapi/"
+      - uv run stinger asyncapi {{.CLI_ARGS}} --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/asyncapi/"
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  asyncapi:generate:
+    desc: Generate AsyncAPI documentation for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: asyncapi:generate:{{ .ITEM }}
 
   markdown:generate:*:
     desc: Generate markdown documentation for an interface
@@ -380,9 +444,28 @@ tasks:
       - task: python:generate
       - task: cpp:generate
       - task: rust:generate
+      - task: asyncapi:generate
       - task: markdown:generate
       - task: web:generate
       - task: protobuf:generate
+
+  docs:
+    desc: Build the Sphinx (Read the Docs style) documentation
+    sources:
+      - docs/**/*.rst
+      - docs/**/*.md
+      - docs/conf.py
+      - stingeripc/**/*.py
+    generates:
+      - docs/_build/html/**
+    cmds:
+      - uv run sphinx-build -b html docs/ docs/_build/html/
+    silent: false
+
+  docs:clean:
+    desc: Remove the built documentation
+    cmds:
+      - rm -rf docs/_build
 
   clean:
     desc: Clean all generated files

@@ -4,8 +4,7 @@ on the next generation.
 
 This is the Client for the {{stinger.name}} interface.
 
-LICENSE: This generated code is not subject to any license restrictions from the generator itself.
-TODO: Get license text from stinger file
+{%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 */
 use std::collections::{HashMap};
 use std::fmt;
@@ -512,6 +511,7 @@ mod tests {
             interface_name: "{{stinger.name}}".into(),
             title: "{{stinger.title}}".into(),
             version: "{{stinger.version}}".into(),
+            methods: HashMap::new(),
             instance: service_id.clone(),
             connection_topic: format!("sample/{}", service_id),
             timestamp: "2024-01-01T00:00:00Z".into(),

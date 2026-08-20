@@ -2,528 +2,746 @@
 Provides the functionality needed to create an AsyncAPI service specification from a Stinger file.
 """
 
-import sys
-from jacobsjinjatoo import templator as jj2
-from jacobsjinjatoo import stringmanip
-import os.path
-from enum import Enum
+import json
+import re
+import warnings
+
+warnings.filterwarnings("ignore", module="asyncapi3")
 from typing import Any
-from collections import OrderedDict
-from .components import StingerSpec, Arg, ArgPrimitive, ArgEnum, ArgStruct
-from .args import ArgType, ArgPrimitiveType
+from asyncapi3 import AsyncAPI3
+from asyncapi3 import models
+from asyncapi3.models import Schema
+from asyncapi3.models.components import Schemas
+
+from asyncapi3.models.bindings import (
+    MQTTChannelBindings,
+    MQTTOperationBindings,
+    MQTTMessageBindings,
+    ChannelBindingsObject,
+    OperationBindingsObject,
+    MessageBindingsObject,
+)
+
+from stinger_python_utils.return_codes import (
+    MethodReturnCode,
+)
+
+from stingeripc.arg_datatypes import InterfaceEnum, InterfaceStruct
+from stingeripc.arg_models import Arg, ArgArray, ArgEnum, ArgStruct, ArgPrimitive
+from stingeripc.ipc_method import IpcMethod
+from stingeripc.ipc_property import IpcProperty
+from stingeripc.ipc_signal import IpcSignal
+from stingeripc.components import StingerSpec
+from stingeripc.args import ArgType
+from stingeripc.config import StingerConfig
+from jacobsjinjatoo.stringmanip import lower_camel_case, upper_camel_case
 
 
-class Direction(Enum):
-    SERVER_PUBLISHES = 1
-    SERVER_SUBSCRIBES = 2
+def _primitive_type_to_schema(arg: ArgPrimitive) -> dict:
+    schema_dict: dict[str, Any] = {}
+    type_map = {
+        "string": "string",
+        "integer": "integer",
+        "float": "number",
+        "boolean": "boolean",
+    }
+    json_type: str | list[str] = type_map.get(arg.primitive_type.name.lower(), "string")
+    if arg.optional:
+        assert isinstance(json_type, str)
+        schema_dict["type"] = [json_type, "null"]
+    else:
+        schema_dict["type"] = json_type
+    if arg.description:
+        schema_dict["description"] = arg.description
+    return schema_dict
 
 
-class SpecType(Enum):
-    SERVER = 1
-    CLIENT = 2
-    LIB = 3
-
-
-class ObjectSchema:
-
-    def __init__(self):
-        self._properties: dict[str, Any] = dict()
-        self._required = set()
-        self._dependent_schemas = {}
-
-    def add_value_property(self, name: str, arg_primitive_type: ArgPrimitiveType, required=True):
-        schema = {"type": ArgPrimitiveType.to_json_type(arg_primitive_type)}
-        self._properties[name] = schema
-        if required:
-            self._required.add(name)
-
-    def add_value_dependency(self, name: str, required_on_name: str, required_on_value):
-        self._dependent_schemas[name] = {"properties": {required_on_name: {"const": required_on_value}}}
-
-    def add_const_value_property(self, name: str, arg_type: ArgPrimitiveType, const_value, required=True):
-        self.add_value_property(name, arg_type, required)
-        self._properties[name]["const"] = const_value
-
-    def add_enum_value_property(self, name: str, arg_type: ArgPrimitiveType, possible_values, required=True):
-        self.add_value_property(name, arg_type, required)
-        self._properties[name]["enum"] = possible_values
-
-    def add_reference_property(self, name: str, dollar_ref: str, required=True):
-        schema = {"$ref": dollar_ref}
-        self._properties[name] = schema
-        if required:
-            self._required.add(name)
-
-    def to_schema(self) -> dict[str, str | dict[str, Any] | list[str]]:
-        props: dict[str, Any] = dict()
-        schema: dict[str, str | dict[str, Any] | list[str]] = {
-            "type": "object",
-            "properties": props,
-            "required": sorted(list(self._required)),
-        }
-        for prop_name, prop_schema in self._properties.items():
-            props[prop_name] = prop_schema
-        return schema
-
-
-class Message(object):
-    """The information needed to create an AsyncAPI Message structure."""
-
-    def __init__(self, message_name: str, schema: str | None = None):
-        self.name = message_name
-        self.schema = schema or {"type": "null"}
-        self._traits: list[dict[str, Any]] = list()
-        self._headers: dict[str, tuple[bool, Any]] = dict()
-
-    def set_schema(self, schema: dict[str, Any]):
-        self.schema = schema
-        return self
-
-    def set_reference(self, reference):
-        return self.set_schema({"$ref": reference})
-
-    def add_trait(self, trait):
-        self._traits.append(trait)
-
-    def add_header(self, name: str, schema: dict[str, Any], required: bool = False):
-        self._headers[name] = (required, schema)
-
-    def get_message(self) -> dict[str, Any]:
-        msg: dict[str, Any] = {
-            "name": self.name,
-            "payload": self.schema,
-        }
-        if len(self._traits) > 0:
-            msg["traits"] = self._traits
-        if len(self._headers) > 0:
-            msg["headers"] = OrderedDict(
-                {
-                    "properties": OrderedDict(),
-                    "required": list(),
-                }
-            )
-            for header_name, (required, schema) in self._headers.items():
-                msg["headers"]["properties"][header_name] = schema
-                if required:
-                    msg["headers"]["required"].append(header_name)
-        return msg
-
-
-class Channel(object):
-    """The data needed to create an AsyncAPI Channel structure."""
-
-    def __init__(
-        self,
-        topic: str,
-        name: str,
-        direction: Direction,
-        message_name: str | None = None,
-    ):
-        self.topic = topic
-        self.name = name
-        self.direction = direction
-        self.message_name = message_name or name
-        self.mqtt = {"qos": 1, "retain": False}
-        self.description: str | None = None
-        self.parameters: dict[str, str] = dict()
-        self._operation_traits: list[dict[str, Any]] = list()
-
-    def set_mqtt(self, qos: int, retain: bool):
-        self.mqtt = {"qos": qos, "retain": retain}
-        return self
-
-    def set_description(self, description: str):
-        self.description = description
-        return self
-
-    def add_topic_parameters(self, name: str, json_schema_type: str):
-        self.parameters[name] = json_schema_type
-        return self
-
-    def add_operation_trait(self, trait: dict[str, Any]):
-        self._operation_traits.append(trait)
-        return self
-
-    def get_operation(self, client_type: SpecType, use_common=False) -> dict[str, dict[str, Any]]:
-        channel_item: dict[str, dict[str, Any]] = dict()
-        op_item: OrderedDict[str, Any] = OrderedDict(
-            {
-                "operationId": self.name,
-                "message": {"$ref": f"{use_common or ''}#/components/messages/{self.message_name}"},
-            }
-        )
-        if use_common is not False:
-            op_item["traits"] = [{"$ref": f"{use_common}#/components/operationTraits/{self.name}"}]
-        elif len(self._operation_traits) > 0:
-            op_item.update(
-                OrderedDict(
-                    {
-                        "traits": self._operation_traits,
-                    }
-                )
-            )
-        if (client_type == SpecType.SERVER and self.direction == Direction.SERVER_PUBLISHES) or (client_type == SpecType.CLIENT and self.direction == Direction.SERVER_SUBSCRIBES):
-            channel_item.update({"publish": op_item})
+def _other_arg_to_schema(arg: Arg) -> dict:
+    schema_dict: dict[str, Any] = {"type": "string"}
+    if arg.arg_type.name.lower() == "datetime":
+        schema_dict["format"] = "date-time"
+    elif arg.arg_type.name.lower() == "duration":
+        schema_dict["format"] = "duration"
+        if arg.description:
+            schema_dict["description"] = (arg.description + " The value should be an ISO 8601 duration string, e.g. 'PT1H30M' for 1 hour and 30 minutes.").strip()
         else:
-            channel_item.update({"subscribe": op_item})
-        if len(self.parameters) > 0:
-            params_obj = dict()
-            for param_name, param_type in self.parameters.items():
-                params_obj[param_name] = {"schema": {"type": param_type}}
-            channel_item.update({"parameters": params_obj})
-        return channel_item
+            schema_dict["description"] = "The value should be an ISO 8601 duration string, e.g. 'PT1H30M' for 1 hour and 30 minutes."
+    elif arg.arg_type.name.lower() == "binary":
+        schema_dict["format"] = "byte"
+        if arg.description:
+            schema_dict["description"] = (arg.description + " The value should be a base64-encoded string.").strip()
+        else:
+            schema_dict["description"] = "The value should be a base64-encoded string."
+    if arg.optional:
+        schema_dict["type"] = [schema_dict["type"], "null"]
+    return schema_dict
 
 
-class Server(object):
-    def __init__(self, name: str):
-        self.name = name
-        self._protocol = "mqtt"
-        self._host: str | None = None
-        self._port: int | None = None
-        self._lwt_topic: str | None = None
-
-    def set_host(self, host: str, port: int):
-        self._host = host
-        self._port = port
-        return self
-
-    def set_lwt_topic(self, topic: str):
-        self._lwt_topic = topic
-        return self
-
-    @property
-    def url(self) -> str:
-        return "{}:{}".format(self._host or "{hostname}", self._port or "{port}")
-
-    def get_server(self) -> dict[str, Any]:
-        spec: dict[str, Any] = {
-            "protocol": self._protocol,
-            "protocolVersion": "5",
-            "url": self.url,
-        }
-        if self._lwt_topic is not None:
-            spec["bindings"] = OrderedDict(
-                {
-                    "mqtt": OrderedDict(
-                        {
-                            "lastWill": OrderedDict(
-                                {
-                                    "retain": False,
-                                    "message": None,
-                                    "qos": 1,
-                                    "topic": self._lwt_topic,
-                                }
-                            )
-                        }
-                    )
-                }
-            )
-        if self._host is None or self._port is None:
-            spec["variables"] = {}
-        if self._host is None:
-            spec["variables"]["hostname"] = {"description": "The hosthame or IP address of the MQTT broker."}
-        if self._port is None:
-            spec["variables"]["port"] = {"description": "The port for the MQTT server"}
-        return spec
+def _enum_to_schema(ie: InterfaceEnum) -> Schema:
+    kwargs: dict = {"type": "integer", "enum": [item.integer for item in ie.enum_items]}
+    item_descriptions: list[str] = [f"JSON Value `{item.integer}` is `{item.name}` - {item.description or ''}" for item in ie.enum_items]
+    if ie.documentation:
+        item_descriptions.insert(0, ie.documentation)
+    kwargs["description"] = "\n".join(item_descriptions)
+    return Schema(**kwargs)
 
 
-class AsyncApiCreator(object):
-    """A class to create a AsyncAPI specification from several AsyncAPI structures.
+def _array_to_schema(arg: ArgArray) -> dict:
+    if arg.element.arg_type == ArgType.ENUM:
+        assert isinstance(arg.element, ArgEnum)
+        item_schema: dict[str, Any] = {"$ref": f"#/components/schemas/{arg.element.enum.name}"}
+    elif arg.element.arg_type == ArgType.STRUCT:
+        assert isinstance(arg.element, ArgStruct)
+        item_schema = {"$ref": f"#/components/schemas/{arg.element.interface_struct.name}"}
+    elif arg.element.arg_type == ArgType.PRIMITIVE:
+        assert isinstance(arg.element, ArgPrimitive)
+        item_schema = _primitive_type_to_schema(arg.element)
+    else:
+        item_schema = _other_arg_to_schema(arg.element)
+    array_schema: dict[str, Any] = {"type": "array", "items": item_schema}
+    if arg.optional:
+        array_schema["type"] = [array_schema["type"], "null"]
+    if arg.description:
+        array_schema["description"] = arg.description
+    return array_schema
 
-    It also accepts a Stinger spec for creating all the structures.
-    """
 
-    def __init__(self):
-        self.info = dict()
-        self.asyncapi: OrderedDict[str, Any] = OrderedDict(
-            {
-                "asyncapi": "2.4.0",
-                "id": "",
-                "info": OrderedDict(),
-                "channels": OrderedDict(),
-                "components": OrderedDict(
-                    {
-                        "operationTraits": OrderedDict(
-                            {
-                                "methodCall": OrderedDict(
-                                    {
-                                        "bindings": OrderedDict(
-                                            {
-                                                "mqtt": OrderedDict(
-                                                    {
-                                                        "bindingVersion": "0.2.0",
-                                                        "qos": 2,
-                                                        "retain": False,
-                                                    }
-                                                ),
-                                            }
-                                        ),
-                                    }
-                                ),
-                                "methodCallback": OrderedDict(
-                                    {
-                                        "bindings": OrderedDict(
-                                            {
-                                                "mqtt": OrderedDict(
-                                                    {
-                                                        "bindingVersion": "0.2.0",
-                                                        "qos": 1,
-                                                        "retain": False,
-                                                    }
-                                                ),
-                                            }
-                                        ),
-                                    }
-                                ),
-                                "signal": OrderedDict(
-                                    {
-                                        "bindings": OrderedDict(
-                                            {
-                                                "mqtt": OrderedDict(
-                                                    {
-                                                        "bindingVersion": "0.2.0",
-                                                        "qos": 2,
-                                                        "retain": False,
-                                                    }
-                                                ),
-                                            }
-                                        ),
-                                    }
-                                ),
-                            }
-                        ),
-                        "messageTraits": OrderedDict(
-                            {
-                                "methodJsonArguments": OrderedDict(
-                                    {
-                                        "bindings": OrderedDict(
-                                            {
-                                                "mqtt": OrderedDict(
-                                                    {
-                                                        "bindingVersion": "0.2.0",
-                                                        "contentType": "application/json",
-                                                        "correlationData": OrderedDict(
-                                                            {
-                                                                "type": "string",
-                                                                "format": "uuid",
-                                                            }
-                                                        ),
-                                                    }
-                                                ),
-                                            }
-                                        ),
-                                    }
-                                ),
-                                "methodJsonResponse": OrderedDict(
-                                    {
-                                        "bindings": OrderedDict(
-                                            {
-                                                "mqtt": OrderedDict(
-                                                    {
-                                                        "bindingVersion": "0.2.0",
-                                                        "contentType": "application/json",
-                                                        "correlationData": OrderedDict(
-                                                            {
-                                                                "type": "string",
-                                                                "format": "uuid",
-                                                            }
-                                                        ),
-                                                        "responseTopic": {
-                                                            "type": "string",
-                                                        },
-                                                    }
-                                                ),
-                                            }
-                                        ),
-                                    }
-                                ),
-                                "signalJson": OrderedDict(
-                                    {
-                                        "bindings": OrderedDict(
-                                            {
-                                                "mqtt": OrderedDict(
-                                                    {
-                                                        "bindingVersion": "0.2.0",
-                                                        "contentType": "application/json",
-                                                    }
-                                                ),
-                                            }
-                                        ),
-                                    }
-                                ),
-                            }
-                        ),
-                        "messages": OrderedDict(),
-                        "schemas": OrderedDict(),
-                    }
-                ),
-            }
+def _struct_to_schema(ist: InterfaceStruct) -> Schema:
+    from stingeripc.arg_models import ArgEnum, ArgStruct, ArgPrimitive
+    from stingeripc.args import ArgType
+
+    properties: dict[str, dict] = {}
+    required: list[str] = []
+    for member in ist.members:
+        if member.arg_type == ArgType.ENUM:
+            assert isinstance(member, ArgEnum)
+            if member.optional:
+                prop: dict[str, Any] = {"anyOf": [{"$ref": f"#/components/schemas/{member.enum.name}"}, {"type": "null"}]}
+            else:
+                prop: dict[str, Any] = {"$ref": f"#/components/schemas/{member.enum.name}"}
+        elif member.arg_type == ArgType.STRUCT:
+            assert isinstance(member, ArgStruct)
+            if member.optional:
+                prop: dict[str, Any] = {"anyOf": [{"$ref": f"#/components/schemas/{member.interface_struct.name}"}, {"type": "null"}]}
+            else:
+                prop: dict[str, Any] = {"$ref": f"#/components/schemas/{member.interface_struct.name}"}
+        elif member.arg_type == ArgType.PRIMITIVE:
+            assert isinstance(member, ArgPrimitive)
+            prop: dict[str, Any] = _primitive_type_to_schema(member)
+        elif member.arg_type == ArgType.ARRAY:
+            assert isinstance(member, ArgArray)
+            prop: dict[str, Any] = _array_to_schema(member)
+        else:
+            prop: dict[str, Any] = _other_arg_to_schema(member)
+        if member.description and "description" not in prop:
+            prop["description"] = member.description
+        properties[member.name] = prop
+        if not member.optional:
+            required.append(member.name)
+    kwargs: dict[str, Any] = {"type": "object", "properties": properties}
+    if required:
+        kwargs["required"] = required
+    if ist.documentation:
+        kwargs["description"] = ist.documentation
+    return Schema(**kwargs)
+
+
+def _arg_schema(arg: Arg) -> dict:
+    if arg.arg_type == ArgType.ENUM:
+        assert isinstance(arg, ArgEnum)
+        return {"$ref": f"#/components/schemas/{arg.enum.name}"}
+    elif arg.arg_type == ArgType.STRUCT:
+        assert isinstance(arg, ArgStruct)
+        return {"$ref": f"#/components/schemas/{arg.interface_struct.name}"}
+    elif arg.arg_type == ArgType.PRIMITIVE:
+        assert isinstance(arg, ArgPrimitive)
+        return _primitive_type_to_schema(arg)
+    return {"type": "string"}
+
+
+def _parameters_for_address(address: str, config: StingerConfig) -> models.channel.Parameters:
+    params: dict = {}
+    if "{service_id}" in address:
+        params["service_id"] = {"$ref": "#/components/parameters/service_id"}
+    if "{client_id}" in address:
+        params["client_id"] = {"$ref": "#/components/parameters/client_id"}
+    for topic_param in config.topics.params:
+        if f"{{{topic_param}}}" in address:
+            params[topic_param] = {"$ref": f"#/components/parameters/{topic_param}"}
+    return models.channel.Parameters(root=params)
+
+
+def _topic_template_to_regex(topic_template: str) -> str:
+    """Convert a topic template into a regex where placeholders map to [^\}]+."""
+    return re.sub(r"\{[^{}]+\}", r"[^\\}]+", topic_template)
+
+
+def arg_list_to_schema(arg_list: list[Arg]) -> Schema:
+    properties: dict[str, dict] = {}
+    required: list[str] = []
+    for arg in arg_list:
+        properties[arg.name] = _arg_schema(arg)
+        if not arg.optional:
+            required.append(arg.name)
+    kwargs: dict = {"type": "object", "properties": properties}
+    if required:
+        kwargs["required"] = required
+    return Schema(**kwargs)
+
+
+class AsyncApiSignalHelper:
+    def __init__(self, signal: IpcSignal, config: StingerConfig):
+        self.signal = signal
+        self.config = config
+
+    def get_payload_schema(self) -> Schema:
+        return arg_list_to_schema(self.signal.arg_list)
+
+    def get_message(self) -> models.Message:
+        payload_schema = self.get_payload_schema()
+        return models.Message(
+            name=self.signal.name,
+            summary=f"The message for the '{self.signal.name}' signal.",
+            description=f"The payload represents the data for the signal.  It is encoded as a JSON object.",
+            payload=payload_schema,
+            contentType="application/json",
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
         )
-        self.channels = []
-        self.messages = []
-        self.servers = []
-        self.name = "interface"
 
-    def add_schema(self, schema_name: str, schema_spec: dict[str, Any]):
-        schema_dict: dict[str, Any] = self.asyncapi["components"]["schemas"]
-        schema_dict[schema_name] = schema_spec
+    def to_channel(self) -> models.Channel:
+        message = self.get_message()
+        address = self.signal.topic()
+        return models.Channel(
+            address=address,
+            description=self.signal.documentation,
+            messages=models.message.Messages(root={self.signal.name: message}),
+            parameters=_parameters_for_address(address, self.config),
+        )
 
-    def add_channel(self, channel: Channel):
-        self.channels.append(channel)
+    def to_operation(self) -> models.Operation:
+        name = self.signal.name
+        return models.Operation(
+            summary=f"Receive the '{self.signal.name}' signal.",
+            description=f"""
+            The server publishes a message to the signal topic whenever the signal is emitted.
+            Clients can subscribe to the signal topic to receive messages whenever the signal is emitted.
 
-    def add_message(self, message: Message):
-        self.messages.append(message)
+            ```plantuml
+            Client -> MQTT Broker: Subscribe
+            Server -> MQTT Broker: '{self.signal.name}' Signal
+            MQTT Broker -> Client: '{self.signal.name}' Signal
+            ```
 
-    def add_server(self, server: Server):
-        self.servers.append(server)
-
-    def set_interface_name(self, name):
-        self.name = name
-        self.asyncapi["id"] = f"urn:stingeripc:{name}"
-
-    def add_to_info(self, key, value):
-        self.asyncapi["info"][key] = value
-
-    def get_asyncapi(self, client_type: SpecType, use_common=None):
-        spec = self.asyncapi.copy()
-        if len(self.servers) > 0:
-            spec["servers"] = {}
-        for svr in self.servers:
-            spec["servers"][svr.name] = svr.get_server()
-        for ch in self.channels:
-            spec["channels"][ch.topic] = ch.get_operation(client_type, use_common or False)
-        if use_common is None:
-            for msg in self.messages:
-                spec["components"]["messages"][msg.name] = msg.get_message()
-        return spec
+            The message is not retained, so clients will only receive the signal message when the signal is emitted while they are subscribed.
+            """,
+            action="receive",
+            channel=models.base.Reference(ref=f"#/channels/{name}"),
+            messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{name}")],
+            bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+            tags=[models.base.Tag(name="signal")],
+        )
 
 
-class StingerToAsyncApi:
+class AsyncApiMethodHelper:
+    def __init__(self, method: IpcMethod, config: StingerConfig):
+        self.method = method
+        self.config = config
 
-    def __init__(self, stinger: StingerSpec):
-        self._asyncapi: AsyncApiCreator = AsyncApiCreator()
-        self._stinger: StingerSpec = stinger
-        self._convert()
+    def request_channel_name(self) -> str:
+        return f"{self.method.name}_request"
 
-    def _convert(self):
-        self._asyncapi.set_interface_name(self._stinger.name)
-        self._add_interface_info()
-        self._add_servers()
-        self._add_enums()
-        self._add_signals()
-        self._add_methods()
-        if len(self._stinger.methods) > 0:
-            schema_name = f"stinger_method_return_codes"
-            description = [f"The stinger_method_return_codes enum has the following values:"]
-            accepted_values = []
-            for i, enum_value in self._stinger.method_return_codes.items():
-                description.append(f"{i} - {enum_value}")
-                accepted_values.append(i)
-            json_schema = {
-                "type": "integer",
-                "description": "\n ".join(description),
-                "enum": accepted_values,
-            }
-            self._asyncapi.add_schema(schema_name, json_schema)
-        return self
+    def response_channel_name(self) -> str:
+        return f"{self.method.name}_response"
 
-    def _add_interface_info(self):
-        topic = self._stinger.interface_info_topic()
-        self._asyncapi.add_to_info("version", self._stinger.version)
-        self._asyncapi.add_to_info("title", self._stinger.title)
-        ch = Channel(topic, "interfaceInfo", Direction.SERVER_PUBLISHES)
-        ch.set_mqtt(qos=1, retain=True)
-        self._asyncapi.add_channel(ch)
-        msg = Message("interfaceInfo")
-        schema = ObjectSchema()
-        info = {"version": self._stinger.version, "title": self._stinger.title}
-        for k, v in info.items():
-            schema.add_const_value_property(k, ArgPrimitiveType.STRING, v)
-        msg.set_schema(schema.to_schema())
-        self._asyncapi.add_message(msg)
+    def request_message_key(self) -> str:
+        return f"{self.method.name}_request"
 
-    def _add_servers(self):
-        info_topic = self._stinger.interface_info_topic()
-        if hasattr(self._stinger, "brokers"):
-            for broker_name, broker_spec in self._stinger.brokers.items():
-                svr = Server(broker_name)
-                if broker_spec.hostname is not None and broker_spec.port is not None:
-                    svr.set_host(broker_spec.hostname, broker_spec.port)
-                svr.set_lwt_topic(info_topic)
-                self._asyncapi.add_server(svr)
+    def response_message_key(self) -> str:
+        return self.method.return_value_name.replace(" ", "_")
 
-    def _add_enums(self): ...
+    def get_request_message(self) -> models.Message:
+        payload_schema = arg_list_to_schema(self.method.arg_list)
+        response_topic_schema = _topic_template_to_regex(self.method.response_topic())
+        return models.Message(
+            name=self.request_message_key(),
+            description="""The payload represents the arguments for the method call.  It is encoded as a JSON object.
+            
+            Correlation data must be provided as an MQTT property.  The data can be any binary data, but must be unique to this method.  Typically, using a UUID is sufficient to ensure uniqueness.  The server will include the same correlation data in the response message, so the client can match responses to requests when multiple requests are in-flight.
+            
+            A response topic must be provided as an MQTT property.  The server will publish the response message to the provided response topic.  The method-calling client must have a valid subscription to the MQTT response topic.
+            """,
+            payload=payload_schema,
+            contentType="application/json",
+            bindings=MessageBindingsObject(
+                mqtt=MQTTMessageBindings(
+                    contentType="application/json",
+                    correlationData={"type": "string", "format": "uuid"},
+                    responseTopic={"type": "string", "pattern": response_topic_schema},
+                )
+            ),
+            tags=[models.base.Tag(name="method"), models.base.Tag(name="request")],
+        )
 
-    def _add_signals(self):
-        for sig_name, sig_spec in self._stinger.signals.items():
-            ch = Channel(sig_spec.topic(), sig_name, Direction.SERVER_PUBLISHES)
-            ch.add_operation_trait({"$ref": "#/components/operationTraits/signal"})
-            self._asyncapi.add_channel(ch)
-            msg = Message(sig_name)
-            msg.add_trait({"$ref": "#/components/messageTraits/signalJson"})
-            schema = ObjectSchema()
-            for arg_spec in sig_spec.arg_list:
-                if isinstance(arg_spec, ArgPrimitive):
-                    schema.add_value_property(arg_spec.name, arg_spec.type)
-                elif isinstance(arg_spec, ArgEnum):
-                    schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.enum.name}")
-            msg.set_schema(schema.to_schema())
-            self._asyncapi.add_message(msg)
+    def request_to_channel(self) -> models.Channel:
+        message = self.get_request_message()
+        address = self.method.request_topic()
+        return models.Channel(
+            address=address,
+            description=self.method.documentation,
+            messages=models.message.Messages(root={self.request_message_key(): message}),
+            parameters=_parameters_for_address(address, self.config),
+        )
 
-    def _add_methods(self):
-        for method_name, method_spec in self._stinger.methods.items():
-            call_ch = Channel(method_spec.request_topic(), method_name, Direction.SERVER_SUBSCRIBES)
-            call_ch.add_operation_trait({"$ref": "#/components/operationTraits/methodCall"})
-            self._asyncapi.add_channel(call_ch)
-            call_msg = Message(method_name)
-            call_msg.add_trait({"$ref": "#/components/messageTraits/methodJsonArguments"})
-            call_msg_schema = ObjectSchema()
-            for arg_spec in method_spec.arg_list:
-                if isinstance(arg_spec, ArgPrimitive):
-                    call_msg_schema.add_value_property(arg_spec.name, arg_spec.type)
-                elif isinstance(arg_spec, ArgEnum):
-                    call_msg_schema.add_reference_property(arg_spec.name, f"#/components/schemas/enum_{arg_spec.name}")
-            call_msg.set_schema(call_msg_schema.to_schema())
-            self._asyncapi.add_message(call_msg)
+    def request_to_operation(self) -> models.Operation:
+        name = self.request_channel_name()
+        return models.Operation(
+            action="send",
+            channel=models.base.Reference(ref=f"#/channels/{name}"),
+            description="""
+            A method may call one of the server's methods by publishing a message to the method's request topic.
 
-            resp_ch = Channel(
-                method_spec.response_topic(client_id="{client_id}"),
-                f"{method_name}Response",
-                Direction.SERVER_PUBLISHES,
-            )
-            resp_ch.add_operation_trait({"$ref": "#/components/operationTraits/methodCall"})
-            self._asyncapi.add_channel(resp_ch)
-            resp_msg = Message(f"{method_name}Response")
-            resp_msg.add_trait({"$ref": "#/components/messageTraits/methodJsonArguments"})
-            resp_msg.add_header(
-                "result",
-                {"$ref": "#/components/schemas/stinger_method_return_codes"},
-                required=True,
-            )
-            resp_msg.add_header("debug", {"type": "string"}, required=False)
-            resp_msg_schema = ObjectSchema()
+            ```plantuml
+            Client -> MQTT Broker: Method Request
+            MQTT Broker -> Server: Method Request
+            Server -> Server: Process method call
+            Server -> MQTT Broker: Method Response
+            MQTT Broker -> Client: Method Response
+            ```
+            """,
+            messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{name}")],
+            bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+            tags=[models.base.Tag(name="method"), models.base.Tag(name="request")],
+            reply=models.OperationReply(channel=models.base.Reference(ref=f"#/channels/{self.response_channel_name()}")),
+        )
 
-            def add_arg(arg: Arg):
-                if isinstance(arg, ArgPrimitive):
-                    resp_msg_schema.add_value_property(arg.name, arg.type, required=True)
-                elif isinstance(arg, ArgEnum):
-                    resp_msg_schema.add_reference_property(
-                        arg.name,
-                        f"#/components/schemas/enum_{arg.enum.name}",
-                        required=True,
-                    )
+    def get_response_message(self) -> models.Message:
+        payload_schema = arg_list_to_schema(self.method.return_arg_list)
+        return models.Message(
+            name=self.method.return_value_name,
+            description="""
+            This payload represents the {% if self.method.return_arg_list | length > 1 %}return values{%elif self.method.return_arg_list | length == 1 %}return value{% else %}completion{% endif %} of the method call response.  It is encoded as a JSON object.
+            
+            A "correlation data" MQTT property will be included in the response message, and will match the correlation data provided in the request message, so the client can match responses to requests when multiple requests are in-flight.  Whatever binary data was provided as correlation data in the request will be provided as correlation data in the response.
+            (Hint: any blob of data works, so you could include extra tracking information like a timestamp if you needed it).
+            """,
+            payload=payload_schema,
+            contentType="application/json",
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+            tags=[models.base.Tag(name="method"), models.base.Tag(name="response")],
+        )
 
-            if isinstance(method_spec.return_value, ArgStruct):
-                for arg_spec in method_spec.return_value.members:
-                    add_arg(arg_spec)
-                    resp_msg_schema.add_value_dependency(arg_spec.name, "result", 0)
-            elif method_spec.return_value is not None:
-                assert isinstance(method_spec.return_value, Arg), "Method return value must be a primitive or enum"
-                add_arg(method_spec.return_value)
-                resp_msg_schema.add_value_dependency(method_spec.return_value_name, "result", 0)
+    def response_to_channel(self) -> models.Channel:
+        response_key = self.response_message_key()
+        message = self.get_response_message()
+        address = self.method.response_topic()
+        return models.Channel(
+            address=address,
+            description=self.method.documentation,
+            messages=models.message.Messages(root={response_key: message}),
+            parameters=_parameters_for_address(address, self.config),
+        )
 
-            resp_msg.set_schema(resp_msg_schema.to_schema())
-            self._asyncapi.add_message(resp_msg)
+    def response_to_operation(self) -> models.Operation:
+        name = self.response_channel_name()
+        return models.Operation(
+            action="receive",
+            channel=models.base.Reference(ref=f"#/channels/{name}"),
+            description="""
+            The server will publish a response message to the response topic provided in the request message.  The response message will contain the return value(s) of the method call.
 
-    def get_asyncapi(self):
-        return self._asyncapi.get_asyncapi(SpecType.CLIENT)
+            ```plantuml
+            Client -> MQTT Broker: Method Request
+            MQTT Broker -> Server: Method Request
+            Server -> Server: Process method call
+            Server -> MQTT Broker: Method Response
+            MQTT Broker -> Client: Method Response
+            ```
+            """,
+            messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.response_message_key()}")],
+            bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+            tags=[models.base.Tag(name="method"), models.base.Tag(name="response")],
+        )
+
+
+class AsyncApiPropertyHelper:
+    def __init__(self, prop: IpcProperty, config: StingerConfig):
+        self.prop = prop
+        self.config = config
+
+    def value_channel_name(self) -> str:
+        return f"{self.prop.name}_value"
+
+    def update_request_channel_name(self) -> str:
+        return f"{self.prop.name}_update_request"
+
+    def update_response_channel_name(self) -> str:
+        return f"{self.prop.name}_update_response"
+
+    def payload_schema(self) -> Schema:
+        return arg_list_to_schema(self.prop.arg_list)
+
+    def _payload_ref(self) -> Schema:
+        return Schema(**{"$ref": f"#/components/schemas/{self.prop.name}_property"})
+
+    def get_value_message(self) -> models.Message:
+        return models.Message(
+            name=f"{upper_camel_case(self.prop.name)}PropertyValue",
+            title=f"{self.prop.name} value",
+            summary=f"The current value of the '{self.prop.name}' property.",
+            description=f"""The payload represents the current value of the property.  It is encoded as a JSON object.
+
+            The `PropertyValue` user property value (an integer provided as an MQTT string) is a version number that increments with each new value of the property.
+            A client typically stores this value in order to provide it in update requests.
+            """,
+            payload=self._payload_ref(),
+            contentType="application/json",
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+            headers=Schema(
+                type="object",
+                properties={
+                    "PropertyValue": {"type": "integer", "description": "An integer that increments with each new value of the property."},
+                    "DebugInfo": {
+                        "type": "string",
+                        "description": "A optional (not likely to be provided) string that the client should log or print for debugging purposes.",
+                    },
+                },
+                required=["PropertyValue"],
+            ),
+            tags=[models.base.Tag(name="property"), models.base.Tag(name="value")],
+        )
+
+    def get_request_message(self) -> models.Message:
+        return models.Message(
+            name=f"{upper_camel_case(self.prop.name)}UpdateRequest",
+            summary=f"A request to update the '{self.prop.name}' property.",
+            description="""The payload represents the new property value that the client wants to set.
+            
+                The entirety of the JSON object must be provided, and will completely replace the
+                current value of the property if the update is accepted.
+                
+                The `PropertyVersion` user property value (a number provided as an MQTT string)
+                should be the same `PropertyVersion` value that was most recently received.""",
+            payload=self._payload_ref(),
+            contentType="application/json",
+            bindings=MessageBindingsObject(
+                mqtt=MQTTMessageBindings(
+                    contentType="application/json",
+                    correlationData={"type": "string", "format": "uuid"},
+                    responseTopic={"type": "string", "pattern": _topic_template_to_regex(self.prop.response_topic())},
+                )
+            ),
+            headers=Schema(
+                type="object",
+                properties={
+                    "PropertyValue": {
+                        "type": "integer",
+                        "description": "This is the current version of the property.  The version in the request must match the version of the property value for the update to be accepted.  This prevents lost updates when multiple clients are updating the same property.",
+                    },
+                },
+                required=["PropertyValue"],
+            ),
+            tags=[models.base.Tag(name="property"), models.base.Tag(name="update"), models.base.Tag(name="request")],
+        )
+
+    def get_response_message(self) -> models.Message:
+        return models.Message(
+            name=f"{upper_camel_case(self.prop.name)}UpdateResponse",
+            summary=f"The response after updating the '{self.prop.name}' property.",
+            description="""The payload represents the latest value of the property after the update attempt.
+            
+            If the property update was successful, then there should be a `ReturnCode` user property with value `0`, and the payload should match the value that was sent in the update request.
+            The `PropertyValue` user property will be the newest version of the property value after the update.
+            The `DebugInfo` user property is usually empty or unset on success, but is not required to be empty.  If provided, the
+            client should log or print the provided `DebugInfo` string for debugging purposes.
+
+            If the property update was unsuccessful, then there should be a `ReturnCode` user property with a non-zero value, and the payload will contain the server's current value for the property.
+            The `PropertyValue` user property will be the version of the current property value (which may or may not be what it was before).
+            The `DebugInfo` user property should contain a string describing why the update was unsuccessful, and the client should log or print it for debugging purposes, but the client is not to specifically parse the `DebugInfo` for programatic meaning.
+            """,
+            payload=self._payload_ref(),
+            contentType="application/json",
+            bindings=MessageBindingsObject(
+                mqtt=MQTTMessageBindings(
+                    contentType="application/json",
+                    correlationData={"type": "string", "format": "uuid"},
+                )
+            ),
+            headers=Schema(
+                type="object",
+                properties={
+                    "PropertyValue": {
+                        "type": "integer",
+                        "description": "This is the current version of the property.  The version in the request must match the version of the property value for the update to be accepted.  This prevents lost updates when multiple clients are updating the same property.",
+                        "minimum": -1,
+                    },
+                    "ReturnCode": {
+                        "type": "integer",
+                        "description": " | ".join([f"{code.name}: {code.value}" for code in MethodReturnCode]),
+                        "enum": [code.value for code in MethodReturnCode],
+                    },
+                    "DebugInfo": {
+                        "type": "string",
+                        "description": "A string describing why the update was unsuccessful, if applicable.",
+                    },
+                },
+                required=["PropertyValue", "ReturnCode", "DebugInfo"],
+            ),
+            tags=[models.base.Tag(name="property"), models.base.Tag(name="update"), models.base.Tag(name="response")],
+        )
+
+    def value_to_channel(self) -> models.Channel:
+        address = self.prop.value_topic()
+        return models.Channel(
+            title=f"{upper_camel_case(self.prop.name)}PropertyValue",
+            summary=f"The current value of the '{self.prop.name}' property.",
+            address=address,
+            description=self.prop.documentation,
+            messages=models.message.Messages(root={self.prop.name: self.get_value_message()}),
+            parameters=_parameters_for_address(address, self.config),
+            tags=[models.base.Tag(name="property"), models.base.Tag(name="value")],
+        )
+
+    def value_to_operation(self) -> models.Operation:
+        name = self.value_channel_name()
+        return models.Operation(
+            title=f"Receive{upper_camel_case(self.prop.name)}PropertyValue",
+            summary=f"Receive the current value of the '{self.prop.name}' property.",
+            description=f"""
+            Every time the property value changes, the server will publish the current property value to MQTT.
+            It publishes with a retain=true flag, so that clients can receive the current property value immediately upon subscribing.
+            Clients can subscribe to the value topic to receive the current property value and be notified of changes to the property value.
+
+            ```plantuml
+            Server -> MQTT Broker: '{self.prop.name}' Value (retain=true)
+            Client -> MQTT Broker: Subscribe
+            MQTT Broker -> Client: '{self.prop.name}' Value
+            ```
+            """,
+            action="receive",
+            channel=models.base.Reference(ref=f"#/channels/{name}"),
+            messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.prop.name}")],
+            bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+            tags=[models.base.Tag(name="property"), models.base.Tag(name="value")],
+        )
+
+    def update_request_to_channel(self) -> models.Channel:
+        address = self.prop.update_topic()
+        return models.Channel(
+            title=f"{upper_camel_case(self.prop.name)}UpdateRequest",
+            summary=f"A request to update the '{self.prop.name}' property.",
+            description=self.prop.documentation,
+            address=address,
+            messages=models.message.Messages(root={self.prop.name: self.get_request_message()}),
+            parameters=_parameters_for_address(address, self.config),
+        )
+
+    def update_request_to_operation(self) -> models.Operation:
+        name = self.update_request_channel_name()
+        address = self.prop.update_topic()
+        return models.Operation(
+            action="send",
+            channel=models.base.Reference(ref=f"#/channels/{name}"),
+            description=f"""
+            A client publishes to this topic in order to request that the server updates the property value to provided value.
+
+            The server will respond with a message on the response topic indicating whether the update was successful, and what the new property value is after the update attempt.
+
+            ```plantuml
+            Server -> MQTT Broker: Subscribe to {address}
+            Client -> MQTT Broker: Update Request
+            MQTT Broker -> Server:  Update Request
+            Server -> Server: Update property value
+            Server -> MQTT Broker: New Property Value
+            MQTT Broker -> Client: New Property Value
+            Server -> MQTT Broker: Property Update Response
+            MQTT Broker -> Client: Property Update Response
+            ```
+            """,
+            messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.prop.name}")],
+            bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+            tags=[models.base.Tag(name="property")],
+            reply=models.OperationReply(channel=models.base.Reference(ref=f"#/channels/{self.update_response_channel_name()}")),
+        )
+
+    def update_response_to_channel(self) -> models.Channel:
+        address = self.prop.response_topic()
+        return models.Channel(
+            title=f"{upper_camel_case(self.prop.name)}UpdateResponse",
+            summary=f"A response to the update request for the '{self.prop.name}' property.",
+            address=address,
+            description=self.prop.documentation,
+            messages=models.message.Messages(root={self.prop.name: self.get_response_message()}),
+            parameters=_parameters_for_address(address, self.config),
+        )
+
+    def update_response_to_operation(self) -> models.Operation:
+        name = self.update_response_channel_name()
+        address = self.prop.update_topic()
+        return models.Operation(
+            action="receive",
+            channel=models.base.Reference(ref=f"#/channels/{name}"),
+            description=f"""
+            A server publishes to this topic in order to provide the response to an update request.
+
+            The server will respond with a message on the response topic indicating whether the update was successful, and what the new property value is after the update attempt.
+
+            ```plantuml
+            Server -> MQTT Broker: Subscribe to {address}
+            Client -> MQTT Broker: Update Request
+            MQTT Broker -> Server:  Update Request
+            Server -> Server: Update property value
+            Server -> MQTT Broker: New Property Value
+            MQTT Broker -> Client: New Property Value
+            Server -> MQTT Broker: Property Update Response
+            MQTT Broker -> Client: Property Update Response
+            ```
+
+            If the update failed, the most recent property value will be included in the response payload, 
+            and the client should update its local cached property value to match the value in the response, 
+            as that is the current value of the property on the server.
+            """,
+            messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.prop.name}")],
+            bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+            tags=[models.base.Tag(name="property")],
+        )
+
+
+def _interface_info_schema(config: StingerConfig) -> Schema:
+    properties: dict[str, Any] = {
+        "interface_name": {"type": "string"},
+        "title": {"type": "string"},
+        "version": {"type": "string"},
+        "instance": {"type": "string"},
+        "connection_topic": {"type": "string"},
+        "timestamp": {"type": "string", "format": "date-time"},
+        "methods": {
+            "type": "object",
+            "additionalProperties": {"type": "string"},
+            "description": "Maps method names to their version string, for methods that declare a version.",
+        },
+    }
+    required = ["interface_name", "title", "version", "instance", "connection_topic", "timestamp"]
+    for topic_param in config.topics.params:
+        properties[topic_param] = {"type": "string"}
+        required.append(topic_param)
+    return Schema(type="object", properties=properties, required=required)
+
+
+class AsyncApiInterfaceInfoHelper:
+    def __init__(self, spec: StingerSpec, config: StingerConfig):
+        self.spec = spec
+        self.config = config
+
+    def channel_name(self) -> str:
+        return "interface_info"
+
+    def get_payload_schema(self) -> Schema:
+        return _interface_info_schema(self.config)
+
+    def get_message(self) -> models.Message:
+        return models.Message(
+            name="InterfaceInfo",
+            summary=f"Advertisement/discovery information for the '{self.spec.name}' interface.",
+            description="The server periodically publishes this message (with a message-expiry interval) so that clients can discover running instances of the interface and the versions of the methods they support.",
+            payload=self.get_payload_schema(),
+            contentType="application/json",
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+        )
+
+    def to_channel(self) -> models.Channel:
+        message = self.get_message()
+        address = self.spec.interface_info_topic()
+        return models.Channel(
+            address=address,
+            description=f"Advertisement/discovery channel for the '{self.spec.name}' interface.",
+            messages=models.message.Messages(root={self.channel_name(): message}),
+            parameters=_parameters_for_address(address, self.config),
+        )
+
+    def to_operation(self) -> models.Operation:
+        name = self.channel_name()
+        return models.Operation(
+            summary=f"Receive '{self.spec.name}' interface advertisement/discovery information.",
+            description="""
+            The server publishes this message periodically (with a message-expiry interval) so that clients can discover running server instances and the method versions they advertise.
+
+            ```plantuml
+            Server -> MQTT Broker: Interface Info (with message expiry)
+            Client -> MQTT Broker: Subscribe
+            MQTT Broker -> Client: Interface Info
+            ```
+            """,
+            action="receive",
+            channel=models.base.Reference(ref=f"#/channels/{name}"),
+            messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{name}")],
+            bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=1, retain=False)),
+            tags=[models.base.Tag(name="discovery")],
+        )
+
+
+def stinger_to_asyncapi(spec: StingerSpec, config: StingerConfig | None = None) -> dict:
+    """Convert a StingerSpec to an AsyncAPI 3.0 specification dict."""
+    config_obj = config or StingerConfig()
+
+    schemas: dict[str, Schema] = {}
+    for enum_name, ie in spec.enums.items():
+        schemas[enum_name] = _enum_to_schema(ie)
+    for struct_name, ist in spec.structs.items():
+        schemas[struct_name] = _struct_to_schema(ist)
+
+    channels: dict[str, models.Channel] = {}
+    operations: dict[str, models.Operation] = {}
+    interface_info_helper = AsyncApiInterfaceInfoHelper(spec, config_obj)
+    channels[interface_info_helper.channel_name()] = interface_info_helper.to_channel()
+    operations[interface_info_helper.channel_name()] = interface_info_helper.to_operation()
+    for name, signal in spec.signals.items():
+        signal_helper = AsyncApiSignalHelper(signal, config_obj)
+        channels[name] = signal_helper.to_channel()
+        operations[name] = signal_helper.to_operation()
+    for method_name, method in spec.methods.items():
+        method_helper = AsyncApiMethodHelper(method, config_obj)
+        channels[method_helper.request_channel_name()] = method_helper.request_to_channel()
+        operations[method_helper.request_channel_name()] = method_helper.request_to_operation()
+        channels[method_helper.response_channel_name()] = method_helper.response_to_channel()
+        operations[method_helper.response_channel_name()] = method_helper.response_to_operation()
+    for prop_name, prop in spec.properties.items():
+        prop_helper = AsyncApiPropertyHelper(prop, config_obj)
+        schemas[f"{prop.name}_property"] = prop_helper.payload_schema()
+        channels[prop_helper.value_channel_name()] = prop_helper.value_to_channel()
+        operations[prop_helper.value_channel_name()] = prop_helper.value_to_operation()
+        if not prop.read_only:
+            channels[prop_helper.update_request_channel_name()] = prop_helper.update_request_to_channel()
+            operations[prop_helper.update_request_channel_name()] = prop_helper.update_request_to_operation()
+            channels[prop_helper.update_response_channel_name()] = prop_helper.update_response_to_channel()
+            operations[prop_helper.update_response_channel_name()] = prop_helper.update_response_to_operation()
+
+    aa = AsyncAPI3(
+        info=models.Info(
+            title=spec.name,
+            version=spec._version,
+            description=spec.summary or None,
+            tags=[
+                models.base.Tag(name="signal"),
+                models.base.Tag(name="method"),
+                models.base.Tag(name="property"),
+                models.base.Tag(name="discovery"),
+            ],
+        ),
+        components=models.Components(
+            schemas=Schemas(root=schemas) if schemas else None,
+        ),
+        channels=models.Channels(root=channels) if channels else None,
+        operations=models.operation.Operations(root=operations) if operations else None,
+    )
+
+    component_parameters: dict[str, models.Parameter] = {
+        "service_id": models.Parameter(description="The ID of the service/instance"),
+        "client_id": models.Parameter(description="The MQTT Client ID"),
+    }
+    for topic_param in config_obj.topics.params:
+        if topic_param not in component_parameters:
+            component_parameters[topic_param] = models.Parameter(description=f"Topic parameter '{topic_param}'")
+
+    aa.components.parameters = models.channel.Parameters(root=component_parameters)
+
+    return json.loads(aa.model_dump_json(exclude_none=True))

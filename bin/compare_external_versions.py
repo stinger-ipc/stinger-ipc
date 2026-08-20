@@ -1,8 +1,7 @@
 import sys
 import subprocess
-from ruamel.yaml import YAML
+import yaml
 from packaging.version import Version, InvalidVersion
-import io
 import logging
 
 logger = logging.getLogger("CompatibilityChecks")
@@ -90,9 +89,8 @@ def main(yaml_file: str):
         sys.exit(0)
 
     # Parse both YAML versions
-    yaml = YAML(typ='safe')
-    current_data = yaml.load(io.StringIO(current_yaml_content))
-    previous_data = yaml.load(io.StringIO(previous_yaml_content))
+    current_data = yaml.safe_load(current_yaml_content)
+    previous_data = yaml.safe_load(previous_yaml_content)
 
     # Check for the 'signals' key
     if 'signals' not in current_data or 'signals' not in previous_data:

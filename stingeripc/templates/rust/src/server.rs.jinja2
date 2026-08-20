@@ -9,8 +9,7 @@ on the next generation.
 
 This is the Server for the {{stinger.name}} interface.
 
-LICENSE: This generated code is not subject to any license restrictions from the generator itself.
-TODO: Get license text from stinger file
+{%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 */
 
 #[allow(unused_imports)]
@@ -67,9 +66,9 @@ struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
 struct {{stinger.name | UpperCamelCase}}Properties {
     {%for prop_name, prop in stinger.properties.items()-%}
     {%-if prop.arg_list | length > 1%}
-    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.rust_type}}>>,
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.rust.type}}>>,
     {%-else%}
-    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.arg_list[0].rust_type}}>>,
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.arg_list[0].rust.type}}>>,
     {%endif-%}
     {{prop_name | snake_case}}_version: Arc<AtomicU32>,
     {%-endfor%}
@@ -299,12 +298,16 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     {%endif-%}
     {%for sig_name, sig in stinger.signals.items()-%}
     /// Emits the {{sig_name}} signal with the given arguments.
-    pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> SentMessageFuture {
+    pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> SentMessageFuture {
         let data = {{sig_name|UpperCamelCase}}SignalPayload {
             {%for arg in sig.arg_list%}
             {{arg.name|snake_case}},
             {%endfor%}
         };
+        if let Err(err) = data.validate_schema() {
+            error!("Payload for '{{sig_name}}' signal failed schema validation, not emitting: {}", err);
+            return Self::wrap_return_code_in_future(MethodReturnCode::ServerSerializationError(format!("'{{sig_name}}' signal payload failed schema validation: {}", err))).await;
+        }
         let topic_param_map = HashMap::from([
             ("interface_name".to_string(), "{{stinger.name}}".to_string()),
             ("service_id".to_string(), self.instance_id.clone()),
@@ -315,19 +318,27 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             {%-endfor%}
         ]);
         let topic = strfmt("{{sig.topic()}}", &topic_param_map).unwrap();
+        {%if sig.version -%}
+        let msg = message::stable_signal(&topic, &data, "{{sig.version}}").unwrap();
+        {%else -%}
         let msg = message::signal(&topic, &data).unwrap();
+        {%endif -%}
         let mut publisher = self.mqtt_client.clone();
         let ch = publisher.publish_noblock(msg).await;
         Self::oneshot_to_future(ch).await
     }
 
     /// Emits the {{sig_name}} signal with the given arguments, but this is a fire-and-forget version.
-    pub fn emit_{{sig_name|snake_case}}_nowait(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError>{
+    pub fn emit_{{sig_name|snake_case}}_nowait(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError>{
         let data = {{sig_name|UpperCamelCase}}SignalPayload {
             {%for arg in sig.arg_list%}
             {{arg.name|snake_case}},
             {%endfor%}
         };
+        if let Err(err) = data.validate_schema() {
+            error!("Payload for '{{sig_name}}' signal failed schema validation, not emitting: {}", err);
+            return Err(Mqtt5PubSubError::Other(format!("'{{sig_name}}' signal payload failed schema validation: {}", err)));
+        }
         let topic_param_map = HashMap::from([
             ("interface_name".to_string(), "{{stinger.name}}".to_string()),
             ("service_id".to_string(), self.instance_id.clone()),
@@ -338,7 +349,11 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             {%-endfor%}
         ]);
         let topic = strfmt("{{sig.topic()}}", &topic_param_map).unwrap();
+        {%if sig.version -%}
+        let msg = message::stable_signal(&topic, &data, "{{sig.version}}").unwrap();
+        {%else -%}
         let msg = message::signal(&topic, &data).unwrap();
+        {%endif -%}
         let mut publisher = self.mqtt_client.clone();
         publisher.publish_nowait(msg)
     }
@@ -362,9 +377,14 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         }
         // Unwrap is OK here because we just checked for error.
         let payload = payload_obj.unwrap();
-        {%endif%}{# has arg_list #} 
+        if let Err(err) = payload.validate_schema() {
+            error!("Request payload for {{method_name}} failed schema validation: {}", err);
+            {{stinger.rust.server_struct_name}}::<C>::publish_error_response(publisher, opt_resp_topic, opt_corr_data, MethodReturnCode::ClientDeserializationError("Request payload failed schema validation".to_string())).await;
+            return;
+        }
+        {%endif%}{# has arg_list #}
         // call the method handler
-        let rc: Result<{{method.return_value_rust_type}}, MethodReturnCode> = {
+        let rc: Result<{{method.rust.return_value_type}}, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
             handler_guard.handle_{{method_name|snake_case}}({%for arg in method.arg_list%}payload.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}).await
         };
@@ -381,9 +401,19 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                     let resp_obj = {{method.return_value_name | UpperCamelCase}} {
                         {{method.return_arg_list[0].name | snake_case}}: retval,
                     };
+                    if let Err(err) = resp_obj.validate_schema() {
+                        error!("Response payload for {{method_name}} failed schema validation: {}", err);
+                        {{stinger.rust.server_struct_name}}::<C>::publish_error_response(publisher, Some(resp_topic), Some(corr_data), MethodReturnCode::ServerSerializationError("Response payload failed schema validation".to_string())).await;
+                        return;
+                    }
                     let msg = message::response(&resp_topic, &resp_obj, corr_data,None).unwrap();
                     let _fut_publish_result = publisher.publish(msg).await;
                     {% else %}
+                    if let Err(err) = retval.validate_schema() {
+                        error!("Response payload for {{method_name}} failed schema validation: {}", err);
+                        {{stinger.rust.server_struct_name}}::<C>::publish_error_response(publisher, Some(resp_topic), Some(corr_data), MethodReturnCode::ServerSerializationError("Response payload failed schema validation".to_string())).await;
+                        return;
+                    }
                     let msg = message::response(&resp_topic, &retval, corr_data, None).unwrap();
                     let _fut_publish_result = publisher.publish(msg).await;
                     {% endif %}
@@ -408,7 +438,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_{{prop_name|snake_case}}_value(
             mut publisher: C, 
-            property_pointer: Arc<RwLockWatch<{%if prop.arg_list|length > 0 %}{{prop.rust_type}}{%else%}{{prop.arg_list[0].rust_type}}{%endif%}>>,  // Arc to the property value
+            property_pointer: Arc<RwLockWatch<{%if prop.arg_list|length > 0 %}{{prop.rust.type}}{%else%}{{prop.arg_list[0].rust.type}}{%endif%}>>,  // Arc to the property value
             version_pointer: Arc<AtomicU32>,
             msg: MqttMessage
     )
@@ -460,6 +490,11 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             MethodReturnCode::Success(_) => {
                 match serde_json::from_str::<{{prop_name|UpperCamelCase}}Property>(&payload_str) {
                     Ok(new_property_structure) => {
+                        if let Err(err) = new_property_structure.validate_schema() {
+                            error!("Property '{{prop_name}}' update payload failed schema validation: {}", err);
+                            return_code = MethodReturnCode::ClientDeserializationError("Property '{{prop_name}}' payload failed schema validation".to_string());
+                            None
+                        } else {
                         let request_lock = property_pointer.write_request();
                         let mut write_request = request_lock.write().await;
                         {%if prop.arg_list | length == 1 %}
@@ -480,6 +515,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                                 return_code = MethodReturnCode::ServerError("Timeout committing '{{prop_name}}' property change".to_string());
                                 None
                             }
+                        }
                         }
                     }
                     Err(e) => {
@@ -534,16 +570,16 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     /// Watch for changes to the `{{prop_name}}` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     /// Use `.borrow_and_update()` on the Receiver to get the current value and reset the watcher.
-    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}> {
+    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{% else %}{{prop.arg_list[0].rust.type}}{% endif %}> {
         self.properties.{{prop_name | snake_case}}.subscribe()
     }
 
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust_type}}{% else %}{{prop.arg_list[0].rust_type}}{% endif %}> {
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{% else %}{{prop.arg_list[0].rust.type}}{% endif %}> {
         self.properties.{{prop_name | snake_case}}.write_request()
     }
 
     /// Sets the value{%if prop.arg_list|length > 1%}s{%endif%} of the {{prop_name}} property.
-    pub async fn set_{{prop_name}}(&mut self, value: {{prop.rust_type}}) -> SentMessageFuture {
+    pub async fn set_{{prop_name}}(&mut self, value: {{prop.rust.type}}) -> SentMessageFuture {
         let write_request_lock = self.get_{{prop_name | snake_case}}_handle();
         Box::pin(async move { 
             let mut write_request = write_request_lock.write().await;
@@ -608,6 +644,13 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                         {%else%}
                         let payload_obj = request.clone();
                         {%endif%}
+                        if let Err(err) = payload_obj.validate_schema() {
+                            error!("Value for '{{prop_name}}' property failed schema validation, not publishing: {}", err);
+                            if let Some(responder) = opt_responder {
+                                let _ = responder.send(None);
+                            }
+                            continue;
+                        }
                         let version_value = {{prop_name|snake_case}}_prop_version.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1; // fetch_add returns the previous value, so add 1 to get the new version after the update.
                         let topic: String = strfmt("{{prop.value_topic()}}", &topic_param_map_for_{{prop_name|snake_case}}).unwrap();
                         match message::property_value(&topic, &payload_obj, version_value) {
@@ -640,6 +683,15 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         {%endif%}{# properties exist#}
         {%endif%} {# any methods or properties #}
 
+        // Static map of method names to their declared version, used in periodic interface info advertisements.
+        let interface_info_methods: HashMap<String, String> = HashMap::from([
+            {%-for method_name, method in stinger.methods.items()%}
+            {%-if method.version%}
+            ("{{method_name}}".to_string(), "{{method.version}}".to_string()),
+            {%-endif%}
+            {%-endfor%}
+        ]);
+
         // Spawn a task to periodically publish interface info.
         let mut interface_publisher = self.mqtt_client.clone();
         let instance_id = self.instance_id.clone();
@@ -653,6 +705,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                     .interface_name("{{stinger.name}}".to_string())
                     .title("{{stinger.title}}".to_string())
                     .version("{{stinger.version}}".to_string())
+                    .methods(interface_info_methods.clone())
                     .instance(instance_id.clone())
                     .connection_topic(topic.clone())
                     {%-for topic_param in config.topics.params%}
@@ -723,7 +776,7 @@ pub trait {{stinger.name | UpperCamelCase }}MethodHandlers<C: Mqtt5PubSub>: Send
 
     {%for method_name, method in stinger.methods.items()-%}
     /// Pointer to a function to handle the {{method_name}} method request.
-    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodReturnCode>;
+    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.rust.return_value_type}}, MethodReturnCode>;
     
     {%endfor%}
 
@@ -753,10 +806,10 @@ mod tests {
         }
 
         {%for method_name, method in stinger.methods.items()%}
-        async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.return_value_rust_type}}, MethodReturnCode> {
+        async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.rust.return_value_type}}, MethodReturnCode> {
             println!("Handling {{method_name}}");
             {%-if method.return_value_type == 'struct'%}
-            let rv = {{method.return_arg_list[0].rust_temp_type}} {
+            let rv = {{method.return_arg_list[0].rust.temp_type}} {
                 {%for arg in method.return_value.members-%}
                 {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
                 {%endfor%}
@@ -767,7 +820,7 @@ mod tests {
             Ok(rv)
             {%endif%}
             {%-elif method.return_value_type == 'multiple'%}
-            let rv = {{method.return_value_rust_type}} {
+            let rv = {{method.rust.return_value_type}} {
                 {%for arg in method.return_value-%}
                 {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
                 {%endfor%}
@@ -802,7 +855,7 @@ mod tests {
             {{prop_name | snake_case}}: 
             {%-if prop.arg_list|length == 1%}{{prop.arg_list[0].get_random_example_value(lang="rust")}},
             {%-else-%}
-            {{prop.rust_type}} {
+            {{prop.rust.type}} {
                 {%-for arg in prop.arg_list %}
                     {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
                 {%-endfor%}

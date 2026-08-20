@@ -15,6 +15,32 @@ from stingeripc.filtering import filter_by_consumer
 from stingeripc.config import load_config, StingerConfig
 
 
+def _to_plain(value: Any) -> Any:
+    """Recursively convert a jacobs-json-doc parsed document into plain Python types."""
+    if isinstance(value, dict):
+        return {k: _to_plain(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_to_plain(v) for v in value]
+    if isinstance(value, bool) or value is None:
+        return value
+    if isinstance(value, int):
+        return int(value)
+    if isinstance(value, float):
+        return float(value)
+    if isinstance(value, str):
+        return str(value)
+    return value
+
+
+def _parse_yaml(text: str) -> Any:
+    """Parse YAML text with jacobs-json-doc, resolving $ref references in place."""
+    fetcher = PrepopulatedFetcher()
+    fetcher.prepopulate(None, text)
+    options = ParseOptions()
+    options.ref_resolution_mode = RefResolutionMode.RESOLVE_REFERENCES
+    return create_document(uri=None, fetcher=fetcher, options=options)
+
+
 def main(
     inname: Annotated[Path, typer.Argument(exists=True, file_okay=True, dir_okay=False, readable=True)],
     outdir: Annotated[Path, typer.Argument(file_okay=False, dir_okay=True, writable=True, readable=True)],
@@ -74,6 +100,7 @@ def main(
             "topic_template_placeholder_index": topic_util.get_argument_position,
             "get_topic_arguments": topic_util.get_topic_arguments,
             "template_topic_fill_in": topic_util.topic_template_fill_in,
+            "topic_template_to_js": topic_util.topic_template_to_js,
         },
     }
 

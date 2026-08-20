@@ -8,6 +8,9 @@ PGK-INFO
 # All generated code
 generated/
 reference/
+temp/
+original/
+modified/
 
 .vscode/
 build/
@@ -16,5 +19,7 @@ build/
 .mypy_cache/
 .task/
 .venv/
+.infisical.json
 
 pytest-warnings.json
+docs/_build/

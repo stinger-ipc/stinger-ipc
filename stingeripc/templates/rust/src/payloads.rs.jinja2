@@ -8,8 +8,7 @@ on the next generation.
 
 It contains enumerations used by the {{stinger.name}} interface.
 
-LICENSE: This generated code is not subject to any license restrictions from the generator itself.
-TODO: Get license text from stinger file
+{%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 */
 
 {%if stinger.enums | length > 0 %}
@@ -19,385 +18,18 @@ use std::fmt;
 {%endif%}
 use serde::{Deserialize, Serialize};
 
-
-pub mod base64_binary_format {
-    use serde::{Deserialize, Deserializer, Serializer};
-    use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
-    use base64::Engine;
-
-    pub fn serialize<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let b64_string = BASE64_STANDARD.encode(bytes);
-        serializer.serialize_str(&b64_string)
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let b64_string = String::deserialize(deserializer)?;
-        BASE64_STANDARD
-            .decode(b64_string.as_bytes())
-            .map_err(serde::de::Error::custom)
-    }
-
-    // For Option<Vec<u8>>
-    pub fn serialize_option<S>(bytes: &Option<Vec<u8>>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match bytes {
-            Some(b) => serialize(b, serializer),
-            None => serializer.serialize_none(),
-        }
-    }
-
-    pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<Vec<u8>>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let opt = Option::<String>::deserialize(deserializer)?;
-        match opt {
-            Some(b64_string) => {
-                let decoded = BASE64_STANDARD
-                    .decode(b64_string.as_bytes())
-                    .map_err(serde::de::Error::custom)?;
-                Ok(Some(decoded))
-            }
-            None => Ok(None),
-        }
-    }
-
-
-    // For Vec<Vec<u8>> - serializes as array of base64 strings
-    pub fn serialize_vec<S>(bytes_vec: &Vec<Vec<u8>>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        use serde::ser::SerializeSeq;
-        let mut seq = serializer.serialize_seq(Some(bytes_vec.len()))?;
-        for bytes in bytes_vec {
-            let b64_string = BASE64_STANDARD.encode(bytes);
-            seq.serialize_element(&b64_string)?;
-        }
-        seq.end()
-    }
-
-    pub fn deserialize_vec<'de, D>(deserializer: D) -> Result<Vec<Vec<u8>>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let b64_strings = Vec::<String>::deserialize(deserializer)?;
-        b64_strings
-            .into_iter()
-            .map(|b64_string| {
-                BASE64_STANDARD
-                    .decode(b64_string.as_bytes())
-                    .map_err(serde::de::Error::custom)
-            })
-            .collect()
-    }
-
-    // For Option<Vec<Vec<u8>>>
-    pub fn serialize_option_vec<S>(
-        bytes_vec: &Option<Vec<Vec<u8>>>,
-        serializer: S,
-    ) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match bytes_vec {
-            Some(v) => serialize_vec(v, serializer),
-            None => serializer.serialize_none(),
-        }
-    }
-
-    pub fn deserialize_option_vec<'de, D>(
-        deserializer: D,
-    ) -> Result<Option<Vec<Vec<u8>>>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let opt = Option::<Vec<String>>::deserialize(deserializer)?;
-        match opt {
-            Some(b64_strings) => {
-                let decoded: Result<Vec<Vec<u8>>, _> = b64_strings
-                    .into_iter()
-                    .map(|b64_string| {
-                        BASE64_STANDARD
-                            .decode(b64_string.as_bytes())
-                            .map_err(serde::de::Error::custom)
-                    })
-                    .collect();
-                Ok(Some(decoded?))
-            }
-            None => Ok(None),
-        }
-    }
-}
-
-// Helper functions for DateTime serialization/deserialization
-pub mod datetime_iso_format {
-    use chrono::{DateTime, Utc};
-    use serde::{Deserialize, Deserializer, Serializer};
-
-    pub fn serialize<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let iso_string = dt.to_rfc3339();
-        serializer.serialize_str(&iso_string)
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let iso_string = String::deserialize(deserializer)?;
-        DateTime::parse_from_rfc3339(&iso_string)
-            .map(|dt| dt.with_timezone(&Utc))
-            .map_err(serde::de::Error::custom)
-    }
-
-    // For Option<DateTime<Utc>>
-    pub fn serialize_option<S>(dt: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match dt {
-            Some(d) => serialize(d, serializer),
-            None => serializer.serialize_none(),
-        }
-    }
-
-    pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let opt = Option::<String>::deserialize(deserializer)?;
-        match opt {
-            Some(iso_string) => {
-                let dt = DateTime::parse_from_rfc3339(&iso_string)
-                    .map(|dt| dt.with_timezone(&Utc))
-                    .map_err(serde::de::Error::custom)?;
-                Ok(Some(dt))
-            }
-            None => Ok(None),
-        }
-    }
-    // For Vec<DateTime<Utc>> - serializes as array of ISO 8601 strings
-    pub fn serialize_vec<S>(dt_vec: &Vec<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        use serde::ser::SerializeSeq;
-        let mut seq = serializer.serialize_seq(Some(dt_vec.len()))?;
-        for dt in dt_vec {
-            let iso_string = dt.to_rfc3339();
-            seq.serialize_element(&iso_string)?;
-        }
-        seq.end()
-    }
-
-    pub fn deserialize_vec<'de, D>(deserializer: D) -> Result<Vec<DateTime<Utc>>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let iso_strings = Vec::<String>::deserialize(deserializer)?;
-        iso_strings
-            .into_iter()
-            .map(|iso_string| {
-                DateTime::parse_from_rfc3339(&iso_string)
-                    .map(|dt| dt.with_timezone(&Utc))
-                    .map_err(serde::de::Error::custom)
-            })
-            .collect()
-    }
-
-    // For Option<Vec<DateTime<Utc>>>
-    pub fn serialize_option_vec<S>(
-        dt_vec: &Option<Vec<DateTime<Utc>>>,
-        serializer: S,
-    ) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match dt_vec {
-            Some(v) => serialize_vec(v, serializer),
-            None => serializer.serialize_none(),
-        }
-    }
-
-    pub fn deserialize_option_vec<'de, D>(
-        deserializer: D,
-    ) -> Result<Option<Vec<DateTime<Utc>>>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let opt = Option::<Vec<String>>::deserialize(deserializer)?;
-        match opt {
-            Some(iso_strings) => {
-                let decoded: Result<Vec<DateTime<Utc>>, _> = iso_strings
-                    .into_iter()
-                    .map(|iso_string| {
-                        DateTime::parse_from_rfc3339(&iso_string)
-                            .map(|dt| dt.with_timezone(&Utc))
-                            .map_err(serde::de::Error::custom)
-                    })
-                    .collect();
-                Ok(Some(decoded?))
-            }
-            None => Ok(None),
-        }
-    }
-
-
-
-}
-
-pub mod duration_iso_format {
-    use chrono::Duration;
-    use iso8601_duration::Duration as IsoDuration;
-    use serde::{Deserializer, Serializer, Deserialize};
-
-    pub fn serialize<S>(duration: &Duration, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let seconds = duration.num_seconds();
-        let iso_string = format!("PT{}S", seconds);
-        serializer.serialize_str(&iso_string)
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Duration, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let iso_string = String::deserialize(deserializer)?;
-        let iso_dur: IsoDuration = iso_string.parse::<IsoDuration>()
-            .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))?;
-        let std_duration: std::time::Duration = iso_dur.to_std()
-            .ok_or_else(|| serde::de::Error::custom("Failed to convert ISO duration to std::time::Duration"))?;
-        chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)
-    }
-
-    // For Option<Duration>
-    pub fn serialize_option<S>(duration: &Option<Duration>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match duration {
-            Some(d) => serialize(d, serializer),
-            None => serializer.serialize_none(),
-        }
-    }
-
-    pub fn deserialize_option<'de, D>(deserializer: D) -> Result<Option<Duration>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let opt = Option::<String>::deserialize(deserializer)?;
-        match opt {
-            Some(iso_string) => {
-                let iso_dur: IsoDuration = iso_string
-                    .parse::<IsoDuration>()
-                    .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))?;
-                let std_duration: std::time::Duration = iso_dur.to_std().ok_or_else(|| {
-                    serde::de::Error::custom("Failed to convert ISO duration to std::time::Duration")
-                })?;
-                let chrono_duration = chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)?;
-                Ok(Some(chrono_duration))
-            }
-            None => Ok(None),
-        }
-    }
-
-    // For Vec<Duration> - serializes as array of ISO 8601 duration strings
-    pub fn serialize_vec<S>(duration_vec: &Vec<Duration>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        use serde::ser::SerializeSeq;
-        let mut seq = serializer.serialize_seq(Some(duration_vec.len()))?;
-        for duration in duration_vec {
-            let seconds = duration.num_seconds();
-            let iso_string = format!("PT{}S", seconds);
-            seq.serialize_element(&iso_string)?;
-        }
-        seq.end()
-    }
-
-    pub fn deserialize_vec<'de, D>(deserializer: D) -> Result<Vec<Duration>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let iso_strings = Vec::<String>::deserialize(deserializer)?;
-        iso_strings
-            .into_iter()
-            .map(|iso_string| {
-                let iso_dur: IsoDuration = iso_string
-                    .parse::<IsoDuration>()
-                    .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))?;
-                let std_duration: std::time::Duration = iso_dur.to_std().ok_or_else(|| {
-                    serde::de::Error::custom(
-                        "Failed to convert ISO duration to std::time::Duration",
-                    )
-                })?;
-                chrono::Duration::from_std(std_duration).map_err(serde::de::Error::custom)
-            })
-            .collect()
-    }
-
-    // For Option<Vec<Duration>>
-    pub fn serialize_option_vec<S>(
-        duration_vec: &Option<Vec<Duration>>,
-        serializer: S,
-    ) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match duration_vec {
-            Some(v) => serialize_vec(v, serializer),
-            None => serializer.serialize_none(),
-        }
-    }
-
-    pub fn deserialize_option_vec<'de, D>(
-        deserializer: D,
-    ) -> Result<Option<Vec<Duration>>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let opt = Option::<Vec<String>>::deserialize(deserializer)?;
-        match opt {
-            Some(iso_strings) => {
-                let decoded: Result<Vec<Duration>, _> = iso_strings
-                    .into_iter()
-                    .map(|iso_string| {
-                        let iso_dur: IsoDuration = iso_string
-                            .parse::<IsoDuration>()
-                            .map_err(|e| serde::de::Error::custom(format!("{:?}", e)))?;
-                        let std_duration: std::time::Duration =
-                            iso_dur.to_std().ok_or_else(|| {
-                                serde::de::Error::custom(
-                                    "Failed to convert ISO duration to std::time::Duration",
-                                )
-                            })?;
-                        chrono::Duration::from_std(std_duration)
-                            .map_err(serde::de::Error::custom)
-                    })
-                    .collect();
-                Ok(Some(decoded?))
-            }
-            None => Ok(None),
-        }
-    }
-
-
-
-}
+// The custom serde (de)serialization helpers live in their own module so this
+// file stays focused on the payload data structures.  Each import is only
+// emitted when the interface actually contains a field of that type.
+{%- if stinger.uses_binary() %}
+use crate::serde_formats::base64_binary_format;
+{%- endif %}
+{%- if stinger.uses_datetime() %}
+use crate::serde_formats::datetime_iso_format;
+{%- endif %}
+{%- if stinger.uses_duration() %}
+use crate::serde_formats::duration_iso_format;
+{%- endif %}
 
 
 #[allow(dead_code)]
@@ -478,11 +110,11 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
     #[serde(rename = "{{arg.name}}")]
     {%-endif%} {# end rename if needed #}
     {%-if arg.arg_type.name.lower() == 'primitive'%}
-    pub {{arg.name|snake_case}}: {{arg.rust_type}},
+    pub {{arg.name|snake_case}}: {{arg.rust.type}},
     {%-elif arg.arg_type.name.lower() == 'struct'%}
-    pub {{arg.name|snake_case}}: {{arg.rust_type}},
+    pub {{arg.name|snake_case}}: {{arg.rust.type}},
     {%elif arg.arg_type.name.lower() == 'enum'%}
-    pub {{arg.name|snake_case}}: {{arg.rust_local_type}},
+    pub {{arg.name|snake_case}}: {{arg.rust.local_type}},
     {%elif arg.arg_type.name.lower() == 'datetime'%}
     {%-if arg.optional %}
     #[serde(
@@ -549,15 +181,46 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
     {%endif%}{# array optionality #}
     {%else%}
     {%-if arg.optional %}
-    pub {{arg.name|snake_case}}: Option<Vec<{{arg.element.rust_type}}>>,
+    pub {{arg.name|snake_case}}: Option<Vec<{{arg.element.rust.type}}>>,
     {%else%}{# not optional array #}
-    pub {{arg.name|snake_case}}: Vec<{{arg.element.rust_type}}>,
+    pub {{arg.name|snake_case}}: Vec<{{arg.element.rust.type}}>,
     {%endif%}{# array optionality #}
     {%endif%} {# array element cases #}
     {%-else%} 
     TEMPLATE ERROR {{arg.arg_type.name}} NOT HANDLED
     {%-endif-%}
 {%endfor%}
+{%-endmacro %}
+
+{# Emits an `impl` block with a validate_schema() method for a struct.  The method
+   is always generated; fields that declare a JSON schema constraint are checked
+   against their schema using the `jsonschema` crate, and a struct with no such
+   fields simply returns Ok(()). #}
+{%macro validate_schema_impl(struct_name, arg_list) -%}
+{%-set schema_args = arg_list | selectattr('value_schema') | list -%}
+#[allow(dead_code)]
+impl {{struct_name}} {
+    /// Validate fields that declare a JSON schema constraint.
+    ///
+    /// Returns `Ok(())` if all schema-constrained fields conform to their schema,
+    /// or if no field declares a schema.  Returns `Err` with a description if a
+    /// constrained field's value does not conform.
+    pub fn validate_schema(&self) -> Result<(), String> {
+        {%-for arg in schema_args%}
+        {
+            let schema: serde_json::Value = serde_json::from_str(r##"{{arg.value_schema | tojson}}"##)
+                .map_err(|e| format!("embedded schema for field '{{arg.name}}' is invalid: {}", e))?;
+            let instance = serde_json::to_value(&self.{{arg.name | snake_case}})
+                .map_err(|e| format!("could not serialize field '{{arg.name}}': {}", e))?;
+            let validator = jsonschema::validator_for(&schema)
+                .map_err(|e| format!("could not build validator for field '{{arg.name}}': {}", e))?;
+            validator.validate(&instance)
+                .map_err(|e| format!("field '{{arg.name}}' failed schema validation: {}", e))?;
+        }
+        {%-endfor%}
+        Ok(())
+    }
+}
 {%-endmacro %}
 
 // --- INTERFACE STRUCTURES ---
@@ -568,6 +231,7 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
 pub struct {{struct_name | UpperCamelCase}} {
     {{ arg_members(struct.members) }}
 }
+{{ validate_schema_impl(struct_name | UpperCamelCase, struct.members) }}
 {%endfor%}
 
 // ---- METHODS ----
@@ -582,6 +246,7 @@ pub struct {{struct_name | UpperCamelCase}} {
 pub struct {{method_name | UpperCamelCase}}RequestObject {
     {{ arg_members(method.arg_list) }}
 }
+{{ validate_schema_impl((method_name | UpperCamelCase) ~ "RequestObject", method.arg_list) }}
 
 
 #[allow(dead_code)]
@@ -590,6 +255,7 @@ pub struct {{method_name | UpperCamelCase}}RequestObject {
 pub struct {{method.return_value_name | UpperCamelCase}} {
     {{ arg_members(method.return_arg_list) }}
 }
+{{ validate_schema_impl(method.return_value_name | UpperCamelCase, method.return_arg_list) }}
 {%-endfor%}
 
 // ---- SIGNALS ----
@@ -600,6 +266,7 @@ pub struct {{method.return_value_name | UpperCamelCase}} {
 pub struct {{sig_name | UpperCamelCase}}SignalPayload {
     {{ arg_members(sig.arg_list) }}
 }
+{{ validate_schema_impl((sig_name | UpperCamelCase) ~ "SignalPayload", sig.arg_list) }}
 {%endfor%}
 
 {%for prop_name, prop in stinger.properties.items()%}
@@ -609,6 +276,7 @@ pub struct {{sig_name | UpperCamelCase}}SignalPayload {
 pub struct {{prop_name | UpperCamelCase}}Property {
     {{ arg_members(prop.arg_list) }}
 }
+{{ validate_schema_impl((prop_name | UpperCamelCase) ~ "Property", prop.arg_list) }}
 {%endfor%}
 
 
@@ -630,6 +298,7 @@ mod tests {
     }
     {%endfor%}
 
+    {% if stinger.uses_binary() %}
     #[test]
     fn test_base64_binary_format_serialization() {
         use serde::{Deserialize, Serialize};
@@ -710,4 +379,5 @@ mod tests {
         let parsed: BinaryData = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed, random_data);
     }
+    {% endif %}
 }

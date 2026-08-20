@@ -1,14 +1,12 @@
 """
 Tests for {{stinger.name}} server.
 """
+{% import "partials/imports.jinja2" as imports %}
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 import sys
 from pathlib import Path
-from datetime import datetime, timedelta, {%if not config.python.python37 %}UTC{%else%}timezone{%endif%}
-{%if config.python.python37 %}
-UTC = timezone.utc
-{%endif%}
+{{ imports.datetime_types(config) }}
 from {{stinger.python.module_name}}.server import {{stinger.name | UpperCamelCase}}Server
 {%if stinger.properties | length > 0 -%}
 from {{stinger.python.module_name}}.property import {%if not config.properties.stinger_owned_values %}{{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{{stinger.name | UpperCamelCase}}InitialPropertyValues
@@ -96,7 +94,7 @@ class {{stinger.name|UpperCamelCase}}ServerSetup:
         return self.{{prop_name|snake_case}}
 
     {%-if not prop.read_only%}
-    def set_property_{{prop_name|snake_case}}(self, value: {{prop.python_annotation}}):
+    def set_property_{{prop_name|snake_case}}(self, value: {{prop.python.annotation}}):
         """Set the value for the '{{prop_name|snake_case}}' property."""
         self.{{prop_name|snake_case}}_modified_flag = True
         self.{{prop_name|snake_case}} = value
@@ -175,6 +173,37 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode('utf-8'))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
+
+    def test_{{prop_name|snake_case}}_property_setter(self, server, mock_connection):
+        """Test that setting the '{{prop_name|snake_case}}' property publishes the correct message."""
+        mock_connection.clear_published_messages()
+        server._force_property_publish = True # Backdoor way to force server to publish property updates even if the value hasn't changed.  For unittests only.
+
+        new_{{prop_name | snake_case}}_value =
+            {%-if prop.arg_list | length > 1%}
+            {{-prop.python.class_name}}(
+                {%for arg in prop.arg_list%}
+                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
+                {%endfor%}
+            )
+            {%-else-%}
+            {{prop.arg_list[0].get_random_example_value()}}
+            {%endif%}
+        server.{{prop_name|snake_case}} = new_{{prop_name | snake_case}}_value
+
+        assert len(mock_connection.published_messages) == 1, f"No message was published for property '{{prop_name|snake_case}}'.  Messages: {mock_connection.published_messages}"
+
+        published_msg = mock_connection.published_messages[-1]
+        assert published_msg.qos == {{stinger.property_value_qos}}, "Property '{{prop_name|snake_case}}' setter published message with incorrect QoS"
+        assert published_msg.retain is True, "Property '{{prop_name|snake_case}}' setter published message with incorrect retain flag"
+        assert published_msg.content_type == "application/json", "Property '{{prop_name|snake_case}}' setter published message with incorrect content type"
+        published_msg_json_obj = json.loads(published_msg.payload)
+        {%-if prop.arg_list | length > 1%}
+        assert json.loads(new_{{prop_name | snake_case}}_value.model_dump_json(by_alias=True)) == published_msg_json_obj, "Property '{{prop_name|snake_case}}' setter did not publish the correct JSON payload"
+        {%else%}
+        new_{{prop_name | snake_case}}_obj = {{-prop.python.model_class_name}}({{prop.arg_list[0].name|snake_case}}=new_{{prop_name | snake_case}}_value)
+        assert json.loads(new_{{prop_name | snake_case}}_obj.model_dump_json(by_alias=True)) == published_msg_json_obj, "Property '{{prop_name|snake_case}}' setter did not publish the correct JSON payload"
+        {%endif%}
 
     {%if not config.properties.stinger_owned_values -%}
     def test_{{prop_name|snake_case}}_receive(self, server, server_setup, mock_connection):
@@ -425,7 +454,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
         """Test that the server can handle the '{{method_name|snake_case}}' method."""
         handler_callback_data = {{method.get_return_value_random_example_value('python')}}
         received_args = None # type: Optional[Dict[str, Any]]
-        def handler({%for arg in method.arg_list %}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.return_value_python_annotation}}:
+        def handler({%for arg in method.arg_list %}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.python.return_value_annotation}}:
             nonlocal received_args
             received_args = {
                 {%-for arg in method.arg_list%}
@@ -474,7 +503,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
         {%if method.return_arg_list|length > 1%}
         expected_resp_dict = to_jsonified_dict(handler_callback_data)
         {%elif method.return_arg_list|length == 1 %}
-        expected_return_obj = {{method_name|UpperCamelCase}}MethodResponse({{method.return_arg_list[0].name|snake_case}}=handler_callback_data)
+        expected_return_obj = {{method.python.response_class_name}}({{method.return_arg_list[0].name|snake_case}}=handler_callback_data)
         expected_resp_dict = to_jsonified_dict(expected_return_obj)
         {%else%}
         expected_resp_dict = {} # type: Dict[str, Any]

@@ -43,6 +43,9 @@ methods:
       - name: your_number
         type: integer
         description: Your favorite number.
+        schema:
+          minimum: 0
+          maximum: 10000
     returnValues:
       - name: my_number
         type: integer
@@ -55,3 +58,10 @@ properties:
       - name: name
         type: string
         description: The name of the school where the person studies.
+
+constants:
+
+  pi:
+    type: float
+    value: 3.14159
+    description: The mathematical constant pi.

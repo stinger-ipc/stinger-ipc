@@ -1,6 +1,6 @@
 [project]
 name = "stinger-ipc"
-version = "0.9.7post0"
+version = "0.10.0a8"
 description = "Tools to create code to do IPC over MQTT"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -9,16 +9,18 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
 ]
 dependencies = [
+    "asyncapi3>=0.0.2",
     "go-task-bin>=3.46.2",
     "jacobs-jinja-too~=0.2.14",
-    "jacobs-json-doc~=0.17.0",
-    "jsonschema-rs>=0.34.0",
+    "jacobs-json-doc~=0.18.0",
+    "jsonschema-rs>=0.48.0",
     "packaging>=25.0",
     "pydantic>=2.11.7",
     "pydantic-asyncapi>=0.3.0",
     "ruamel-yaml>=0.18.14",
     "semantic-version>=2.10.0",
     "stevedore>=5.5.0",
+    "stinger-python-utils~=0.1.9",
     "typer>=0.16.1",
 ]
 
@@ -27,9 +29,16 @@ dev = [
     "black>=26.3.1",
     "jacobs-json-schema>=0.4.2",
     "mypy>=1.16.0",
+    "myst-parser>=5.1.0",
     "paho-mqtt>=2.1.0",
     "pytest>=9.0.3",
+    "sphinx>=9.1.0",
+    "sphinx-autodoc-typehints>=3.13.2",
+    "sphinx-rtd-theme>=3.1.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [tool.black]
 line-length = 200
@@ -55,7 +64,8 @@ stinger = "stingeripc.tools.cli:run"
 stinger-ipc = "stingeripc.tools.cli:run"
 
 [project.entry-points."stinger_symbols"]
-python = 'stingeripc.lang_symb:PythonSymbolsProvider'
-rust = 'stingeripc.lang_symb:RustSymbolsProvider'
-cpp = 'stingeripc.lang_symb:CppSymbolsProvider'
+python = 'stingeripc.python_symb:PythonSymbolsProvider'
+rust = 'stingeripc.rust_symb:RustSymbolsProvider'
+cpp = 'stingeripc.cpp_symb:CppSymbolsProvider'
+markdown = 'stingeripc.markdown_symb:MarkdownSymbolsProvider'
 pb = 'stingeripc.symbols.protobuf:ProtocolBufferSymbolsProvider'
