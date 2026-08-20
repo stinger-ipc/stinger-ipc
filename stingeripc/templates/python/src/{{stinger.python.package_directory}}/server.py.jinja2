@@ -141,6 +141,9 @@ class {{stinger.python.server_class_name}}:
             return
         self._running = False
         self._conn.unpublish_retained(self._service_advert_topic)
+        {%-if stinger.properties|length > 0 %}
+        self._unpublish_all_properties()
+        {%-endif%}
         if hasattr(self, '_advertise_thread') and self._advertise_thread.is_alive():
             self._advertise_thread.join(timeout=timeout)
 
@@ -209,6 +212,16 @@ class {{stinger.python.server_class_name}}:
         """
         {%-for prop_name, prop in stinger.properties.items()%}
         self.publish_{{prop_name|snake_case}}_value()
+        {%-endfor%}
+
+    def _unpublish_all_properties(self):
+        """ Clears the retained value of all properties.
+
+        This is called during shutdown so that clients don't receive stale
+        property values from a server which is no longer running.
+        """
+        {%-for prop_name, prop in stinger.properties.items()%}
+        self._conn.unpublish_retained("{{prop.value_topic()}}".format(**self._topic_template_kwargs)) # type: ignore[str-format]
         {%-endfor%}
     {%-endif%}
 
