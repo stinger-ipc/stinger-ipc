@@ -22,6 +22,11 @@ pub fn interface_online(topic: &str, payload: &crate::interface::InterfaceInfo, 
 }
 {%if stinger.properties|length > 0 %}
 #[cfg(any(feature = "server", test))]
+pub fn unpublish(topic: &str) -> MqttMessage {
+    MqttMessage::simple(topic.to_string(), QoS::AtLeastOnce, true, Bytes::new())
+}
+
+#[cfg(any(feature = "server", test))]
 pub fn property_value<T: Serialize>(
         topic: &str, 
         payload: &T, 

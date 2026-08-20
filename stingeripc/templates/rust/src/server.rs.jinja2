@@ -558,6 +558,35 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     }
     {%endfor%}
 
+    {%if stinger.properties|length > 0%}
+    /// Unpublishes the retained value of all properties.
+    ///
+    /// Call this before your application exits so that clients don't receive stale property
+    /// values from a server instance which is no longer running.
+    pub async fn shutdown(&mut self) {
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("client_id".to_string(), self.client_id.clone()),
+            {%-for topic_param in config.topics.params%}
+            ("{{topic_param}}".to_string(), self.topic_param_{{topic_param|snake_case}}.clone()),
+            {%-endfor%}
+        ]);
+        {%-for prop_name, prop in stinger.properties.items()%}
+        {
+            let topic = strfmt("{{prop.value_topic()}}", &topic_param_map).unwrap();
+            let msg = message::unpublish(&topic);
+            if let Err(err) = self.mqtt_client.publish(msg).await {
+                error!("Failed to unpublish retained value for '{{prop_name}}' property: {:?}", err);
+            }
+        }
+        {%-endfor%}
+    }
+    {%else%}
+    /// This interface has no properties, so there is nothing to unpublish on exit.
+    pub async fn shutdown(&mut self) {}
+    {%endif%}
+
     /// Starts the tasks that process messages received.
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
     /// Based on the subscription id of the received message, it will call a function to handle the
