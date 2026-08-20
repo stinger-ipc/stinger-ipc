@@ -293,13 +293,11 @@ class {{stinger.python.client_class_name}}:
             fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to '{{method_name}}' method: {e}"))
 
         if not fut.done():
-        {%-if method.return_arg_list | length == 0 %}
+        {%-if method.return_value is none %}
             fut.set_result(None)
             return
-        {%elif method.return_arg_list | length == 1 %}
-            fut.set_result(resp_model.{{method.return_arg_list[0].name|snake_case}})
         {%else%}
-            fut.set_result(resp_model)
+            fut.set_result(resp_model.{{method.return_value.name|snake_case}})
         {%endif-%}
         else:
             self._logger.warning("Future for '{{method_name}}' method was already done!")

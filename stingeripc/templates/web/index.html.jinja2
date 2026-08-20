@@ -201,8 +201,8 @@
         </div>
         <div class="last-received method-response" ng-show="methods['{{ method_name | lowerCamelCase }}'].received_time">
             <div class="method-response-status"><span class="mdi mdi-check-circle-outline"></span> Response received at <span ng-bind="methods['{{ method_name | lowerCamelCase }}'].received_time | date:'HH:mm:ss'"></span></div>
-        {%if method.return_values %}
-        {{ arglist(method.return_values, ['methods', method_name, 'received'], true) | indent(8) }}
+        {%if method.return_value is not none %}
+        {{ arglist(method.return_arg_list, ['methods', method_name, 'received'], true) | indent(8) }}
         {%endif%}
         </div>
     </div>

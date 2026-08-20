@@ -316,11 +316,12 @@ class AsyncApiMethodHelper:
 
     def get_response_message(self) -> models.Message:
         payload_schema = arg_list_to_schema(self.method.return_arg_list)
+        represents = "return value" if self.method.return_value is not None else "completion"
         return models.Message(
             name=self.method.return_value_name,
-            description="""
-            This payload represents the {% if self.method.return_arg_list | length > 1 %}return values{%elif self.method.return_arg_list | length == 1 %}return value{% else %}completion{% endif %} of the method call response.  It is encoded as a JSON object.
-            
+            description=f"""
+            This payload represents the {represents} of the method call response.  It is encoded as a JSON object.
+
             A "correlation data" MQTT property will be included in the response message, and will match the correlation data provided in the request message, so the client can match responses to requests when multiple requests are in-flight.  Whatever binary data was provided as correlation data in the request will be provided as correlation data in the response.
             (Hint: any blob of data works, so you could include extra tracking information like a timestamp if you needed it).
             """,

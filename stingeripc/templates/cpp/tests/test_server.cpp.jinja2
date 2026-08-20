@@ -148,11 +148,7 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{method_name | UpperCamelCase}}Re
     _server->register{{method_name | UpperCamelCase}}Handler([handlerCalled]({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.cpp.return_value_class}}
     {
         *handlerCalled = true;
-        {%-if method.return_value_type == 'multiple'%}
-        return {{method.return_value_name | UpperCamelCase}}{ {{method.get_return_value_random_example_value('c++')}} };
-        {%-elif method.return_value_type == 'struct'%}
-        return {{method.get_return_value_random_example_value('c++')}};
-        {%-elif method.return_value_type is not false %}
+        {%-if method.return_value_type is not false %}
         return {{method.get_return_value_random_example_value('c++')}};
         {%-endif%}
     });

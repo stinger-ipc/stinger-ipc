@@ -392,14 +392,14 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
-                Ok({%if method.return_arg_list|length == 0 %}_{%endif%}retval) => {
-                    {% if method.return_arg_list|length == 0 %}
-                    let empty_resp = {{method.return_value_name | UpperCamelCase}}{};
+                Ok({%if method.return_value is none %}_{%endif%}retval) => {
+                    {% if method.return_value is none %}
+                    let empty_resp = {{method.rust.return_struct_name}}{};
                     let msg = message::response(&resp_topic, &empty_resp, corr_data, None).unwrap();
                     let _fut_publish_result = publisher.publish(msg).await;
-                    {%elif method.return_arg_list|length == 1 %}
-                    let resp_obj = {{method.return_value_name | UpperCamelCase}} {
-                        {{method.return_arg_list[0].name | snake_case}}: retval,
+                    {% else %}
+                    let resp_obj = {{method.rust.return_struct_name}} {
+                        {{method.return_value.name | snake_case}}: retval,
                     };
                     if let Err(err) = resp_obj.validate_schema() {
                         error!("Response payload for {{method_name}} failed schema validation: {}", err);
@@ -407,14 +407,6 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                         return;
                     }
                     let msg = message::response(&resp_topic, &resp_obj, corr_data,None).unwrap();
-                    let _fut_publish_result = publisher.publish(msg).await;
-                    {% else %}
-                    if let Err(err) = retval.validate_schema() {
-                        error!("Response payload for {{method_name}} failed schema validation: {}", err);
-                        {{stinger.rust.server_struct_name}}::<C>::publish_error_response(publisher, Some(resp_topic), Some(corr_data), MethodReturnCode::ServerSerializationError("Response payload failed schema validation".to_string())).await;
-                        return;
-                    }
-                    let msg = message::response(&resp_topic, &retval, corr_data, None).unwrap();
                     let _fut_publish_result = publisher.publish(msg).await;
                     {% endif %}
                 }
@@ -809,23 +801,16 @@ mod tests {
         async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.rust.return_value_type}}, MethodReturnCode> {
             println!("Handling {{method_name}}");
             {%-if method.return_value_type == 'struct'%}
-            let rv = {{method.return_arg_list[0].rust.temp_type}} {
+            let rv = {{method.return_value.rust.temp_type}} {
                 {%for arg in method.return_value.members-%}
                 {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
                 {%endfor%}
             };
-            {%if method.return_arg_list[0].optional %}
+            {%if method.return_value.optional %}
             Ok(Some(rv))
             {%else%}
             Ok(rv)
             {%endif%}
-            {%-elif method.return_value_type == 'multiple'%}
-            let rv = {{method.rust.return_value_type}} {
-                {%for arg in method.return_value-%}
-                {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
-                {%endfor%}
-            };
-            Ok(rv)
             {%elif method.return_value_type is not false %}
             Ok({{method.return_value.get_random_example_value(lang="rust")}})
             {%else%}

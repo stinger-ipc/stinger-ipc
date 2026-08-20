@@ -1,6 +1,6 @@
 [project]
 name = "stinger-ipc"
-version = "0.10.0a8"
+version = "0.11.0.dev0"
 description = "Tools to create code to do IPC over MQTT"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -56,7 +56,7 @@ packages = ["stingeripc", "stingeripc.tools", "stingeripc.symbols"]
 [tool.setuptools.package-data]
 stingeripc = [
     "templates/**/*.jinja2",
-    "schema/schema.yaml",
+    "schema/*/schema.yaml",
 ]
 
 [project.scripts]

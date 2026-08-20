@@ -272,29 +272,19 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
         }
 
         // Found the promise for this correlation ID.
-        {%if method.return_arg_list | length == 0 %}
-        // Method doesn't have any return values.
+        {%if method.return_value is none %}
+        // Method doesn't return a value.
         promiseItr->second.set_value();
-        {%elif method.return_arg_list | length == 1%}
-        // Method has a single return value.
-        auto returnValues = {{method_name | UpperCamelCase}}ReturnValues::FromRapidJsonObject(doc);
-        if (!returnValues.ValidateSchema()) {
-            _broker->Log(LOG_WARNING, "Response payload for '{{method_name}}' failed schema validation.");
-            promiseItr->second.set_exception(
-                std::make_exception_ptr(std::runtime_error("Response payload for '{{method_name}}' failed schema validation")));
-            return;
-        }
-        promiseItr->second.set_value(returnValues.{{method.return_arg_list[0].name|lowerCamelCase}});
         {%else%}
-        // Method has multiple return values.
-        auto returnValues = {{method_name | UpperCamelCase}}ReturnValues::FromRapidJsonObject(doc);
-        if (!returnValues.ValidateSchema()) {
+        // Method returns a single value.
+        auto returnPayload = {{method.cpp.return_struct_name}}::FromRapidJsonObject(doc);
+        if (!returnPayload.ValidateSchema()) {
             _broker->Log(LOG_WARNING, "Response payload for '{{method_name}}' failed schema validation.");
             promiseItr->second.set_exception(
                 std::make_exception_ptr(std::runtime_error("Response payload for '{{method_name}}' failed schema validation")));
             return;
         }
-        promiseItr->second.set_value(returnValues);
+        promiseItr->second.set_value(returnPayload.{{method.return_value.name|lowerCamelCase}});
         {%endif%}
     }
 

@@ -382,21 +382,17 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
 
         let receiver = self.start_{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
 
-        let {%if method.return_value_type is false %}{%endif%}return_code: MethodReturnCode = receiver.await.unwrap();
+        let return_code: MethodReturnCode = receiver.await.unwrap();
         info!("Received response for method '{{method_name}}': {:?}", return_code);
         match return_code {
-            MethodReturnCode::Success({%if method.return_arg_list |length == 0 %}_{%else%}payload_str{%endif%}) => {
-                {%if method.return_arg_list |length > 0%}
-                let return_obj: {{method_name|UpperCamelCase}}ReturnValues = serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
+            MethodReturnCode::Success({%if method.return_value is none %}_{%else%}payload_str{%endif%}) => {
+                {%if method.return_value is none %}
+                Ok(())
+                {%else%}
+                let return_obj: {{method.rust.return_struct_name}} = serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
                     .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
                 return_obj.validate_schema().map_err(MethodReturnCode::ClientDeserializationError)?;
-                {%endif%}
-                {%if method.return_arg_list |length == 0 %}
-                Ok(())
-                {%elif method.return_arg_list |length == 1 %}
-                Ok(return_obj.{{method.return_arg_list[0].name}})
-                {%else%}
-                Ok(return_obj)
+                Ok(return_obj.{{method.return_value.name | snake_case}})
                 {%endif%}
             },
             _ => {

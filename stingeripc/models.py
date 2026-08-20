@@ -142,7 +142,7 @@ class InterfaceSignal(InterfaceComponent):
 
 class InterfaceMethod(InterfaceComponent):
     arguments: List[AnyArg] = Field([], description="A list of arguments for the method")
-    returnValues: List[AnyArg] = Field([], description="A list of return values for the method")
+    returnValue: Optional[AnyArg] = Field(None, description="The value returned by the method, if it returns one")
 
 
 class InterfaceProperty(InterfaceComponent):

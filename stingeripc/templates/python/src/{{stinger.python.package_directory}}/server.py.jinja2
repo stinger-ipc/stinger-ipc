@@ -355,23 +355,18 @@ class {{stinger.python.server_class_name}}:
             return_json = ""
             debug_msg = None # type: Optional[str]
             try:
-                return_values = self._method_{{method_name|snake_case}}_handler(*method_args)
-                if inspect.iscoroutine(return_values):
+                return_value = self._method_{{method_name|snake_case}}_handler(*method_args)
+                if inspect.iscoroutine(return_value):
                     if self._event_loop is None:
                         raise RuntimeError(f"Method handler for '{{method_name}}' returned a coroutine, but no event loop was provided to the server to run it on.")
-                    return_values = asyncio.run_coroutine_threadsafe(return_values, self._event_loop).result()
+                    return_value = asyncio.run_coroutine_threadsafe(return_value, self._event_loop).result()
                 
-                {%if method.return_arg_list|length == 0%}
+                {%if method.return_value is none%}
                 return_data = "{}"
-                {%elif method.return_arg_list|length == 1 %}
-                if not isinstance(return_values, {{method.return_arg_list[0].python.local_type}}){% if method.return_arg_list[0].optional %} and return_values is not None{% endif %}:
-                    raise ServerSerializationErrorStingerMethodException(f"The return value must be of type {{method.return_arg_list[0].python.class_name}}, but was {type(return_values)}")
-                ret_obj = {{method.python.response_class_name}}({{method.return_arg_list[0].name}}=return_values)
-                return_data = ret_obj
                 {%else%}
-                if not isinstance(return_values, {{method.python.response_class_name}}):
-                    raise ServerSerializationErrorStingerMethodException(f"The return value must be of type {{method.python.response_class_name}}, but was {type(return_values)}")
-                return_data = return_values
+                if not isinstance(return_value, {{method.return_value.python.local_type}}){% if method.return_value.optional %} and return_value is not None{% endif %}:
+                    raise ServerSerializationErrorStingerMethodException(f"The return value must be of type {{method.return_value.python.class_name}}, but was {type(return_value)}")
+                return_data = {{method.python.response_class_name}}({{method.return_value.name}}=return_value)
                 {%endif%}
             except (json.JSONDecodeError, ValidationError) as e:
                 self._logger.warning("Deserialization error while handling {{method_name}}: %s", e)

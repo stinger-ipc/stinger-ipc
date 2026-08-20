@@ -124,12 +124,15 @@ class RustMethodSymbols(RustSymbols):
 
     @property
     def return_value_type(self) -> str:
-        """Rust return type for the method's return value(s)."""
+        """Rust return type for the method's return value."""
         if self._method.return_value is None:
             return "()"
-        elif isinstance(self._method.return_value, list):
-            return stringmanip.upper_camel_case(self._method.return_value_name)
         return self._method.return_value.rust.type
+
+    @property
+    def return_struct_name(self) -> str:
+        """Rust struct name of the method's generated response payload."""
+        return stringmanip.upper_camel_case(self._method.return_value_name)
 
 
 class RustArgSymbols(RustSymbols):

@@ -57,7 +57,7 @@ public:
     // ------------------- METHODS --------------------
     {%for method_name, method in stinger.methods.items()%}
     // Calls the `{{method_name}}` method.
-    // Returns a future.  When that future resolves, it will have the returned value. {{method.return_value}}
+    // Returns a future.  When that future resolves, it will have the {%if method.return_value is none%}method's completion{%else%}`{{method.return_value.name}}` return value{%endif%}.
     std::future<{{method.cpp.return_value_class}}> {{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
     {%endfor%}
     {%endif%}

@@ -14,8 +14,8 @@ if TYPE_CHECKING:
 class IpcMethod(InterfaceComponent):
     """A request/response method exposed by the interface.
 
-    A method accepts an ordered list of arguments (its request) and may return
-    zero or more values (its response).  Requests are published on the method's
+    A method accepts an ordered list of arguments (its request) and returns at
+    most one value (its response).  Requests are published on the method's
     request topic and responses on its response topic; both are computed from
     the configured topic templates.
     """
@@ -24,8 +24,7 @@ class IpcMethod(InterfaceComponent):
         InterfaceComponent.__init__(self, name, root)
         LanguageSymbolMixin.enhance(self, self._config)
         self._arg_list: list[Arg] = []
-        self._return_value: Arg | list[Arg] | None = None
-        self._return_arg_list: list[Arg] = []
+        self._return_value: Optional[Arg] = None
         self._version: Optional[str] = None
 
     def add_arg(self, arg: Arg) -> IpcMethod:
@@ -38,24 +37,15 @@ class IpcMethod(InterfaceComponent):
         self._arg_list.append(arg)
         return self
 
-    def add_return_value(self, value: Arg) -> IpcMethod:
-        """Append a return value to the method's response and return self.
+    def set_return_value(self, value: Arg) -> IpcMethod:
+        """Set the method's single return value and return self.
 
-        A single return value is stored directly; multiple return values are
-        accumulated into a list.  Duplicate names within a multi-value response
-        are rejected.
+        A method returns at most one value, so setting a return value on a
+        method that already has one is rejected.
         """
-        self._return_arg_list.append(value)
-        if self._return_value is None:
-            self._return_value = value
-        elif isinstance(self._return_value, list):
-            if value.name in [a.name for a in self._return_value]:
-                raise InvalidStingerStructure(f"A return value named '{value.name}' has been already added.")
-            self._return_value.append(value)
-        elif isinstance(self._return_value, Arg):
-            if value.name == self._return_value.name:
-                raise InvalidStingerStructure(f"Attempt to add '{value.name}' to return value when it is already been added.")
-            self._return_value = [self._return_value, value]
+        if self._return_value is not None:
+            raise InvalidStingerStructure(f"A return value named '{self._return_value.name}' has already been set; a method has at most one return value.")
+        self._return_value = value
         return self
 
     def request_topic(self, **kwargs) -> str:
@@ -85,34 +75,35 @@ class IpcMethod(InterfaceComponent):
 
     @property
     def return_arg_list(self) -> list[Arg]:
-        """The ordered list of values that make up the method's response."""
-        return self._return_arg_list
+        """The method's response as a list: empty, or a single-element list.
+
+        Templates that render the response payload iterate over this so that
+        methods with and without a return value can share one code path.
+        """
+        if self._return_value is None:
+            return []
+        return [self._return_value]
 
     @property
-    def return_value(self) -> Arg | list[Arg] | None:
-        """The method's return value: a single Arg, a list of Args, or None.
-
-        A single return value is returned directly, multiple return values are
-        returned as a list, and a method with no return values returns None.
-        """
+    def return_value(self) -> Optional[Arg]:
+        """The method's return value, or None when the method returns nothing."""
         return self._return_value
 
     @property
     def return_value_name(self) -> str:
-        """Human-readable name for the method's return value(s)."""
-        return f"{self.name} return values"
+        """Human-readable name for the method's return value."""
+        return f"{self.name} return value"
 
     @property
     def return_value_property_name(self) -> str:
         """The property name used to expose the method's return value.
 
-        For a single return value this is the argument's name; otherwise it
-        falls back to the method's name.
+        This is the return value's own name, falling back to the method's name
+        when the method has no return value.
         """
-        if isinstance(self._return_value, Arg):
+        if self._return_value is not None:
             return self._return_value.name
-        else:
-            return self.name
+        return self.name
 
     @property
     def version(self) -> Optional[str]:
@@ -123,17 +114,12 @@ class IpcMethod(InterfaceComponent):
     def return_value_type(self) -> str | bool:
         """A short string describing the shape of the method's return value.
 
-        Returns the lower-cased arg type name (e.g. ``'primitive'``) for a
-        single return value, ``'multiple'`` for a list of return values, or
-        ``False`` when the method has no return value.
+        Returns the lower-cased arg type name (e.g. ``'primitive'``) for the
+        return value, or ``False`` when the method has no return value.
         """
         if self._return_value is None:
             return False
-        elif isinstance(self._return_value, Arg):
-            return self._return_value.arg_type.name.lower()
-        elif isinstance(self._return_value, list):
-            return "multiple"
-        raise RuntimeError("Method return value type was not recognized")
+        return self._return_value.arg_type.name.lower()
 
     def get_return_value_random_example_value(self, lang: str = "python", seed: int = 2):
         """Return a randomly generated example value for the method's return value.
@@ -146,21 +132,31 @@ class IpcMethod(InterfaceComponent):
         if lang == "python":
             if self._return_value is None:
                 return "None"
-            elif isinstance(self._return_value, Arg):
-                return self._return_value.get_random_example_value(lang, seed)
-            elif isinstance(self._return_value, list):
-                s = ", ".join([f"{a.name}={a.get_random_example_value(lang,seed)}" for a in self._return_value])
-                return f"{self.python.response_class_name}({s})"  # type: ignore[attr-defined]
-            else:
-                raise RuntimeError(f"Did not handle return value type for: {self._return_value}")
+            return self._return_value.get_random_example_value(lang, seed)
         if lang in ["c++", "cpp", "qt"]:
             if self._return_value is None:
                 return "nullptr"
-            elif isinstance(self._return_value, Arg):
-                return self._return_value.get_random_example_value(lang, seed)
-            elif isinstance(self._return_value, list):
-                return ", ".join([str(a.get_random_example_value(lang, seed)) for a in self._return_value])
+            return self._return_value.get_random_example_value(lang, seed)
         raise RuntimeError(f"No random example for return value for {lang}")
+
+    @staticmethod
+    def _return_value_spec_from_stinger(name: str, method_spec: dict[str, Any]) -> Optional[dict[str, Any]]:
+        """Return the arg spec for the method's return value, or None if it returns nothing.
+
+        A method declares its response with a single ``returnValue`` mapping.
+        The ``returnValues`` list of earlier spec versions is rejected outright
+        rather than half-read, since a method now returns at most one value.
+        """
+        if "returnValues" in method_spec:
+            raise InvalidStingerStructure(f"Method '{name}' uses 'returnValues', which was replaced by a single 'returnValue' in stinger spec version 0.3.0.  Return a struct to send several fields together.")
+
+        if "returnValue" not in method_spec:
+            return None
+
+        return_value_spec = method_spec["returnValue"]
+        if not isinstance(return_value_spec, dict):
+            raise InvalidStingerStructure(f"ReturnValue for '{name}' method must be a single arg structure.  It is '{type(return_value_spec)}'")
+        return return_value_spec
 
     @classmethod
     def new_method_from_stinger(
@@ -182,15 +178,11 @@ class IpcMethod(InterfaceComponent):
             new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)
             method.add_arg(new_arg)
 
-        if "returnValues" in method_spec:
-            if not isinstance(method_spec["returnValues"], list):
-                raise InvalidStingerStructure(f"ReturnValues must be a list.")
-
-            for arg_spec in method_spec["returnValues"]:
-                if "name" not in arg_spec or "type" not in arg_spec:
-                    raise InvalidStingerStructure("Return value must have name and type.")
-                new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)
-                method.add_return_value(new_arg)
+        return_value_spec = cls._return_value_spec_from_stinger(name, method_spec)
+        if return_value_spec is not None:
+            if "name" not in return_value_spec or "type" not in return_value_spec:
+                raise InvalidStingerStructure("Return value must have name and type.")
+            method.set_return_value(Arg.new_arg_from_stinger(return_value_spec, stinger_spec))
 
         if "version" in method_spec:
             method._version = method_spec["version"]

@@ -12,7 +12,7 @@ A very brief example of an interface description is:
 .. code-block:: yaml
 
    stingeripc:
-     version: 0.1.0
+     version: 0.3.0
 
    interface:
      name: Example
@@ -33,9 +33,9 @@ A very brief example of an interface description is:
            type: integer
          - name: right
            type: integer
-       returnValues:
-         - name: sum
-           type: integer
+       returnValue:
+         name: sum
+         type: integer
 
 The ``stinger-ipc`` command provides two main subcommands for working with
 Stinger interface files.

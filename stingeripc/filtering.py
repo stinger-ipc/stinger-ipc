@@ -26,6 +26,14 @@ def _collect_used_types(args: list[Dict[str, Any]], used_enums: Set[str], used_s
                 _collect_used_types([item_type], used_enums, used_structs)
 
 
+def _method_return_args(method_spec: Dict[str, Any]) -> list[Dict[str, Any]]:
+    """Return the method's single ``returnValue`` as a list of arg specs (empty, or one entry)."""
+    return_value = method_spec.get("returnValue")
+    if isinstance(return_value, dict):
+        return [return_value]
+    return []
+
+
 def _collect_struct_dependencies(struct_spec: Dict[str, Any], used_enums: Set[str], used_structs: Set[str]) -> None:
     """Recursively collect enums and structs used by a struct's members."""
     members = struct_spec.get("members", [])
@@ -108,9 +116,8 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
                 # Collect types used in arguments
                 arguments = method_spec.get("arguments", [])
                 _collect_used_types(arguments, used_enums, used_structs)
-                # Collect types used in return values
-                return_values = method_spec.get("returnValues", [])
-                _collect_used_types(return_values, used_enums, used_structs)
+                # Collect types used in the return value
+                _collect_used_types(_method_return_args(method_spec), used_enums, used_structs)
         filtered_dict["methods"] = filtered_methods
 
     # Now collect dependencies from used structs
@@ -254,9 +261,8 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
             arguments = method_spec.get("arguments", [])
             check_args(arguments, method_name, "Method")
 
-            # Check return values
-            return_values = method_spec.get("returnValues", [])
-            check_args(return_values, method_name, "Method")
+            # Check the return value
+            check_args(_method_return_args(method_spec), method_name, "Method")
 
     # Check struct members recursively
     if "structures" in interface:

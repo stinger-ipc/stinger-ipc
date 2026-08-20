@@ -12,7 +12,7 @@ StingerIPC takes a interface description file (.singeripc), and will generate co
 
 ```yaml
 stingeripc:
-  version: 0.1.0
+  version: 0.3.0
 
 interface:
   name: Example
@@ -33,9 +33,9 @@ methods:
         type: integer
       - name: right
         type: integer
-    returnValues:
-      - name: sum
-        type: integer
+    returnValue:
+      name: sum
+      type: integer
 
 ```
 

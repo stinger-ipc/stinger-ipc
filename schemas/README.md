@@ -7,13 +7,32 @@ Stinger files are YAML files that describe interfaces for inter-process communic
 Stinger files should be named with the `.stinger.yaml` extension to indicate their purpose and format.
 For example: `example_interface.stinger.yaml`
 
+## Format Version
+
+Every stinger file declares which version of this format it follows:
+
+```yaml
+stingeripc:
+  version: 0.3.0
+```
+
+The current version is `0.3.0`, and it is the only version the generator accepts.  Each version has its own schema in a directory alongside this file; earlier schemas are kept for reference only.
+
+Changes in `0.3.0`:
+
+* A method returns at most one value.  The `returnValues` list was replaced by a single `returnValue` argument (see [Methods](#methods)).
+
+Changes in `0.2.0`:
+
+* `binary` arguments require a `contentType`.
+
 ## Arguments
 
 Structures, signals, methods, properties all take a list of arguments, though they might call the list different things:
 
 Structures: `members`
 Signals: `payload`
-Methods: Have both `arguments` and `returnValues`
+Methods: Have a list of `arguments` and a single `returnValue`
 Properties: `values`
 
 All arguments have required `name` and `type` fields.  See below for valid `type` values.
@@ -101,7 +120,7 @@ Here is a minimal example that shows metadata and the sections for types and IPC
 
 ```yaml
 stingeripc:
-  version: 0.1.0
+  version: 0.3.0
 
 interface:
   name: example_interface
@@ -198,7 +217,7 @@ Client <<-- Server: Response(Parameters)
 @enduml
 ```
 
-Both `arguments` and `returnValues` are arrays which can have multiple elements.
+`arguments` is an array which can have multiple elements.  `returnValue` is a single argument: a method returns at most one value.  Omit `returnValue` for a method that returns nothing, and use a `struct` return value to send several fields back together.
 
 ```yaml
 methods:
@@ -209,10 +228,10 @@ methods:
         type: struct
         structName: Point
         description: The target position.
-    returnValues:
-      - name: success
-        type: boolean
-        description: True if the move was successful, false otherwise.
+    returnValue:
+      name: success
+      type: boolean
+      description: True if the move was successful, false otherwise.
 ```
 
 ## Properties

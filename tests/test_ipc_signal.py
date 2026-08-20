@@ -7,7 +7,7 @@ from stingeripc.exceptions import InvalidStingerStructure
 
 def _make_stinger_spec():
     stinger = {
-        "stingeripc": {"version": "0.0.7"},
+        "stingeripc": {"version": "0.3.0"},
         "interface": {"name": "test_iface", "version": "0.0.1"},
     }
     return StingerSpec.new_spec_from_stinger(stinger, StingerConfig())

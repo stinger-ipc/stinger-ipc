@@ -79,17 +79,17 @@ TEST(MethodRequestSerialization, {{method_name | UpperCamelCase}}RoundTrip)
     (void)roundTripped.ValidateSchema();
 }
 
-// --- {{method_name}} method return values ---
+// --- {{method_name}} method return value ---
 TEST(MethodReturnSerialization, {{method_name | UpperCamelCase}}RoundTrip)
 {
-    {{method_name | UpperCamelCase}}ReturnValues original{ {%for arg in method.return_arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    {{method.cpp.return_struct_name}} original{ {%for arg in method.return_arg_list%}{{arg.get_random_example_value(lang="c++")}}{%endfor%} };
     const std::string firstJson = serializeToString(original);
 
     rapidjson::Document doc;
-    ASSERT_FALSE(doc.Parse(firstJson.c_str()).HasParseError()) << "Serialized return values are not valid JSON: " << firstJson;
+    ASSERT_FALSE(doc.Parse(firstJson.c_str()).HasParseError()) << "Serialized return value is not valid JSON: " << firstJson;
     ASSERT_TRUE(doc.IsObject());
 
-    auto roundTripped = {{method_name | UpperCamelCase}}ReturnValues::FromRapidJsonObject(doc);
+    auto roundTripped = {{method.cpp.return_struct_name}}::FromRapidJsonObject(doc);
     const std::string secondJson = serializeToString(roundTripped);
 
     EXPECT_EQ(firstJson, secondJson);

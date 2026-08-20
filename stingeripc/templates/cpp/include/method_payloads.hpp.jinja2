@@ -35,9 +35,9 @@ struct {{method_name | UpperCamelCase}}RequestArguments {
     {%endif%}
 };
 
-struct {{method_name | UpperCamelCase}}ReturnValues {
+struct {{method.cpp.return_struct_name}} {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    static {{method_name | UpperCamelCase}}ReturnValues FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    static {{method.cpp.return_struct_name}} FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Validates fields that declare a JSON schema constraint.  Returns true if all such fields conform to their schema (or if none declare one).
     bool ValidateSchema() const;
     {%-if method.return_arg_list | length > 0 %}

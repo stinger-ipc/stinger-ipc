@@ -174,6 +174,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         payload_dict = json.loads(msg.payload.decode('utf-8'))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
+    {% if prop.read_only is not true %}
     def test_{{prop_name|snake_case}}_property_setter(self, server, mock_connection):
         """Test that setting the '{{prop_name|snake_case}}' property publishes the correct message."""
         mock_connection.clear_published_messages()
@@ -204,6 +205,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         new_{{prop_name | snake_case}}_obj = {{-prop.python.model_class_name}}({{prop.arg_list[0].name|snake_case}}=new_{{prop_name | snake_case}}_value)
         assert json.loads(new_{{prop_name | snake_case}}_obj.model_dump_json(by_alias=True)) == published_msg_json_obj, "Property '{{prop_name|snake_case}}' setter did not publish the correct JSON payload"
         {%endif%}
+    {%endif%}{#read/write property#}
 
     {%if not config.properties.stinger_owned_values -%}
     def test_{{prop_name|snake_case}}_receive(self, server, server_setup, mock_connection):
@@ -500,13 +502,11 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
 
         # Verify response payload
         resp_payload = json.loads(resp_msg.payload.decode('utf-8'))
-        {%if method.return_arg_list|length > 1%}
-        expected_resp_dict = to_jsonified_dict(handler_callback_data)
-        {%elif method.return_arg_list|length == 1 %}
-        expected_return_obj = {{method.python.response_class_name}}({{method.return_arg_list[0].name|snake_case}}=handler_callback_data)
-        expected_resp_dict = to_jsonified_dict(expected_return_obj)
-        {%else%}
+        {%if method.return_value is none%}
         expected_resp_dict = {} # type: Dict[str, Any]
+        {%else%}
+        expected_return_obj = {{method.python.response_class_name}}({{method.return_value.name|snake_case}}=handler_callback_data)
+        expected_resp_dict = to_jsonified_dict(expected_return_obj)
         {%endif-%}
         assert resp_payload == expected_resp_dict, f"Response payload '{resp_payload}' does not match expected '{expected_resp_dict}'"
     {%endfor%}

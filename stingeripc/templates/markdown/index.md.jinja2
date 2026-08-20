@@ -532,14 +532,12 @@ There are no arguments for this request.
 {%else-%}
 {{argtable(method.arg_list)}}
 {%endif%}{# number of args #}
-#### Return Parameters
+#### Return Value
 
-{%if method.return_value_type == "struct" %}
-{{argtable(method.return_arg_list)}}
-{%elif method.return_value_type is false -%}
-There is no return value for this method call.
+{%if method.return_value is none -%}
+There is no return value for this method call.  An empty response object will still be sent from server to client.
 {%else-%}
-The return value type is `{{method.return_value.json_type}}`.
+{{argtable(method.return_arg_list)}}
 {%endif-%}
 
 #### Code Examples

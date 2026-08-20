@@ -146,7 +146,7 @@ int main(int argc, char** argv)
         }
         else
         {
-        {%if method.return_arg_list|length > 0%}
+        {%if method.return_value is not none%}
             {{method.cpp.return_value_class}} returnValue;
             bool success = false;
             try
@@ -160,8 +160,8 @@ int main(int argc, char** argv)
             if (success)
             {
                 std::cout << "{{method_name|CONST_CASE}} Response: "
-                {%for arg in method.return_arg_list-%}
-                {%set var_name%}{%if method.return_arg_list|length == 1%}returnValue{%else%}returnValue.{{arg.name|lowerCamelCase}}{%endif%}{%endset-%}
+                {%with arg = method.return_value-%}
+                {%set var_name%}returnValue{%endset-%}
                 << " {{arg.name}}="{%if arg.optional%};
                 if ({{var_name}})
                 {
@@ -189,7 +189,7 @@ int main(int argc, char** argv)
                 }
                 std::cout
                 {%endif-%}
-                {%endfor-%}
+                {%endwith-%}
                 << std::endl;
             }
         {%else%}

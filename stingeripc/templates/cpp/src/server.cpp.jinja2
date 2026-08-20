@@ -213,19 +213,16 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
     {%endif%}
     try
     {
-        {%if method.return_arg_list | length == 0 %}
-        // Method doesn't have any return values.
+        {%if method.return_value is none %}
+        // Method doesn't return a value.
         _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}requestArgs.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
-        auto returnValues = {{method_name | UpperCamelCase}}ReturnValues();
-        {%elif method.return_arg_list | length == 1%}
-        // Method has a single return value.
-        auto returnValue = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}requestArgs.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
-        {{method_name | UpperCamelCase}}ReturnValues returnValues = {returnValue};
+        auto returnPayload = {{method.cpp.return_struct_name}}();
         {%else%}
-        // Method has multiple return values.
-        auto returnValues = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}requestArgs.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+        // Method returns a single value.
+        auto returnValue = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}requestArgs.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+        {{method.cpp.return_struct_name}} returnPayload = {returnValue};
         {%endif%}
-        if (!returnValues.ValidateSchema()) {
+        if (!returnPayload.ValidateSchema()) {
             _broker->Log(LOG_WARNING, "Response payload for {{method_name}} failed schema validation.");
             auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, "{}", optCorrelationData, stinger::error::MethodReturnCode::SERVER_SERIALIZATION_ERROR, "Response payload for {{method_name}} failed schema validation.");
             {%-if method.version%}
@@ -240,7 +237,7 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
             rapidjson::Document responseJson;
             responseJson.SetObject();
             
-            returnValues.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
+            returnPayload.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
 
             rapidjson::StringBuffer buf;
             rapidjson::Writer<rapidjson::StringBuffer> writer(buf);

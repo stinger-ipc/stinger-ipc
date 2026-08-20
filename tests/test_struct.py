@@ -9,7 +9,7 @@ from stingeripc.exceptions import InvalidStingerStructure
 def _make_stinger_spec(extra_structs=None, extra_enums=None):
     """Helper: build a minimal StingerSpec, optionally with structs/enums."""
     stinger = {
-        "stingeripc": {"version": "0.0.7"},
+        "stingeripc": {"version": "0.3.0"},
         "interface": {"name": "test_iface", "version": "0.0.1"},
     }
     if extra_structs:

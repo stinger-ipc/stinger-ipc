@@ -1,5 +1,5 @@
 stingeripc:
-  version: 0.0.7
+  version: 0.3.0
 
 interface:
   name: testable
@@ -65,6 +65,7 @@ structures:
         description: A duration type.
       - name: data
         type: binary
+        contentType: application/octet-stream
         description: A binary type.
       - name: OptionalInteger
         type: integer
@@ -94,6 +95,7 @@ structures:
         description: An optional duration type.
       - name: OptionalBinary
         type: binary
+        contentType: application/octet-stream
         optional: true
         description: An optional binary type.
       - name: array_of_integers
@@ -157,11 +159,13 @@ structures:
         type: array
         itemType:
           type: binary
+          contentType: application/octet-stream
         description: An array of binary values.
       - name: optional_array_of_binaries
         type: array
         itemType:
           type: binary
+          contentType: application/octet-stream
         optional: true
         description: An optional array of binary values.
       - name: array_of_entry_objects
@@ -395,6 +399,7 @@ signals:
     payload:
       - name: value
         type: binary
+        contentType: application/octet-stream
         description: The binary value.
 
   singleOptionalBinary:
@@ -402,6 +407,7 @@ signals:
     payload:
       - name: value
         type: binary
+        contentType: application/octet-stream
         optional: true
         description: The binary value.
 
@@ -410,12 +416,15 @@ signals:
     payload:
       - name: first
         type: binary
+        contentType: application/octet-stream
         description: The first binary value.
       - name: second
         type: binary
+        contentType: application/octet-stream
         description: The second binary value.
       - name: third   
         type: binary
+        contentType: application/octet-stream
         description: The third binary value.
         optional: true
 
@@ -481,6 +490,7 @@ signals:
         type: array
         itemType:
           type: binary
+          contentType: application/octet-stream
         description: The eighth array of binary values.
 
 methods:
@@ -488,16 +498,15 @@ methods:
   callWithNothing:
     documentation: Method that takes no arguments and returns nothing.
     arguments: []
-    returnValues: []
 
   callOneInteger:
     documentation: Method that takes one integer argument and returns one integer value.
     arguments:
       - name: input1
         type: integer
-    returnValues:
-      - name: output1
-        type: integer
+    returnValue:
+      name: output1
+      type: integer
 
   callOptionalInteger:
     documentation: Method that takes one optional integer argument and returns one optional integer value.
@@ -505,13 +514,13 @@ methods:
       - name: input1
         type: integer
         optional: true
-    returnValues:
-      - name: output1
-        type: integer
-        optional: true
+    returnValue:
+      name: output1
+      type: integer
+      optional: true
   
   callThreeIntegers:
-    documentation: Method that takes three integer arguments, the third is optional, and returns three integer values, the third is optional.
+    documentation: Method that takes three integer arguments, the third is optional, and returns one integer value.
     arguments:
       - name: input1
         type: integer
@@ -521,24 +530,19 @@ methods:
       - name: input3
         type: integer
         optional: true
-    returnValues:
-      - name: output1
-        type: integer
-        description: The first integer output.  The other two don't have descriptions.
-      - name: output2
-        type: integer
-      - name: output3
-        type: integer
-        optional: true
+    returnValue:
+      name: output1
+      type: integer
+      description: The returned integer value.
 
   callOneString:
     documentation: Method that takes one string argument and returns one string value.
     arguments:
       - name: input1
         type: string
-    returnValues:
-      - name: output1 
-        type: string
+    returnValue:
+      name: output1 
+      type: string
 
   callOptionalString:
     documentation: Method that takes one optional string argument and returns one optional string value.
@@ -546,13 +550,13 @@ methods:
       - name: input1
         type: string
         optional: true
-    returnValues:
-      - name: output1 
-        type: string
-        optional: true
+    returnValue:
+      name: output1 
+      type: string
+      optional: true
 
   callThreeStrings:
-    documentation: Method that takes three string arguments, the 2nd is optional, and returns three string values, the 2nd is optional.
+    documentation: Method that takes three string arguments, the 2nd is optional, and returns one string value.
     arguments:
       - name: input1
         type: string
@@ -562,15 +566,10 @@ methods:
         optional: true
       - name: input3
         type: string
-    returnValues:
-      - name: output1 
-        type: string
-        description: The first string output.  The other two don't have descriptions.
-      - name: output2 
-        type: string
-        optional: true
-      - name: output3 
-        type: string
+    returnValue:
+      name: output1 
+      type: string
+      description: The returned string value.
 
   callOneEnum:
     documentation: Method that takes one enum argument and returns one enum value.
@@ -578,10 +577,10 @@ methods:
       - name: input1
         type: enum
         enumName: Numbers
-    returnValues:
-      - name: output1 
-        type: enum
-        enumName: Numbers
+    returnValue:
+      name: output1 
+      type: enum
+      enumName: Numbers
 
   callOptionalEnum:
     documentation: Method that takes one optional enum argument and returns one optional enum value.
@@ -590,14 +589,14 @@ methods:
         type: enum
         enumName: Numbers
         optional: true
-    returnValues:
-      - name: output1 
-        type: enum
-        enumName: Numbers
-        optional: true 
+    returnValue:
+      name: output1 
+      type: enum
+      enumName: Numbers
+      optional: true 
 
   callThreeEnums:
-    documentation: Method that takes three enum arguments, the third is optional, and returns three enum values, the third is optional.
+    documentation: Method that takes three enum arguments, the third is optional, and returns one enum value.
     arguments:
       - name: input1
         type: enum
@@ -610,18 +609,11 @@ methods:
         type: enum
         enumName: Numbers
         optional: true
-    returnValues:
-      - name: output1 
-        type: enum
-        enumName: Numbers
-        description: The first enum output.  The other two don't have descriptions.
-      - name: output2 
-        type: enum
-        enumName: Numbers
-      - name: output3 
-        type: enum
-        enumName: Numbers
-        optional: true
+    returnValue:
+      name: output1 
+      type: enum
+      enumName: Numbers
+      description: The returned enum value.
 
   callOneStruct:
     documentation: Method that takes one struct argument and returns one struct value.
@@ -629,10 +621,10 @@ methods:
       - name: input1
         type: struct
         structName: AllTypes
-    returnValues:
-      - name: output1
-        type: struct
-        structName: AllTypes
+    returnValue:
+      name: output1
+      type: struct
+      structName: AllTypes
 
   callOptionalStruct:
     documentation: Method that takes one optional struct argument and returns one optional struct value.
@@ -641,14 +633,14 @@ methods:
         type: struct
         structName: AllTypes
         optional: true
-    returnValues:
-      - name: output1 
-        type: struct
-        structName: AllTypes
-        optional: true
+    returnValue:
+      name: output1 
+      type: struct
+      structName: AllTypes
+      optional: true
 
   callThreeStructs:
-    documentation: Method that takes three struct arguments, the first is optional, and returns three struct values, the first is optional.
+    documentation: Method that takes three struct arguments, the first is optional, and returns one optional struct value.
     arguments:
       - name: input1
         type: struct
@@ -661,27 +653,21 @@ methods:
       - name: input3
         type: struct
         structName: AllTypes
-    returnValues:
-      - name: output1 
-        type: struct
-        structName: AllTypes
-        description: The first struct output.  The other two don't have descriptions.
-        optional: true
-      - name: output2 
-        type: struct
-        structName: AllTypes
-      - name: output3 
-        type: struct
-        structName: AllTypes
+    returnValue:
+      name: output1 
+      type: struct
+      structName: AllTypes
+      description: The returned struct value.
+      optional: true
   
   callOneDateTime:
     documentation: Method that takes one date and time argument and returns one date and time value.
     arguments:
       - name: input1
         type: datetime
-    returnValues:
-      - name: output1
-        type: datetime
+    returnValue:
+      name: output1
+      type: datetime
 
   callOptionalDateTime:
     documentation: Method that takes one optional date and time argument and returns one optional date and time value.
@@ -689,13 +675,13 @@ methods:
       - name: input1  
         type: datetime
         optional: true
-    returnValues:
-      - name: output1
-        type: datetime
-        optional: true
+    returnValue:
+      name: output1
+      type: datetime
+      optional: true
   
   callThreeDateTimes:
-    documentation: Method that takes three date and time arguments, the third is optional, and returns three date and time values, the third is optional.
+    documentation: Method that takes three date and time arguments, the third is optional, and returns one date and time value.
     arguments:
       - name: input1
         type: datetime
@@ -705,24 +691,19 @@ methods:
       - name: input3
         type: datetime
         optional: true
-    returnValues:
-      - name: output1
-        type: datetime
-        description: The first date and time output.  The other two don't have descriptions.
-      - name: output2
-        type: datetime
-      - name: output3
-        type: datetime
-        optional: true
+    returnValue:
+      name: output1
+      type: datetime
+      description: The returned date and time value.
 
   callOneDuration:
     documentation: Method that takes one duration argument and returns one duration value.
     arguments:
       - name: input1
         type: duration
-    returnValues:
-      - name: output1
-        type: duration
+    returnValue:
+      name: output1
+      type: duration
 
   callOptionalDuration:
     documentation: Method that takes one optional duration argument and returns one optional duration value.
@@ -730,13 +711,13 @@ methods:
       - name: input1
         type: duration
         optional: true
-    returnValues:
-      - name: output1
-        type: duration
-        optional: true
+    returnValue:
+      name: output1
+      type: duration
+      optional: true
         
   callThreeDurations:
-    documentation: Method that takes three duration arguments, the third is optional, and returns three duration values, the third is optional.
+    documentation: Method that takes three duration arguments, the third is optional, and returns one duration value.
     arguments:
       - name: input1
         type: duration
@@ -746,56 +727,54 @@ methods:
       - name: input3
         type: duration
         optional: true
-    returnValues:
-      - name: output1
-        type: duration
-        description: The first duration output.  The other two don't have descriptions.
-      - name: output2
-        type: duration
-      - name: output3
-        type: duration
-        optional: true
+    returnValue:
+      name: output1
+      type: duration
+      description: The returned duration value.
 
   callOneBinary:
     documentation: Method that takes one binary argument and returns one binary value.
     arguments:
       - name: input1
         type: binary
-    returnValues:
-      - name: output1
-        type: binary
+        contentType: application/octet-stream
+    returnValue:
+      name: output1
+      type: binary
+      contentType: application/octet-stream
   
   callOptionalBinary:
     documentation: Method that takes one optional binary argument and returns one optional binary value.
     arguments:
       - name: input1
         type: binary
+        contentType: application/octet-stream
         optional: true
-    returnValues:
-      - name: output1
-        type: binary
-        optional: true
+    returnValue:
+      name: output1
+      type: binary
+      contentType: application/octet-stream
+      optional: true
         
   callThreeBinaries:
-    documentation: Method that takes three binary arguments, the third is optional, and returns three binary values, the third is optional.
+    documentation: Method that takes three binary arguments, the third is optional, and returns one binary value.
     arguments:
       - name: input1
         type: binary
+        contentType: application/octet-stream
         description: The first binary input.  The other two don't have descriptions.
       - name: input2
         type: binary
+        contentType: application/octet-stream
       - name: input3
         type: binary
+        contentType: application/octet-stream
         optional: true
-    returnValues:
-      - name: output1
-        type: binary
-        description: The first binary output.  The other two don't have descriptions.
-      - name: output2
-        type: binary
-      - name: output3
-        type: binary
-        optional: true
+    returnValue:
+      name: output1
+      type: binary
+      contentType: application/octet-stream
+      description: The returned binary value.
 
   callOneListOfIntegers:
     documentation: Method that takes one list of integers argument and returns one list of integers value.
@@ -804,11 +783,11 @@ methods:
         type: array
         itemType:
           type: integer
-    returnValues:
-      - name: output1
-        type: array
-        itemType:
-          type: integer
+    returnValue:
+      name: output1
+      type: array
+      itemType:
+        type: integer
 
   callOptionalListOfFloats:
     documentation: Method that takes one optional list of floats argument and returns one optional list of floats value.
@@ -818,15 +797,15 @@ methods:
         itemType:
           type: float
         optional: true
-    returnValues:
-      - name: output1
-        type: array
-        itemType:
-          type: float
-        optional: true
+    returnValue:
+      name: output1
+      type: array
+      itemType:
+        type: float
+      optional: true
 
   callTwoLists:
-    documentation: Method that takes two list arguments, the second is optional, and returns two list values, the second is optional.
+    documentation: Method that takes two list arguments, the second is optional, and returns one list value.
     arguments:
       - name: input1
         type: array
@@ -840,19 +819,14 @@ methods:
         itemType:
           type: string
         optional: true
-    returnValues:
-      - name: output1
-        type: array
-        itemType:
-          type: enum
-          enumName: Numbers
-          enumVersion: 2.0.0
-        description: The first list of enums.
-      - name: output2
-        type: array
-        itemType:
-          type: string
-        optional: true
+    returnValue:
+      name: output1
+      type: array
+      itemType:
+        type: enum
+        enumName: Numbers
+        enumVersion: 2.0.0
+      description: The first list of enums.
     version: 0.1.0
 
 properties:
@@ -1033,12 +1007,14 @@ properties:
     values:
       - name: value
         type: binary
+        contentType: application/octet-stream
   
   read_write_optional_binary:
     documentation: A read-write optional binary property.
     values:
       - name: value
         type: binary
+        contentType: application/octet-stream
         optional: true
   
   read_write_two_binaries:
@@ -1046,9 +1022,11 @@ properties:
     values:
       - name: first
         type: binary
+        contentType: application/octet-stream
         description: A binary blob of data.
       - name: second
         type: binary
+        contentType: application/octet-stream
         optional: true
 
   read_write_list_of_strings:

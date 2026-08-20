@@ -44,7 +44,7 @@ An argument's optional `schema:` constraint flows through the whole pipeline:
 
 - **Definition** — `schema:` is limited to the subset of JSON Schema (Draft 4) that the
   RapidJSON C++ validator supports. This subset is itself defined as the `jsonSchema`
-  `$def` in [schema.yaml](schemas/schema.yaml), so unsupported keywords are rejected
+  `$def` in [schema.yaml](schemas/0.3/schema.yaml), so unsupported keywords are rejected
   at load time.
 - **Model** — the constraint is parsed onto the base `Arg` model as `value_schema`
   (a dict, aliased from `schema`) in [arg_models.py](stingeripc/arg_models.py).
@@ -66,7 +66,7 @@ An argument's optional `schema:` constraint flows through the whole pipeline:
 - [example_interfaces/](example_interfaces/) — sample `*.stinger.yaml` definitions.
 - [generated/](generated/) — output of running the generator against the examples.
 - [schemas/](schemas/) — schema(s) describing the `*.stinger.yaml` format. The
-  authoritative schema for `*.stinger.yaml` files is [schema.yaml](schemas/schema.yaml).
+  authoritative schema for `*.stinger.yaml` files is [schema.yaml](schemas/0.3/schema.yaml).
 - [Taskfile.yml](Taskfile.yml) — task runner entry points (e.g. `task generate`).
 
 ## Common tasks

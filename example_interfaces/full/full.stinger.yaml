@@ -1,5 +1,5 @@
 stingeripc:
-  version: 0.0.7
+  version: 0.3.0
 
 interface:
   name: Full
@@ -93,26 +93,24 @@ methods:
       - name: third
         type: integer
         optional: true
-    returnValues:
-      - name: sum
-        type: integer
+    returnValue:
+      name: sum
+      type: integer
 
   doSomething:
     arguments:
       - name: task_to_do
         type: string
-    returnValues:
-      - name: label
-        type: string
-      - name: identifier
-        type: integer
+    returnValue:
+      name: label
+      type: string
 
   what_time_is_it:
     documentation: Get the current date and time.
     arguments: []
-    returnValues:
-      - name: timestamp
-        type: datetime
+    returnValue:
+      name: timestamp
+      type: datetime
 
   hold_temperature:
     documentation: Hold a temperature for a specified duration.
@@ -120,9 +118,9 @@ methods:
       - name: temperature_celsius
         type: float
         description: The temperature to hold in degrees Celsius.
-    returnValues:
-      - name: success
-        type: boolean
+    returnValue:
+      name: success
+      type: boolean
 
 properties:
 

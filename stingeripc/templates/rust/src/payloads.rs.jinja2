@@ -252,10 +252,10 @@ pub struct {{method_name | UpperCamelCase}}RequestObject {
 #[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 /// Return Object for `{{method_name}}` method.
-pub struct {{method.return_value_name | UpperCamelCase}} {
+pub struct {{method.rust.return_struct_name}} {
     {{ arg_members(method.return_arg_list) }}
 }
-{{ validate_schema_impl(method.return_value_name | UpperCamelCase, method.return_arg_list) }}
+{{ validate_schema_impl(method.rust.return_struct_name, method.return_arg_list) }}
 {%-endfor%}
 
 // ---- SIGNALS ----

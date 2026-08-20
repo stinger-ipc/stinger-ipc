@@ -127,21 +127,24 @@ class CppMethodSymbols(CppSymbols):
 
     @property
     def return_value_class(self) -> str:
-        from stingeripc.components import Arg, ArgPrimitive, ArgStruct
+        """C++ type that the method's handler returns, or ``void`` when it returns nothing."""
+        from stingeripc.components import ArgPrimitive, ArgStruct
 
-        if self._method._return_value is None:
+        return_value = self._method.return_value
+        if return_value is None:
             return "void"
-        elif isinstance(self._method._return_value, Arg):
-            if isinstance(self._method._return_value, ArgPrimitive) and self._method._return_value.type == ArgPrimitiveType.STRING:
-                if self._method._return_value.optional:
-                    return "std::optional<std::string>"
-                return "std::string"
-            elif isinstance(self._method._return_value, ArgStruct) and self._method._return_value.optional:
-                return f"std::optional<{self._method._return_value.cpp.type}>"  # type: ignore[attr-defined]
-            return self._method._return_value.cpp.type  # type: ignore[attr-defined]
-        elif isinstance(self._method._return_value, list):
-            return stringmanip.upper_camel_case(self._method.return_value_name)
-        raise RuntimeError(f"Unhandled return value type: {self._method._return_value}")
+        if isinstance(return_value, ArgPrimitive) and return_value.type == ArgPrimitiveType.STRING:
+            if return_value.optional:
+                return "std::optional<std::string>"
+            return "std::string"
+        if isinstance(return_value, ArgStruct) and return_value.optional:
+            return f"std::optional<{return_value.cpp.type}>"  # type: ignore[attr-defined]
+        return return_value.cpp.type  # type: ignore[attr-defined]
+
+    @property
+    def return_struct_name(self) -> str:
+        """C++ struct name of the method's generated response payload."""
+        return stringmanip.upper_camel_case(self._method.return_value_name)
 
 
 class CppEnumSymbols(CppSymbols):

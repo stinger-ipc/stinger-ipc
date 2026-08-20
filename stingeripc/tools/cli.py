@@ -121,7 +121,9 @@ def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_o
         print(f"❌  [bold red]Missing required 'stingeripc.version' field in {input_file}[/bold red]")
         sys.exit(1)
     schema_dir = Path(__file__).parent.parent / "schema"
-    schema_compat = "0.2" if stingeripc_version.startswith("0.2") else "0.1"
+    # Each schema directory validates one minor version of the format; anything
+    # older than 0.2 is covered by the 0.1 schema.
+    schema_compat = next((v for v in ("0.3", "0.2") if stingeripc_version.startswith(v)), "0.1")
     schema_file = schema_dir / schema_compat / "schema.yaml"
     yaml = YAML(typ="safe")
     with schema_file.open("r") as f:

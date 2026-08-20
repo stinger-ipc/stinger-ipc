@@ -323,11 +323,9 @@ class PythonMethodSymbols(PythonSymbols):
 
     @property
     def return_value_annotation(self) -> str:
-        """Python return type annotation for the method's return value(s)."""
+        """Python return type annotation for the method's return value."""
         if self._method.return_value is None:
             return "None"
-        if isinstance(self._method.return_value, list):
-            return self.response_class_name
         return self._method.return_value.python.annotation
 
     @property
