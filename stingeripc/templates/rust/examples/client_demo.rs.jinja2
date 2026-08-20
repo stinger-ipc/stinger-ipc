@@ -149,15 +149,7 @@ async fn main() {
             {%else%}
             sleep(Duration::from_secs(2)).await;
             { // Scoping for '{{prop_name}}' property.  Demonstrates creating a request to set the value.
-                {%if prop.arg_list|length == 1 -%}
-                let {{prop_name|snake_case}}_new_value = {%if prop.arg_list[0].arg_type.name.lower() == "primitive" and prop.arg_list[0].type.name.lower() == "string"%}format!("new-value-{}", i).into(){%else%}{{prop.arg_list[0].get_random_example_value(lang="rust")}}{%endif%};
-                {%else-%}
-                let {{prop_name|snake_case}}_new_value = {{prop.rust.type}} {
-                    {%-for arg in prop.arg_list %}
-                        {{arg.name|snake_case}}: {%if arg.arg_type.name.lower() == "primitive" and arg.type.name.lower() == "string"%}format!("new-value-{}", i).into(){%else%}{{arg.get_random_example_value(lang="rust")}}{%endif%},
-                    {%-endfor%}
-                };
-                {%endif-%}
+                let {{prop_name|snake_case}}_new_value = {%if prop.value.arg_type.name.lower() == "primitive" and prop.value.type.name.lower() == "string"%}format!("new-value-{}", i).into(){%else%}{{prop.value.get_random_example_value(lang="rust")}}{%endif%};
                 let mut write_lock = {{prop_name|snake_case}}_handle.write().await;
                 *write_lock = {{prop_name|snake_case}}_new_value;
                 println!("<~~ Sending request to update property '{{prop_name}}' to new value: {:?}", *write_lock);

@@ -42,14 +42,14 @@ properties:
 
   home_address:
     documentation: The current home address.
-    values:
-      - name: address
-        type: struct
-        structName: address
+    value:
+      name: address
+      type: struct
+      structName: address
 
   favorite_country:
     documentation: The user's favorite country.
-    values:
-      - name: country
-        type: enum
-        enumName: country
+    value:
+      name: country
+      type: enum
+      enumName: country

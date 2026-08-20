@@ -385,13 +385,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
                                 .unwrap_or(0);
                             match deserialized_property {
                                 Ok(prop_value) => {
-                                    {%if prop.arg_list|length > 1%}
-                                    service_in_discovery.property_builder.{{prop_name|snake_case}}(prop_value);
-                                    {%elif prop.arg_list[0].optional%}
-                                    service_in_discovery.property_builder.{{prop_name|snake_case}}(prop_value.{{prop.arg_list[0].name|snake_case}});
-                                    {%else%}
-                                    service_in_discovery.property_builder.{{prop_name|snake_case}}(prop_value.{{prop.arg_list[0].name|snake_case}});
-                                    {%endif%}
+                                    service_in_discovery.property_builder.{{prop_name|snake_case}}(prop_value.{{prop.value.name|snake_case}});
                                     service_in_discovery.property_builder.{{prop_name|snake_case}}_version(version);
                                     service_in_discovery.property_count += 1;
                                 },
@@ -585,9 +579,7 @@ mod tests {
             let property_{{prop_name|snake_case}}_topic = strfmt("{{config.topics.property_values}}", &topic_param_map).unwrap();
 
             // Just to get this test working faster, we're copy-pasting test code from payloads.rs to generate example property payloads. 
-            let json_str = r#"{ {%-for arg in prop.arg_list%}
-                "{{arg.name}}": {{arg.get_random_example_value(lang="json")}} {%if not loop.last%},{%endif%}
-            {%endfor-%} }"#;
+            let json_str = r#"{ "{{prop.value.name}}": {{prop.value.get_random_example_value(lang="json")}} }"#;
             let payload: {{prop_name | UpperCamelCase}}Property = serde_json::from_str(json_str).unwrap();
 
             let property_msg = property_value(&property_{{prop_name|snake_case}}_topic, &payload, {{loop.index}}).unwrap();

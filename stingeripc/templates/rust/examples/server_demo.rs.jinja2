@@ -107,15 +107,7 @@ async fn main() {
     {%if stinger.properties|length > 0%}
     let initial_property_values = {{stinger.name | UpperCamelCase}}InitialPropertyValues {
         {%for prop_name, prop in stinger.properties.items()%}
-        {{prop_name | snake_case}}: 
-        {%-if prop.arg_list|length == 1%}{{prop.arg_list[0].get_random_example_value(lang="rust")}},
-        {%-else-%}
-        {{prop.rust.type}} {
-            {%-for arg in prop.arg_list %}
-                {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
-            {%-endfor%}
-        },
-        {%-endif%}
+        {{prop_name | snake_case}}: {{prop.value.get_random_example_value(lang="rust")}},
         {{prop_name | snake_case}}_version: 1,
         {%endfor%}
     };
@@ -175,16 +167,7 @@ async fn main() {
             {
                 println!("Demo code periodic change of property '{{prop_name}}'");
                 let mut {{prop_name|snake_case}}_guard = {{prop_name | snake_case}}_property.write().await;
-                {%-if prop.arg_list | length == 1 %}
-                *{{prop_name|snake_case}}_guard = {{prop.arg_list[0].get_random_example_value(lang="rust", seed=3)}};
-                {%else%}
-                let new_{{prop_name|snake_case}}_value = {{prop.rust.type}} {
-                    {%-for arg in prop.arg_list %}
-                        {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust", seed=4)}},
-                    {%-endfor%}
-                };
-                *{{prop_name|snake_case}}_guard = new_{{prop_name|snake_case}}_value;
-                {%endif-%}
+                *{{prop_name|snake_case}}_guard = {{prop.value.get_random_example_value(lang="rust", seed=3)}};
                 // Value is changed and published when {{prop_name|snake_case}}_guard goes out of scope and is dropped.
             }
             {%endfor%}{# property updates -#}

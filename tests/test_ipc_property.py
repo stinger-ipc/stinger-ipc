@@ -27,33 +27,31 @@ class TestIpcPropertyCreateManually(unittest.TestCase):
     def test_read_only_defaults_to_false(self):
         self.assertFalse(self.prop.read_only)
 
-    def test_initial_arg_list_empty(self):
-        self.assertEqual(len(self.prop.arg_list), 0)
+    def test_value_before_set_raises(self):
+        with self.assertRaises(InvalidStingerStructure):
+            self.prop.value
 
     def test_documentation_defaults_to_none(self):
         self.assertIsNone(self.prop.documentation)
 
-    def test_add_arg(self):
+    def test_set_value(self):
         arg = Arg.new_arg_from_stinger({"name": "x", "type": "integer"})
-        self.prop.add_arg(arg)
+        self.prop.set_value(arg)
+        self.assertIs(self.prop.value, arg)
         self.assertEqual(len(self.prop.arg_list), 1)
         self.assertEqual(self.prop.arg_list[0].name, "x")
 
-    def test_add_duplicate_arg_raises(self):
-        arg = Arg.new_arg_from_stinger({"name": "x", "type": "integer"})
-        self.prop.add_arg(arg)
+    def test_set_second_value_raises(self):
+        self.prop.set_value(Arg.new_arg_from_stinger({"name": "x", "type": "integer"}))
         with self.assertRaises(InvalidStingerStructure):
-            self.prop.add_arg(arg)
+            self.prop.set_value(Arg.new_arg_from_stinger({"name": "y", "type": "integer"}))
 
 
 class TestIpcPropertyFromStinger(unittest.TestCase):
     def setUp(self):
         self.spec = _make_stinger_spec()
         self.prop_spec = {
-            "values": [
-                {"name": "temperature", "type": "float"},
-                {"name": "unit", "type": "string"},
-            ],
+            "value": {"name": "temperature", "type": "float"},
         }
         self.prop = IpcProperty.new_property_from_stinger("sensor", self.prop_spec, self.spec)
 
@@ -66,11 +64,11 @@ class TestIpcPropertyFromStinger(unittest.TestCase):
     def test_read_only_defaults_to_false(self):
         self.assertFalse(self.prop.read_only)
 
-    def test_arg_list_populated(self):
-        self.assertEqual(len(self.prop.arg_list), 2)
+    def test_value_populated(self):
+        self.assertEqual(self.prop.value.name, "temperature")
 
-    def test_arg_names(self):
-        self.assertEqual([a.name for a in self.prop.arg_list], ["temperature", "unit"])
+    def test_arg_list_holds_the_single_value(self):
+        self.assertEqual([a.name for a in self.prop.arg_list], ["temperature"])
 
     def test_documentation_defaults_to_none(self):
         self.assertIsNone(self.prop.documentation)
@@ -81,7 +79,7 @@ class TestIpcPropertyFromStingerWithVersion(unittest.TestCase):
         self.spec = _make_stinger_spec()
         self.prop = IpcProperty.new_property_from_stinger(
             "sensor",
-            {"values": [{"name": "x", "type": "integer"}], "version": "2.0.0"},
+            {"value": {"name": "x", "type": "integer"}, "version": "2.0.0"},
             self.spec,
         )
 
@@ -94,7 +92,7 @@ class TestIpcPropertyFromStingerReadOnly(unittest.TestCase):
         spec = _make_stinger_spec()
         prop = IpcProperty.new_property_from_stinger(
             "constant",
-            {"values": [{"name": "x", "type": "integer"}], "readOnly": True},
+            {"value": {"name": "x", "type": "integer"}, "readOnly": True},
             spec,
         )
         self.assertTrue(prop.read_only)
@@ -104,7 +102,7 @@ class TestIpcPropertyFromStingerReadOnly(unittest.TestCase):
         with self.assertRaises(InvalidStingerStructure):
             IpcProperty.new_property_from_stinger(
                 "bad",
-                {"values": [{"name": "x", "type": "integer"}], "readOnly": "yes"},
+                {"value": {"name": "x", "type": "integer"}, "readOnly": "yes"},
                 spec,
             )
 
@@ -114,34 +112,39 @@ class TestIpcPropertyFromStingerWithDocumentation(unittest.TestCase):
         spec = _make_stinger_spec()
         prop = IpcProperty.new_property_from_stinger(
             "sensor",
-            {"documentation": "Current sensor reading.", "values": [{"name": "x", "type": "integer"}]},
+            {"documentation": "Current sensor reading.", "value": {"name": "x", "type": "integer"}},
             spec,
         )
         self.assertEqual(prop.documentation, "Current sensor reading.")
 
     def test_documentation_defaults_to_none(self):
         spec = _make_stinger_spec()
-        prop = IpcProperty.new_property_from_stinger("sensor", {"values": [{"name": "x", "type": "integer"}]}, spec)
+        prop = IpcProperty.new_property_from_stinger("sensor", {"value": {"name": "x", "type": "integer"}}, spec)
         self.assertIsNone(prop.documentation)
 
 
 class TestIpcPropertyFromStingerValidationErrors(unittest.TestCase):
-    def test_missing_values_raises(self):
+    def test_missing_value_raises(self):
         spec = _make_stinger_spec()
         with self.assertRaises(InvalidStingerStructure):
             IpcProperty.new_property_from_stinger("bad", {}, spec)
 
-    def test_values_not_a_list_raises(self):
+    def test_legacy_values_list_raises(self):
         spec = _make_stinger_spec()
         with self.assertRaises(InvalidStingerStructure):
-            IpcProperty.new_property_from_stinger("bad", {"values": "not_a_list"}, spec)
+            IpcProperty.new_property_from_stinger("bad", {"values": [{"name": "x", "type": "integer"}]}, spec)
 
-    def test_arg_missing_name_raises(self):
+    def test_value_not_a_mapping_raises(self):
         spec = _make_stinger_spec()
         with self.assertRaises(InvalidStingerStructure):
-            IpcProperty.new_property_from_stinger("bad", {"values": [{"type": "integer"}]}, spec)
+            IpcProperty.new_property_from_stinger("bad", {"value": "not_a_mapping"}, spec)
 
-    def test_arg_missing_type_raises(self):
+    def test_value_missing_name_raises(self):
         spec = _make_stinger_spec()
         with self.assertRaises(InvalidStingerStructure):
-            IpcProperty.new_property_from_stinger("bad", {"values": [{"name": "x"}]}, spec)
+            IpcProperty.new_property_from_stinger("bad", {"value": {"type": "integer"}}, spec)
+
+    def test_value_missing_type_raises(self):
+        spec = _make_stinger_spec()
+        with self.assertRaises(InvalidStingerStructure):
+            IpcProperty.new_property_from_stinger("bad", {"value": {"name": "x"}}, spec)

@@ -25,15 +25,7 @@ def request_loop(client: {{stinger.python.client_class_name}}):
         sleep(5)
         {%endfor%}{# for each method #}
         {%for prop_name, prop in stinger.properties_rw.items()%}
-        {%if prop.arg_list|length > 1%}
-        client.{{prop_name|snake_case}} = {{prop_name|UpperCamelCase}}Property(
-            {%-for arg in prop.arg_list%}
-            {{arg.name|snake_case}}={{arg.get_random_example_value()}},
-            {%-endfor%}
-        )
-        {%else%}
-        client.{{prop_name|snake_case}} = {{prop.arg_list[0].get_random_example_value()}}
-        {%endif%} {# end propertly length cases #}
+        client.{{prop_name|snake_case}} = {{prop.value.get_random_example_value()}}
         {%endfor%} {# for each property #}
         sleep(10)
 {%endif%} {# any methods or properties #}

@@ -65,11 +65,7 @@ struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
 #[derive(Clone)]
 struct {{stinger.name | UpperCamelCase}}Properties {
     {%for prop_name, prop in stinger.properties.items()-%}
-    {%-if prop.arg_list | length > 1%}
     pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.rust.type}}>>,
-    {%-else%}
-    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.arg_list[0].rust.type}}>>,
-    {%endif-%}
     {{prop_name | snake_case}}_version: Arc<AtomicU32>,
     {%-endfor%}
 }
@@ -195,11 +191,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         {%if stinger.properties|length > 0%}
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
             {%-for prop_name, prop in stinger.properties.items()%}
-            {%if prop.arg_list | length > 1 -%}
             {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(initial_property_values.{{prop_name | snake_case}}.clone())),
-            {%-else%}
-            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(initial_property_values.{{prop_name | snake_case}}.clone())),
-            {%-endif-%}
             {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(initial_property_values.{{prop_name | snake_case}}_version)),
             {%-endfor%}
         };
@@ -210,14 +202,10 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         {%-for prop_name, prop in stinger.properties.items()%}
         {
             let topic = strfmt("{{prop.value_topic()}}", &topic_param_map).unwrap();
-            {%if prop.arg_list | length > 1 -%}
-            let msg = message::property_value(&topic, &initial_property_values.{{prop_name | snake_case}}, initial_property_values.{{prop_name | snake_case}}_version).unwrap();
-            {%-else%}
             let payload_obj = {{prop_name | UpperCamelCase}}Property {
-                {{prop.arg_list[0].name | snake_case}}: initial_property_values.{{prop_name | snake_case}},
+                {{prop.value.name | snake_case}}: initial_property_values.{{prop_name | snake_case}},
             };
             let msg = message::property_value(&topic, &payload_obj, initial_property_values.{{prop_name | snake_case}}_version).unwrap();
-            {%endif%}
             let _ = connection.publish_nowait(msg);
         }
         {%endfor%}
@@ -430,12 +418,12 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_{{prop_name|snake_case}}_value(
             mut publisher: C, 
-            property_pointer: Arc<RwLockWatch<{%if prop.arg_list|length > 0 %}{{prop.rust.type}}{%else%}{{prop.arg_list[0].rust.type}}{%endif%}>>,  // Arc to the property value
+            property_pointer: Arc<RwLockWatch<{{prop.rust.type}}>>,  // Arc to the property value
             version_pointer: Arc<AtomicU32>,
             msg: MqttMessage
     )
     {
-        // This is JSON encoding of an object with {{prop.arg_list | length}} field{%if prop.arg_list | length > 1 %}s{%endif%}.
+        // This is JSON encoding of an object with a single '{{prop.value.name}}' field.
         let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
         
         let mut return_code = MethodReturnCode::Success(None);
@@ -489,15 +477,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                         } else {
                         let request_lock = property_pointer.write_request();
                         let mut write_request = request_lock.write().await;
-                        {%if prop.arg_list | length == 1 %}
-                        // Single value property.  Use the {{prop.arg_list[0].name | snake_case}} field of the struct.
-                        *write_request = new_property_structure.{{prop.arg_list[0].name | snake_case}}.clone();
+                        // Use the '{{prop.value.name | snake_case}}' field of the deserialized payload struct.
+                        *write_request = new_property_structure.{{prop.value.name | snake_case}}.clone();
                         debug!("Updating '{{prop_name}}' property to new value: {:?}", *write_request);
-                        {%else%}
-                        // Multi-value property set as a struct.
-                        *write_request = new_property_structure.clone();
-                        debug!("Updating '{{prop_name}}' property to new structure: {:?}", *write_request);
-                        {%endif%}
 
                         // Committing the write request blocks until the message has been published to MQTT.
                         match write_request.commit(std::time::Duration::from_secs(2)).await {
@@ -526,22 +508,14 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             let corr_data = msg.correlation_data.unwrap_or_default();
             let payload_obj = {
                 if let Some(new_value) = opt_new_value {
-                    {%if prop.arg_list | length == 1 %}
                     {{prop_name | UpperCamelCase}}Property { 
-                        {{prop.arg_list[0].name}}: new_value
+                        {{prop.value.name}}: new_value
                     }
-                    {%else%}
-                    new_value
-                    {%endif%}
                 } else {
                     let prop_lock = property_pointer.read().await;
-                    {%if prop.arg_list | length == 1 %}
                     {{prop_name | UpperCamelCase}}Property { 
-                        {{prop.arg_list[0].name}}: (*prop_lock).clone(),
+                        {{prop.value.name}}: (*prop_lock).clone(),
                     }
-                    {%else%}
-                    (*prop_lock).clone()
-                    {%endif%}
                 }
             };
             match message::property_update_response(&resp_topic, &payload_obj, corr_data, return_code) {
@@ -562,15 +536,15 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     /// Watch for changes to the `{{prop_name}}` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     /// Use `.borrow_and_update()` on the Receiver to get the current value and reset the watcher.
-    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{% else %}{{prop.arg_list[0].rust.type}}{% endif %}> {
+    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{{prop.rust.type}}> {
         self.properties.{{prop_name | snake_case}}.subscribe()
     }
 
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{% else %}{{prop.arg_list[0].rust.type}}{% endif %}> {
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> WriteRequestLockWatch<{{prop.rust.type}}> {
         self.properties.{{prop_name | snake_case}}.write_request()
     }
 
-    /// Sets the value{%if prop.arg_list|length > 1%}s{%endif%} of the {{prop_name}} property.
+    /// Sets the value of the {{prop_name}} property.
     pub async fn set_{{prop_name}}(&mut self, value: {{prop.rust.type}}) -> SentMessageFuture {
         let write_request_lock = self.get_{{prop_name | snake_case}}_handle();
         Box::pin(async move { 
@@ -629,13 +603,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                 tokio::spawn(async move {
                     while let Some((request, opt_responder)) = rx_for_{{prop_name|snake_case}}_prop.recv().await {
                         debug!("Received request to update '{{prop_name}}' property value through local watch channel. Current version is {}, request is: {:?}", {{prop_name|snake_case}}_prop_version.load(Ordering::SeqCst), request);
-                        {%if prop.arg_list | length == 1 %}
                         let payload_obj = {{prop_name | UpperCamelCase}}Property { 
-                            {{prop.arg_list[0].name}}: request.clone(),
+                            {{prop.value.name}}: request.clone(),
                         };
-                        {%else%}
-                        let payload_obj = request.clone();
-                        {%endif%}
                         if let Err(err) = payload_obj.validate_schema() {
                             error!("Value for '{{prop_name}}' property failed schema validation, not publishing: {}", err);
                             if let Some(responder) = opt_responder {
@@ -837,15 +807,7 @@ mod tests {
         {%if stinger.properties|length > 0%}
         let initial_property_values = {{stinger.name | UpperCamelCase}}InitialPropertyValues {
             {%for prop_name, prop in stinger.properties.items()%}
-            {{prop_name | snake_case}}: 
-            {%-if prop.arg_list|length == 1%}{{prop.arg_list[0].get_random_example_value(lang="rust")}},
-            {%-else-%}
-            {{prop.rust.type}} {
-                {%-for arg in prop.arg_list %}
-                    {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
-                {%-endfor%}
-            },
-            {%-endif%}
+            {{prop_name | snake_case}}: {{prop.value.get_random_example_value(lang="rust")}},
             {{prop_name | snake_case}}_version: 1,
             {%endfor%}
         };
@@ -895,9 +857,7 @@ mod tests {
             let correlation_uuid = uuid::Uuid::new_v4();
 
             // Just to get this test working faster, we're copy-pasting test code from payloads.rs to generate example property payloads. 
-            let json_str = r#"{ {%-for arg in prop.arg_list%}
-                "{{arg.name}}": {{arg.get_random_example_value(lang="json")}} {%if not loop.last%},{%endif%}
-            {%endfor-%} }"#;
+            let json_str = r#"{ "{{prop.value.name}}": {{prop.value.get_random_example_value(lang="json")}} }"#;
             let payload: {{prop_name | UpperCamelCase}}Property = serde_json::from_str(json_str).unwrap();
 
             let update_req = property_update_request(&property_{{prop_name|snake_case}}_topic, &payload, initial_property_values.{{prop_name | snake_case}}_version, correlation_uuid, property_{{prop_name|snake_case}}_response_topic).unwrap();

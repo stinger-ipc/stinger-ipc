@@ -25,12 +25,7 @@ def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
 def initial_property_values():
     initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
         {%-for prop_name, prop in stinger.properties.items()%}
-        {{prop_name|snake_case}}={%if prop.arg_list|length > 1%}{{prop_name|UpperCamelCase}}Property(
-            {%-for arg in prop.arg_list%}
-            {{arg.name|snake_case}}={{arg.get_random_example_value()}},
-            {%-endfor%}
-        ){%else%}{{prop.arg_list[0].get_random_example_value()}}
-        {%-endif%},
+        {{prop_name|snake_case}}={{prop.value.get_random_example_value()}},
         {%-endfor%}
     )
     return initial_property_values
@@ -82,7 +77,7 @@ class TestClientProperties:
         """Test that client properties are initialized correctly."""
         {%for prop_name, prop in stinger.properties.items()%}
         assert hasattr(client, '{{prop_name|snake_case}}'), "Client missing property '{{prop_name|snake_case}}'"
-        {%-if prop.arg_list|length > 1 or not prop.arg_list[0].optional%}
+        {%-if not prop.value.optional%}
         assert client.{{prop_name|snake_case}} is not None, "Property '{{prop_name|snake_case}}' not initialized properly"
         {%-endif%}
         assert client.{{prop_name|snake_case}} == initial_property_values.{{prop_name|snake_case}}, "Property '{{prop_name|snake_case}}' value does not match expected value"
@@ -93,16 +88,7 @@ class TestClientProperties:
     def test_{{prop_name|snake_case}}_setter(self, mock_connection, client):
         mock_connection.clear_published_messages()
 
-        new_{{prop_name | snake_case}}_value =
-            {%-if prop.arg_list | length > 1%}
-            {{-prop.python.class_name}}(
-                {%for arg in prop.arg_list%}
-                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
-                {%endfor%}
-            )
-            {%-else-%}
-            {{prop.arg_list[0].get_random_example_value()}}
-            {%endif%}
+        new_{{prop_name | snake_case}}_value = {{prop.value.get_random_example_value()}}
         client.{{prop_name|snake_case}} = new_{{prop_name | snake_case}}_value
 
         published_msg = mock_connection.published_messages[-1]
@@ -110,12 +96,8 @@ class TestClientProperties:
         assert published_msg.retain is False, "Property '{{prop_name|snake_case}}' setter published message with incorrect retain flag"
         assert published_msg.content_type == "application/json", "Property '{{prop_name|snake_case}}' setter published message with incorrect content type"
         published_msg_json_obj = json.loads(published_msg.payload)
-        {%-if prop.arg_list | length > 1%}
-        assert json.loads(new_{{prop_name | snake_case}}_value.model_dump_json(by_alias=True)) == published_msg_json_obj, "Property '{{prop_name|snake_case}}' setter did not publish the correct JSON payload"
-        {%else%}
-        new_{{prop_name | snake_case}}_obj = {{-prop.python.model_class_name}}({{prop.arg_list[0].name|snake_case}}=new_{{prop_name | snake_case}}_value)
+        new_{{prop_name | snake_case}}_obj = {{-prop.python.model_class_name}}({{prop.value.name|snake_case}}=new_{{prop_name | snake_case}}_value)
         assert json.loads(new_{{prop_name | snake_case}}_obj.model_dump_json(by_alias=True)) == published_msg_json_obj, "Property '{{prop_name|snake_case}}' setter did not publish the correct JSON payload"
-        {%endif%}
     {%endif%}{# don't generate for readonly#}
     {%-endfor%}{# each property#}
 {%endif%}

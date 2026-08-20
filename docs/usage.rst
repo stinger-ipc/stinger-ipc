@@ -37,6 +37,13 @@ A very brief example of an interface description is:
          name: sum
          type: integer
 
+   properties:
+
+     favorite_number:
+       value:
+         name: number
+         type: integer
+
 The ``stinger-ipc`` command provides two main subcommands for working with
 Stinger interface files.
 

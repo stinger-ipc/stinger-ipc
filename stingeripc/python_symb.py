@@ -349,10 +349,7 @@ class PythonPropertySymbols(PythonSymbols):
     @property
     def class_name(self) -> str:
         """Python class name for the property's value type."""
-        if len(self._prop._arg_list) == 1:
-            return self._prop._arg_list[0].python.class_name
-        else:
-            return f"{stringmanip.upper_camel_case(self._prop.name)}Property"
+        return self._prop.value.python.class_name
 
     @property
     def type(self) -> str:
@@ -367,25 +364,17 @@ class PythonPropertySymbols(PythonSymbols):
     @property
     def annotation(self) -> str:
         """Python type annotation for the property's value."""
-        if len(self._prop._arg_list) == 1:
-            return self._prop._arg_list[0].python.annotation
-        else:
-            return f"{stringmanip.upper_camel_case(self._prop.name)}Property"
+        return self._prop.value.python.annotation
 
     @property
     def getter_value_annotation(self) -> str:
         """Python type annotation used by the property getter."""
-        if len(self._prop._arg_list) == 1:
-            return self._prop._arg_list[0].python.annotation
-        return self.model_class_name
+        return self.annotation
 
     @property
     def setter_value_annotation(self) -> str:
         """Python type annotation used by the property setter."""
-        if len(self._prop._arg_list) == 1:
-            return f"Union[{self._prop._arg_list[0].python.annotation}, {self.model_class_name}]"
-        else:
-            return self.model_class_name
+        return f"Union[{self.annotation}, {self.model_class_name}]"
 
     @property
     def model_class_name(self) -> str:

@@ -34,6 +34,14 @@ def _method_return_args(method_spec: Dict[str, Any]) -> list[Dict[str, Any]]:
     return []
 
 
+def _property_value_args(prop_spec: Dict[str, Any]) -> list[Dict[str, Any]]:
+    """Return the property's single ``value`` as a list of arg specs (empty, or one entry)."""
+    value = prop_spec.get("value")
+    if isinstance(value, dict):
+        return [value]
+    return []
+
+
 def _collect_struct_dependencies(struct_spec: Dict[str, Any], used_enums: Set[str], used_structs: Set[str]) -> None:
     """Recursively collect enums and structs used by a struct's members."""
     members = struct_spec.get("members", [])
@@ -101,9 +109,8 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
             consumers = prop_spec.get("consumers", [])
             if consumer_name in consumers:
                 filtered_properties[prop_name] = prop_spec
-                # Collect types used in values
-                values = prop_spec.get("values", [])
-                _collect_used_types(values, used_enums, used_structs)
+                # Collect types used in the value
+                _collect_used_types(_property_value_args(prop_spec), used_enums, used_structs)
         filtered_dict["properties"] = filtered_properties
 
     # Filter methods
@@ -246,9 +253,8 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
             if prop_spec.get("consumers") and not prop_spec.get("version"):
                 raise ValueError(f"Property '{prop_name}' specifies consumers but does not specify a version")
 
-            # Check values arguments
-            values = prop_spec.get("values", [])
-            check_args(values, prop_name, "Property")
+            # Check the value
+            check_args(_property_value_args(prop_spec), prop_name, "Property")
 
     # Check methods
     if "methods" in interface:

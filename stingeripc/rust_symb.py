@@ -281,13 +281,9 @@ class RustPropertySymbols(RustSymbols):
     @property
     def local_type(self) -> str:
         """Unqualified Rust type name for the property's value."""
-        if len(self._prop._arg_list) == 1:
-            return self._prop._arg_list[0].rust.local_type
-        return f"{stringmanip.upper_camel_case(self._prop.name)}Property"
+        return self._prop.value.rust.local_type
 
     @property
     def type(self) -> str:
         """Rust type name for the property's value."""
-        if len(self._prop._arg_list) == 1:
-            return self._prop._arg_list[0].rust.type
-        return self.local_type
+        return self._prop.value.rust.type

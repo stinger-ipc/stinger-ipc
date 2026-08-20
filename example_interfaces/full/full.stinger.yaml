@@ -9,6 +9,17 @@ interface:
 
 structures:
 
+  favorite_foods:
+    documentation: Structure representing someone's favorite foods.
+    members:
+      - name: drink
+        type: string
+      - name: slices_of_pizza
+        type: integer
+      - name: breakfast
+        type: string
+        optional: true
+
   lunch:
     documentation: Structure representing a lunch order.
     members:
@@ -127,54 +138,43 @@ properties:
   favorite_number:
     documentation: |
       My favorite number
-    values:
-      - name: number
-        type: integer
+    value:
+      name: number
+      type: integer
 
   favorite_foods:
-    values:
-      - name: drink
-        type: string
-      - name: slices_of_pizza
-        type: integer
-      - name: breakfast
-        type: string
-        optional: true
+    value:
+      name: foods
+      type: struct
+      structName: favorite_foods
 
   lunch_menu:
-    values:
-      - name: monday
+    value:
+      name: menu
+      type: array
+      itemType:
         type: struct
         structName: lunch
-      - name: tuesday
-        type: struct
-        structName: lunch
-        description: Tuesday's lunch menu.
+      description: The lunch served on each day of the week, starting with Monday.
     readOnly: true
   
   family_name:
-    documentation: This is to test a property with a single string value.
-    values:
-      - name: family_name
-        type: string
+    documentation: This is to test a property with a string value.
+    value:
+      name: family_name
+      type: string
 
   last_breakfast_time:
-    documentation: This is to test a property with a single datetime value.
-    values:
-      - name: timestamp
-        type: datetime
+    documentation: This is to test a property with a datetime value.
+    value:
+      name: timestamp
+      type: datetime
 
   last_birthdays:
-    documentation: This is to test a property with multiple datetime values.
-    values:
-      - name: mom
+    documentation: This is to test a property with an array of datetime values.
+    value:
+      name: birthdays
+      type: array
+      itemType:
         type: datetime
-      - name: dad
-        type: datetime
-      - name: sister
-        type: datetime
-        optional: true
-      - name: brothers_age
-        type: integer
-        optional: true
-        description: The age of my brothers in years.
+      description: The most recent birthday of each family member.

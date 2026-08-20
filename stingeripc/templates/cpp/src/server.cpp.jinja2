@@ -379,7 +379,7 @@ void {{stinger.cpp.server_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
     // TODO: Check _last{{prop_name | UpperCamelCase}}PropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    // Deserialize {{prop.arg_list|length}} values into struct.
+    // Deserialize the '{{prop.value.name}}' value into a struct.
     {{prop_name|UpperCamelCase}}Property tempValue = {{prop_name|UpperCamelCase}}Property::FromRapidJsonObject(doc);
     if (!tempValue.ValidateSchema()) {
         _broker->Log(LOG_WARNING, "Received '{{prop_name}}' property update failed schema validation; ignoring.");

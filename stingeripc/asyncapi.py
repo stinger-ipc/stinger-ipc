@@ -149,14 +149,21 @@ def _struct_to_schema(ist: InterfaceStruct) -> Schema:
 def _arg_schema(arg: Arg) -> dict:
     if arg.arg_type == ArgType.ENUM:
         assert isinstance(arg, ArgEnum)
+        if arg.optional:
+            return {"anyOf": [{"$ref": f"#/components/schemas/{arg.enum.name}"}, {"type": "null"}]}
         return {"$ref": f"#/components/schemas/{arg.enum.name}"}
     elif arg.arg_type == ArgType.STRUCT:
         assert isinstance(arg, ArgStruct)
+        if arg.optional:
+            return {"anyOf": [{"$ref": f"#/components/schemas/{arg.interface_struct.name}"}, {"type": "null"}]}
         return {"$ref": f"#/components/schemas/{arg.interface_struct.name}"}
     elif arg.arg_type == ArgType.PRIMITIVE:
         assert isinstance(arg, ArgPrimitive)
         return _primitive_type_to_schema(arg)
-    return {"type": "string"}
+    elif arg.arg_type == ArgType.ARRAY:
+        assert isinstance(arg, ArgArray)
+        return _array_to_schema(arg)
+    return _other_arg_to_schema(arg)
 
 
 def _parameters_for_address(address: str, config: StingerConfig) -> models.channel.Parameters:
@@ -174,6 +181,11 @@ def _parameters_for_address(address: str, config: StingerConfig) -> models.chann
 def _topic_template_to_regex(topic_template: str) -> str:
     """Convert a topic template into a regex where placeholders map to [^\}]+."""
     return re.sub(r"\{[^{}]+\}", r"[^\\}]+", topic_template)
+
+
+def arg_to_schema(arg: Arg) -> Schema:
+    """Wrap a single arg in the one-field JSON object that carries it on the wire."""
+    return arg_list_to_schema([arg])
 
 
 def arg_list_to_schema(arg_list: list[Arg]) -> Schema:
@@ -379,7 +391,8 @@ class AsyncApiPropertyHelper:
         return f"{self.prop.name}_update_response"
 
     def payload_schema(self) -> Schema:
-        return arg_list_to_schema(self.prop.arg_list)
+        """The property payload: a JSON object with one field, the property's value."""
+        return arg_to_schema(self.prop.value)
 
     def _payload_ref(self) -> Schema:
         return Schema(**{"$ref": f"#/components/schemas/{self.prop.name}_property"})

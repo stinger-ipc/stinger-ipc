@@ -475,16 +475,18 @@ $defs:
       documentation:
         $ref: "#/$defs/documentation"
       description: false
-      values:
-        type: array
-        uniqueItems: true
-        items:
-          $ref: "#/$defs/arg"
-        minItems: 1
-      payload: false # Use 'values' instead
-      arguments: false # Use 'values' instead
-      params: false # Use 'values' instead
-      value: false # Use 'values' instead
+      value:
+        description: >
+          The single value held by the property.  Use a struct to hold several
+          fields together.
+        allOf:
+          - $ref: "#/$defs/arg"
+      values: false # Use 'value' instead
+      payload: false # Use 'value' instead
+      arguments: false # Use 'value' instead
+      params: false # Use 'value' instead
+      args: false # Use 'value' instead
+      arg: false # Use 'value' instead
       readOnly:
         type: boolean
         default: false
@@ -502,14 +504,14 @@ $defs:
       version:
         $ref: "#/$defs/versionField"
     required:
-      - values
+      - value
     dependencies:
       consumers:
         - version
       version:
         properties:
-          values:
-            $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
+          value:
+            $ref: "#/$defs/enumOrStructArgMustHaveVersion"
 
   method:
     type: object

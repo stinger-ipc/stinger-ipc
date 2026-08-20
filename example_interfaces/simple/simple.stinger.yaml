@@ -54,10 +54,10 @@ methods:
 properties:
 
   school:
-    values:
-      - name: name
-        type: string
-        description: The name of the school where the person studies.
+    value:
+      name: name
+      type: string
+      description: The name of the school where the person studies.
 
 constants:
 

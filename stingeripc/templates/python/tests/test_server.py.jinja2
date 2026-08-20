@@ -45,12 +45,7 @@ class {{stinger.name|UpperCamelCase}}ServerSetup:
     def get_initial_property_values(self) -> {{stinger.name|UpperCamelCase}}InitialPropertyValues:
         initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
             {%-for prop_name, prop in stinger.properties.items()%}
-            {{prop_name|snake_case}}={%if prop.arg_list|length > 1%}{{prop_name|UpperCamelCase}}Property(
-                {%-for arg in prop.arg_list%}
-                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
-                {%-endfor%}
-            ){%else%}{{prop.arg_list[0].get_random_example_value()}}
-            {%-endif%},
+            {{prop_name|snake_case}}={{prop.value.get_random_example_value()}},
             {%-endfor%}
         )
         return initial_property_values
@@ -146,7 +141,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
     def test_server_{{prop_name|snake_case}}_property_initialization(self, server, initial_property_values):
         """Test that the {{prop_name|snake_case}} server property is initialized correctly."""
         assert hasattr(server, '{{prop_name|snake_case}}'), "Server missing property '{{prop_name|snake_case}}'"
-        {%if prop.arg_list|length > 1 or not prop.arg_list[0].optional-%}
+        {%if not prop.value.optional-%}
         assert server.{{prop_name|snake_case}} is not None, "Property '{{prop_name|snake_case}}' not initialized properly"
         {%endif-%}
         assert server.{{prop_name|snake_case}} == initial_property_values.{{prop_name|snake_case}}, "Property '{{prop_name|snake_case}}' value does not match expected value"
@@ -165,11 +160,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
         
         # Verify payload
-        {%-if prop.arg_list | length == 1%}
-        expected_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=initial_property_values.{{prop_name|snake_case}})
-        {%-else%}
-        expected_obj = initial_property_values.{{prop_name|snake_case}}
-        {%-endif%}
+        expected_obj = {{prop_name|UpperCamelCase}}Property({{prop.value.name|snake_case}}=initial_property_values.{{prop_name|snake_case}})
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode('utf-8'))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
@@ -180,16 +171,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         mock_connection.clear_published_messages()
         server._force_property_publish = True # Backdoor way to force server to publish property updates even if the value hasn't changed.  For unittests only.
 
-        new_{{prop_name | snake_case}}_value =
-            {%-if prop.arg_list | length > 1%}
-            {{-prop.python.class_name}}(
-                {%for arg in prop.arg_list%}
-                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
-                {%endfor%}
-            )
-            {%-else-%}
-            {{prop.arg_list[0].get_random_example_value()}}
-            {%endif%}
+        new_{{prop_name | snake_case}}_value = {{prop.value.get_random_example_value()}}
         server.{{prop_name|snake_case}} = new_{{prop_name | snake_case}}_value
 
         assert len(mock_connection.published_messages) == 1, f"No message was published for property '{{prop_name|snake_case}}'.  Messages: {mock_connection.published_messages}"
@@ -199,12 +181,8 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         assert published_msg.retain is True, "Property '{{prop_name|snake_case}}' setter published message with incorrect retain flag"
         assert published_msg.content_type == "application/json", "Property '{{prop_name|snake_case}}' setter published message with incorrect content type"
         published_msg_json_obj = json.loads(published_msg.payload)
-        {%-if prop.arg_list | length > 1%}
-        assert json.loads(new_{{prop_name | snake_case}}_value.model_dump_json(by_alias=True)) == published_msg_json_obj, "Property '{{prop_name|snake_case}}' setter did not publish the correct JSON payload"
-        {%else%}
-        new_{{prop_name | snake_case}}_obj = {{-prop.python.model_class_name}}({{prop.arg_list[0].name|snake_case}}=new_{{prop_name | snake_case}}_value)
+        new_{{prop_name | snake_case}}_obj = {{-prop.python.model_class_name}}({{prop.value.name|snake_case}}=new_{{prop_name | snake_case}}_value)
         assert json.loads(new_{{prop_name | snake_case}}_obj.model_dump_json(by_alias=True)) == published_msg_json_obj, "Property '{{prop_name|snake_case}}' setter did not publish the correct JSON payload"
-        {%endif%}
     {%endif%}{#read/write property#}
 
     {%if not config.properties.stinger_owned_values -%}

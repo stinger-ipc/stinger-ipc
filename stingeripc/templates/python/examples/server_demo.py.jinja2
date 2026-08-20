@@ -20,16 +20,7 @@ from {{stinger.python.module_name}}.interface_types import *
 class {{stinger.name|UpperCamelCase}}PropertyOwnership:
     def __init__(self):
         {%-for prop_name, prop in stinger.properties.items()%}
-        self._{{prop_name|snake_case}} = {##}
-            {%-if prop.arg_list|length > 1 -%}
-            {{prop_name|UpperCamelCase}}Property(
-                {%-for arg in prop.arg_list%}
-                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
-                {%-endfor%}
-            )
-            {%-else -%} {# else single value property #}
-            {{-prop.arg_list[0].get_random_example_value()}}
-            {%-endif %} {# end property value cases #}
+        self._{{prop_name|snake_case}} = {{prop.value.get_random_example_value()}}
         {%-endfor%} {# end property foreach #}
 
     {%-for prop_name, prop in stinger.properties.items()%}
@@ -83,16 +74,7 @@ if __name__ == '__main__':
     {% if config.properties.stinger_owned_values %}
     initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
         {%- for prop_name, prop in stinger.properties.items() %}
-        {{prop_name | snake_case}}=
-            {%-if prop.arg_list | length > 1%}
-            {{prop.python.class_name}}(
-                {%for arg in prop.arg_list%}
-                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
-                {%endfor%}
-            ),
-            {%-else-%}
-            {{prop.arg_list[0].get_random_example_value()}},
-            {%endif%}
+        {{prop_name | snake_case}}={{prop.value.get_random_example_value()}},
         {{prop_name | snake_case}}_version={{loop.index}},
         {%endfor%}{# end foreach property#}
     )
@@ -125,9 +107,9 @@ if __name__ == '__main__':
     {%for prop_name, prop in stinger.properties.items()%}
     {%if not prop.read_only %}
     @server.on_{{prop_name | snake_case}}_updated
-    async def on_{{prop_name | snake_case}}_update({%for arg in prop.arg_list %}{{arg.name}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    async def on_{{prop_name | snake_case}}_update({{prop.value.name}}: {{prop.value.python.annotation}}):
         """ Example callback for when the '{{prop_name}}' property is updated. """
-        print(f"~~> Received update for '{{prop_name}}' property: {%for arg in prop.arg_list %}{ {{arg.name}}= }{%if not loop.last%}, {%endif%}{%endfor%}")
+        print(f"~~> Received update for '{{prop_name}}' property: { {{prop.value.name}}= }")
     {%endif%}
     {%endfor%}
     {%endif%}

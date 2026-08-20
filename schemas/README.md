@@ -21,6 +21,7 @@ The current version is `0.3.0`, and it is the only version the generator accepts
 Changes in `0.3.0`:
 
 * A method returns at most one value.  The `returnValues` list was replaced by a single `returnValue` argument (see [Methods](#methods)).
+* A property holds exactly one value.  The `values` list was replaced by a single `value` argument (see [Properties](#properties)).
 
 Changes in `0.2.0`:
 
@@ -28,12 +29,12 @@ Changes in `0.2.0`:
 
 ## Arguments
 
-Structures, signals, methods, properties all take a list of arguments, though they might call the list different things:
+Structures, signals, and methods take a list of arguments, though they might call the list different things.  Methods and properties instead name a single argument:
 
 Structures: `members`
 Signals: `payload`
 Methods: Have a list of `arguments` and a single `returnValue`
-Properties: `values`
+Properties: a single `value`
 
 All arguments have required `name` and `type` fields.  See below for valid `type` values.
 
@@ -236,7 +237,7 @@ methods:
 
 ## Properties
 
-Properties are values (or a set of values) held by the server.   They are re-published when the value changes.  Properties have a list of 1+ values.  The entire list of values is treated as a singular property; updating only one value of a property is not supported.
+Properties are values held by the server.  They are re-published when the value changes.  A property has exactly one `value`, which is a single argument.  Use a `struct` or an `array` value to hold several fields together.
 
 ```plantuml
 @startuml
@@ -259,15 +260,11 @@ Client <<- Server : Property_Updated(value)
 properties:
   position:
     documentation: The current position.
-    values:
-      - name: position
-        type: struct
-        structName: Point
-        description: The current position.
-      - name: color
-        type: enum
-        enumName: Color
-        description: The color associated with the position.
+    value:
+      name: position
+      type: struct
+      structName: Point
+      description: The current position.
 ```
 
 ### Read Only Properties
@@ -278,10 +275,10 @@ A property can be marked as "read only" which means that clients may not request
 properties:
   network_state:
     documentation: Describes if the network is connected
-    values:
-      - name: state
-        type: enum
-        enumName: networkStates
+    value:
+      name: state
+      type: enum
+      enumName: networkStates
     readOnly: true
 ```
 

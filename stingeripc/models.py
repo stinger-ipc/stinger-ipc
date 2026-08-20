@@ -146,7 +146,7 @@ class InterfaceMethod(InterfaceComponent):
 
 
 class InterfaceProperty(InterfaceComponent):
-    values: List[AnyArg] = Field(..., description="A list of values for the property")
+    value: AnyArg = Field(..., description="The single value held by the property")
     readOnly: Optional[bool] = Field(False, description="Whether the property is read-only")
 
 

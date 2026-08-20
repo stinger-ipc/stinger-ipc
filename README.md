@@ -37,6 +37,13 @@ methods:
       name: sum
       type: integer
 
+properties:
+
+  favorite_number:
+    value:
+      name: number
+      type: integer
+
 ```
 
 ## Command Line Interface

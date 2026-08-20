@@ -176,7 +176,7 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{method_name | UpperCamelCase}}Re
 {%endfor%}
 
 {%for prop_name, prop in stinger.properties.items()%}
-{%-if prop.arg_list | selectattr('value_schema') | list | length == 0 %}
+{%-if not prop.value.value_schema %}
 // Setting `{{prop_name}}` on the server should publish its value to the broker.
 TEST_F({{stinger.cpp.server_class_name}}Test, {{prop_name | UpperCamelCase}}SetterPublishesValue)
 {

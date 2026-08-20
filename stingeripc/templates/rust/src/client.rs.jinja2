@@ -75,11 +75,7 @@ struct {{stinger.name | UpperCamelCase }}SignalChannels {
 #[derive(Clone)]
 struct {{stinger.name | UpperCamelCase}}Properties {
     {%for prop_name, prop in stinger.properties.items()-%}
-    {%-if prop.arg_list | length > 1%}
     pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.rust.type}}>>,
-    {%-else%}
-    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.arg_list[0].rust.type}}>>,
-    {%endif-%}
     pub {{prop_name | snake_case}}_version: Arc<AtomicU32>,
     {%endfor%}
 }
@@ -181,11 +177,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         {%if stinger.properties|length > 0%}
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
         {%-for prop_name, prop in stinger.properties.items()%}
-            {%if prop.arg_list | length > 1 -%}
             {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(discovery_info.properties.{{prop_name | snake_case}})),
-            {%-else%}
-            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(discovery_info.properties.{{prop_name | snake_case}})),
-            {%-endif-%}
             {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(discovery_info.properties.{{prop_name | snake_case}}_version)),
         {%-endfor%}
         };
@@ -268,9 +260,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     /// this logic per property.
     ///
     /// * `T` is the property's value type (what the application sets).
-    /// * `P` is the serializable wire payload for the property.  For single-value
-    ///   properties `P` is the generated `*Property` struct; for multi-value
-    ///   properties `P` and `T` are the same struct.
+    /// * `P` is the serializable wire payload for the property: the generated
+    ///   `*Property` struct, which wraps `T` in its single named field.
     #[allow(clippy::too_many_arguments)]
     async fn run_property_update_request_handler<T, P, MakePayload, ExtractValue>(
         property_name: &'static str,
@@ -405,14 +396,14 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     {%for prop_name, prop in stinger.properties.items()%}
     /// Watch for changes to the `{{prop_name}}` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{% else %}{{prop.arg_list[0].rust.type}}{% endif %}> {
+    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{{prop.rust.type}}> {
         self.properties.{{prop_name | snake_case}}.subscribe()
     }
     {%if not prop.read_only %}
     /// Sets the `{{prop_name}}` property and returns a oneshot that receives the acknowledgment back from the server.
     pub async fn set_{{prop_name | snake_case}}(
             &mut self, 
-            value: {%if prop.arg_list | length > 1 %}{{prop.rust.type}}{% else %}{{prop.arg_list[0].rust.type}}{% endif %}
+            value: {{prop.rust.type}}
     ) -> MethodReturnCode {
         let write_request_lock = self.get_{{prop_name | snake_case}}_handle();
         let mut writer = write_request_lock.write().await;
@@ -425,11 +416,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         }   
     }
 
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{%else%}{{prop.arg_list[0].rust.type}}{% endif %}>> {
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<WriteRequestLockWatch<{{prop.rust.type}}>> {
         self.properties.{{prop_name | snake_case}}.write_request().into()
     }
     {%else%}
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<ReadOnlyLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{%else%}{{prop.arg_list[0].rust.type}}{%endif%}>> {
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<ReadOnlyLockWatch<{{prop.rust.type}}>> {
         self.properties.{{prop_name | snake_case}}.read_only().into()
     }
     {%endif%}
@@ -483,13 +474,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                 update_topic,
                 response_topic,
                 props.{{prop_name | snake_case}}_version.clone(),
-                {%-if prop.arg_list | length == 1 %}
-                |value| {{prop_name | UpperCamelCase}}Property { {{prop.arg_list[0].name}}: value },
-                |resp_obj: {{prop_name | UpperCamelCase}}Property| resp_obj.{{prop.arg_list[0].name|snake_case}},
-                {%-else%}
-                |value| value,
-                |resp_obj| resp_obj,
-                {%-endif%}
+                |value| {{prop_name | UpperCamelCase}}Property { {{prop.value.name}}: value },
+                |resp_obj: {{prop_name | UpperCamelCase}}Property| resp_obj.{{prop.value.name|snake_case}},
             ));
         }
         {% endfor %}
@@ -623,13 +609,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                                         }
                                         // Get a write-guard and set the local copy of the property value.
                                         let mut guard = props_copy.{{prop_name | snake_case}}.write().await;
-                                        {%if prop.arg_list | length == 1 %}
-                                        debug!("{{prop_name | CONST_CASE}} property value updated: {:?}", pl.{{prop.arg_list[0].name}});
-                                        *guard = pl.{{prop.arg_list[0].name}}.clone();
-                                        {%else%}
-                                        debug!("{{prop_name | CONST_CASE}} property value updated: {:?}", pl);
-                                        *guard = pl.clone();
-                                        {%endif%}
+                                        debug!("{{prop_name | CONST_CASE}} property value updated: {:?}", pl.{{prop.value.name}});
+                                        *guard = pl.{{prop.value.name}}.clone();
                                         // Hold onto the write-guard while we set the local copy of the property version.
                                         if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                                             if let Ok(version_num) = version_str.parse::<u32>() {
@@ -686,15 +667,7 @@ mod tests {
         {%if stinger.properties|length > 0%}
         let initial_property_values = {{stinger.name | UpperCamelCase}}InitialPropertyValues {
             {%for prop_name, prop in stinger.properties.items()%}
-            {{prop_name | snake_case}}: 
-            {%-if prop.arg_list|length == 1%}{{prop.arg_list[0].get_random_example_value(lang="rust")}},
-            {%-else-%}
-            {{prop.rust.type}} {
-                {%-for arg in prop.arg_list %}
-                    {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
-                {%-endfor%}
-            },
-            {%-endif%}
+            {{prop_name | snake_case}}: {{prop.value.get_random_example_value(lang="rust")}},
             {{prop_name | snake_case}}_version: 1,
             {%endfor%}
         };
@@ -745,15 +718,7 @@ mod tests {
         {%if not prop.read_only %}
         { // Test setting the {{prop_name}} property if it is not read-only.
             // Create an example value to set the property to.
-            {%if prop.arg_list|length == 1 -%}
-            let {{prop_name|snake_case}}_new_value = {{prop.arg_list[0].get_random_example_value(lang="rust")}};
-            {%else-%}
-            let {{prop_name|snake_case}}_new_value = {{prop.rust.type}} {
-                {%-for arg in prop.arg_list %}
-                    {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
-                {%-endfor%}
-            };
-            {%endif-%}
+            let {{prop_name|snake_case}}_new_value = {{prop.value.get_random_example_value(lang="rust")}};
 
             mock_mqtt.clear_published_messages();
             let {{prop_name|snake_case}}_handle = client.get_{{prop_name | snake_case}}_handle();
