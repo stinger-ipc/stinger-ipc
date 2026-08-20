@@ -24,21 +24,9 @@ dev = [
 ]
 {%endif%}
 
-{%if not config.python.python37%}
-[project.optional-dependencies]
-tui = [
-    "textual[syntax]~=8.1",
-    "typer~=0.23",]
-{%endif%}
-
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
-
-{%if not config.python.python37%}
-[project.scripts]
-{{stinger.name|hyphen_case}}-tui = "{{stinger.python.package_directory}}.tui.app:cli"
-{%endif%}
 
 [tool.setuptools.package-data]
 packages = ["{{stinger.python.package_directory}}"]
@@ -46,15 +34,5 @@ packages = ["{{stinger.python.package_directory}}"]
 [stinger-ipc]
 generator_version = "{{generator.version}}"
 
-[tool.mypy]
-[[tool.mypy.overrides]]
-module = [
-    "textual.*",
-]
-ignore_missing_imports = true
-
 [tool.pytest.ini_options]
 pythonpath = ["src"]
-
-[project.entry-points."stinger_python_utils.mcp_plugins"]
-{{stinger.name|snake_case}} = "{{stinger.python.package_directory}}.mcp:{{stinger.name|UpperCamelCase}}MCPPlugin"
