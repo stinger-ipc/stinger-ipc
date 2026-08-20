@@ -11,14 +11,14 @@ namespace {{stinger.name|snake_case}} {
 {{istruct_name | UpperCamelCase }} {{istruct_name | UpperCamelCase }}::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
     {{istruct_name | UpperCamelCase }} {{istruct_name | lowerCamelCase }};
-    {{deser.deserialize(istruct_name|lowerCamelCase, istruct.members, 'jsonObj') | indent(4)}}
+    {{deser.deserialize(istruct_name|lowerCamelCase, istruct.values, 'jsonObj') | indent(4)}}
 
     return {{istruct_name | lowerCamelCase}};
 };
 
 void {{istruct_name | UpperCamelCase }}::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
-    {%for arg in istruct.members%}
+    {%for arg in istruct.values%}
     {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
     {%- endfor %}
 }

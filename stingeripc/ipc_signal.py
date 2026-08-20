@@ -15,8 +15,8 @@ class IpcSignal(InterfaceComponent):
     """A signal published by the interface.
 
     Signals are fire-and-forget messages: a server emits them and any client
-    subscribed to the signal's topic receives the payload.  A signal carries an
-    ordered list of arguments (its payload) and may declare a ``version``.
+    subscribed to the signal's topic receives its values.  A signal carries an
+    ordered list of arguments (its values) and may declare a ``version``.
     """
 
     def __init__(self, name: str, root: StingerSpec):
@@ -26,7 +26,7 @@ class IpcSignal(InterfaceComponent):
         self._version: Optional[str] = None
 
     def add_arg(self, arg: Arg) -> IpcSignal:
-        """Append an argument to the signal's payload and return self.
+        """Append an argument to the signal's values and return self.
 
         Duplicate argument names are rejected.
         """
@@ -42,7 +42,7 @@ class IpcSignal(InterfaceComponent):
 
     @property
     def arg_list(self) -> list[Arg]:
-        """The ordered list of arguments that make up the signal's payload."""
+        """The ordered list of arguments that make up the signal's values."""
         return self._arg_list
 
     def topic(self, **kwargs) -> str:
@@ -64,12 +64,12 @@ class IpcSignal(InterfaceComponent):
     ) -> IpcSignal:
         """Alternative constructor from a Stinger signal structure."""
         signal = cls(name, stinger_spec)
-        if "payload" not in signal_spec:
-            raise InvalidStingerStructure("Signal specification must have 'payload'")
-        if not isinstance(signal_spec["payload"], list):
-            raise InvalidStingerStructure(f"Payload must be a list.  It is '{type(signal_spec['payload'])}' ")
+        if "values" not in signal_spec:
+            raise InvalidStingerStructure("Signal specification must have 'values'")
+        if not isinstance(signal_spec["values"], list):
+            raise InvalidStingerStructure(f"Values must be a list.  It is '{type(signal_spec['values'])}' ")
 
-        for arg_spec in signal_spec["payload"]:
+        for arg_spec in signal_spec["values"]:
             if "name" not in arg_spec or "type" not in arg_spec:
                 raise InvalidStingerStructure("Arg must have name and type.")
             new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)

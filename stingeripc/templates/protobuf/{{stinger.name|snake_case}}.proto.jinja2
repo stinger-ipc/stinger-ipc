@@ -49,7 +49,7 @@ enum {{i_enum.pb.message_name}} { {%- if not i_enum.has_value(0) %}
 {%endfor%}
 {%for struct_name, struct in stinger.structs.items() %}
 message {{struct.pb.message_name}} {
-    {%-for arg in struct.members%}
+    {%-for arg in struct.values%}
     {{- field(arg, loop.index) | indent(4) }}
     {%-endfor%}
 }

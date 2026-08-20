@@ -3,7 +3,7 @@ structures:
   lunch:
     documentation: Structure representing a lunch order.
     version: 1.2.3
-    members:
+    values:
       - name: drink
         type: boolean
         description: Whether or not lunch comes with a drink

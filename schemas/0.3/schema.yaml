@@ -116,8 +116,9 @@ properties:
         additionalProperties: false
       - type: object
         properties:
-          members:
+          values:
             $ref: "#/$defs/payload"
+          members: false # Use 'values' instead
           documentation:
             $ref: "#/$defs/documentation"
           description: false
@@ -127,11 +128,11 @@ properties:
               description: >
                 A semantic version that can be used to determine data consistency in this specification.
         required:
-          - members
+          - values
         dependencies:
           version:
             properties:
-              members:
+              values:
                 $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
 
   structs: false # Use 'structures' instead
@@ -444,12 +445,12 @@ $defs:
       documentation:
         $ref: "#/$defs/documentation"
       description: false
-      payload:
+      values:
         $ref: "#/$defs/payload"
-      arguments: false # Use 'payload' instead
-      args: false # Use 'payload' instead
-      params: false # Use 'payload' instead
-      values: false # Use 'payload' instead
+      payload: false # Use 'values' instead
+      arguments: false # Use 'values' instead
+      args: false # Use 'values' instead
+      params: false # Use 'values' instead
       consumers:
         type: array
         items:
@@ -466,7 +467,7 @@ $defs:
         - version
       version:
         properties:
-          payload:
+          values:
             $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
 
   property:

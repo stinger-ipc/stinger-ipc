@@ -65,8 +65,8 @@ class {{ie_name | UpperCamelCase }}(IntEnum):
 {%-for istruct_name, istruct in stinger.structs.items() %}
 class {{istruct_name | UpperCamelCase }}(BaseModel):
     """ Interface struct `{{istruct_name}}`. """
-    {{payloads.field_list(istruct.members)|indent(4)}}
-    {{payloads.validate_schema_method(istruct.members)|indent(4)}}
+    {{payloads.field_list(istruct.values)|indent(4)}}
+    {{payloads.validate_schema_method(istruct.values)|indent(4)}}
 {%endfor%}
 
 # There are {{stinger.signals|length}} signal definitions

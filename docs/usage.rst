@@ -21,7 +21,7 @@ A very brief example of an interface description is:
    signals:
 
      foo:
-       payload:
+       values:
          - name: message
            type: string
 

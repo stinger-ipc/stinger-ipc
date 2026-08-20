@@ -772,7 +772,7 @@ mod tests {
             println!("Handling {{method_name}}");
             {%-if method.return_value_type == 'struct'%}
             let rv = {{method.return_value.rust.temp_type}} {
-                {%for arg in method.return_value.members-%}
+                {%for arg in method.return_value.values-%}
                 {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
                 {%endfor%}
             };

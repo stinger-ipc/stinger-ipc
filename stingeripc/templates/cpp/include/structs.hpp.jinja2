@@ -26,7 +26,7 @@ namespace {{stinger.name|snake_case}} {
 struct {{istruct_name | UpperCamelCase }} {
     static {{istruct_name | UpperCamelCase }} FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    {%-for value in istruct.members %}
+    {%-for value in istruct.values %}
     {{value.cpp.temp_type}} {{value.name|lowerCamelCase}};
     {%-endfor%}
 };

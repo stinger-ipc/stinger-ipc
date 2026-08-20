@@ -8,7 +8,7 @@ interface:
 signals:
   
   anotherSignal:
-    payload:
+    values:
       - name: one 
         type: float
       - name: two 
@@ -18,26 +18,26 @@ signals:
 
   bark:
     documentation: Emitted when a dog barks.
-    payload:
+    values:
       - name: word
         type: string
 
   maybe_number:
-    documentation: A signal with optionally no payload.
-    payload:
+    documentation: A signal with optionally no values.
+    values:
       - name: number
         type: integer
         optional: true
   
   maybe_name:
-    documentation: A signal with optionally no payload.
-    payload:
+    documentation: A signal with optionally no values.
+    values:
       - name: name
         type: string
         optional: true
 
   now:
     documentation: The current date and time.
-    payload:
+    values:
       - name: timestamp
         type: datetime

@@ -104,9 +104,9 @@ def main(yaml_file: str):
     for signal_name, current_signal in current_data['signals'].items():
         # Check if the signal existed in the previous version
         previous_signal = previous_data['signals'].get(signal_name, dict())
-        cur_payload = current_signal.get('payload', dict())
-        prev_payload = previous_signal.get('payload', dict())
-        result, comment = compare_payloads(cur_payload, prev_payload)
+        cur_values = current_signal.get('values', dict())
+        prev_values = previous_signal.get('values', dict())
+        result, comment = compare_payloads(cur_values, prev_values)
         if result:
             logger.info("Signal %s OK: %s", signal_name, comment)
         else:

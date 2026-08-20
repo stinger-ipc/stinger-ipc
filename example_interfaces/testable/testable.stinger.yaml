@@ -24,7 +24,7 @@ enums:
 structures:
 
   entry:
-    members:
+    values:
       - name: key
         type: integer
         description: An identifier.
@@ -36,7 +36,7 @@ structures:
     $ref: "extra.yaml#/structures/lunch"
 
   AllTypes:
-    members:
+    values:
       - name: the_bool
         type: boolean
       - name: the_int
@@ -186,18 +186,18 @@ signals:
 
   empty:
     documentation: A signal with no parameters.
-    payload: []
+    values: []
 
   singleInt:
     documentation: A signal with a single integer parameter.
-    payload:
+    values:
       - name: value
         type: integer
         description: The integer value.
   
   jsonSchemaValidatedInt:
     documentation: A signal with a single integer parameter that is validated against a JSON schema.
-    payload:
+    values:
       - name: value
         type: integer
         description: The integer value.
@@ -207,7 +207,7 @@ signals:
 
   singleOptionalInt:
     documentation: A signal with a single optional integer parameter.
-    payload:
+    values:
       - name: value
         type: integer
         optional: true
@@ -215,7 +215,7 @@ signals:
 
   threeIntegers:
     documentation: A signal with three integer parameters, the third is optional.
-    payload:
+    values:
       - name: first
         type: integer
         description: The first integer value.
@@ -229,14 +229,14 @@ signals:
 
   singleString:
     documentation: A signal with a single string parameter.
-    payload:
+    values:
       - name: value
         type: string
         description: The string value.
   
   jsonSchemaValidatedString:
     documentation: A signal with a single string parameter that is validated against a JSON schema.
-    payload:
+    values:
       - name: value
         type: string
         description: The string value.
@@ -246,7 +246,7 @@ signals:
 
   singleOptionalString:
     documentation: A signal with a single optional string parameter.
-    payload:
+    values:
       - name: value
         type: string
         optional: true
@@ -254,7 +254,7 @@ signals:
   
   threeStrings:
     documentation: A signal with three string parameters, the third is optional.
-    payload:
+    values:
       - name: first
         type: string
         description: The first string value.
@@ -268,7 +268,7 @@ signals:
 
   singleEnum:
     documentation: A signal with a single enum parameter.
-    payload:
+    values:
       - name: value
         type: enum
         enumName: Numbers
@@ -278,7 +278,7 @@ signals:
 
   singleOptionalEnum:
     documentation: A signal with a single optional enum parameter.
-    payload:
+    values:
       - name: value
         type: enum
         enumName: Numbers
@@ -287,7 +287,7 @@ signals:
 
   threeEnums:
     documentation: A signal with three enum parameters, the third is optional.
-    payload:
+    values:
       - name: first
         type: enum
         enumName: Numbers
@@ -304,7 +304,7 @@ signals:
   
   singleStruct:
     documentation: A signal with a single struct parameter.
-    payload:
+    values:
       - name: value
         type: struct
         structName: AllTypes
@@ -312,7 +312,7 @@ signals:
   
   singleOptionalStruct:
     documentation: A signal with a single optional struct parameter.
-    payload:
+    values:
       - name: value
         type: struct
         structName: AllTypes
@@ -321,7 +321,7 @@ signals:
 
   threeStructs:
     documentation: A signal with three struct parameters, the third is optional.
-    payload:
+    values:
       - name: first
         type: struct
         structName: AllTypes
@@ -338,14 +338,14 @@ signals:
   
   singleDateTime:
     documentation: A signal with a single date and time parameter.
-    payload:
+    values:
       - name: value
         type: datetime
         description: The date and time value.
   
   singleOptionalDatetime:
     documentation: A signal with a single optional date and time parameter.
-    payload:
+    values:
       - name: value
         type: datetime
         optional: true
@@ -353,7 +353,7 @@ signals:
   
   threeDateTimes:
     documentation: A signal with three date and time parameters, the third is optional.
-    payload:
+    values:
       - name: first
         type: datetime
         description: The first date and time value.
@@ -367,14 +367,14 @@ signals:
   
   singleDuration:
     documentation: A signal with a single duration parameter.
-    payload:
+    values:
       - name: value
         type: duration
         description: The duration value.
 
   singleOptionalDuration:
     documentation: A signal with a single optional duration parameter.
-    payload:
+    values:
       - name: value
         type: duration
         optional: true
@@ -382,7 +382,7 @@ signals:
 
   threeDurations:
     documentation: A signal with three duration parameters, the third is optional.
-    payload:
+    values:
       - name: first
         type: duration
         description: The first duration value.
@@ -396,7 +396,7 @@ signals:
   
   singleBinary:
     documentation: A signal with a single binary parameter.
-    payload:
+    values:
       - name: value
         type: binary
         contentType: application/octet-stream
@@ -404,7 +404,7 @@ signals:
 
   singleOptionalBinary:
     documentation: A signal with a single optional binary parameter.
-    payload:
+    values:
       - name: value
         type: binary
         contentType: application/octet-stream
@@ -413,7 +413,7 @@ signals:
 
   threeBinaries:
     documentation: A signal with three binary parameters, the third is optional.
-    payload:
+    values:
       - name: first
         type: binary
         contentType: application/octet-stream
@@ -430,7 +430,7 @@ signals:
 
   singleArrayOfIntegers:
     documentation: A signal with an array of integers.
-    payload:
+    values:
       - name: values
         type: array
         itemType:
@@ -439,7 +439,7 @@ signals:
 
   singleOptionalArrayOfStrings:
     documentation: A signal with an optional array of strings.
-    payload:
+    values:
       - name: values
         type: array
         itemType:
@@ -448,7 +448,7 @@ signals:
         description: The array of strings.
 
   arrayOfEveryType:
-    payload:
+    values:
       - name: first_of_integers
         type: array
         itemType:

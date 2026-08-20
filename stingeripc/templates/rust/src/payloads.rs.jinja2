@@ -229,9 +229,9 @@ impl {{struct_name}} {
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct {{struct_name | UpperCamelCase}} {
-    {{ arg_members(struct.members) }}
+    {{ arg_members(struct.values) }}
 }
-{{ validate_schema_impl(struct_name | UpperCamelCase, struct.members) }}
+{{ validate_schema_impl(struct_name | UpperCamelCase, struct.values) }}
 {%endfor%}
 
 // ---- METHODS ----

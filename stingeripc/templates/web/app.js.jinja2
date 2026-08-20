@@ -79,7 +79,7 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
             "subscription_id": null,
             "name": "{{prop_name}}",
             "received": { {%for arg in prop.arg_list %}
-                "{{arg.name}}": {%if arg.arg_type|lower == "argtype.struct"%}{ {%for member in arg.members %}
+                "{{arg.name}}": {%if arg.arg_type|lower == "argtype.struct"%}{ {%for member in arg.values %}
                     "{{member.name}}": null{%if not loop.last%},{%endif%}
                 {%endfor%} }{%else%}null{%endif%}{%if not loop.last%},{%endif%}
             {%endfor%} },

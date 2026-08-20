@@ -10,7 +10,7 @@ interface:
 structures:
 
   person:
-    members:
+    values:
       - name: name
         type: string
         description: The name of the person
@@ -30,7 +30,7 @@ enums:
 signals:
   
   person_entered:
-    payload:
+    values:
       - name: person
         type: struct
         structName: person

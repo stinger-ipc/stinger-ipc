@@ -123,7 +123,7 @@ AnyArg = IntegerArg | NumberArg | StringArg | BooleanArg | DateTimeArg | Duratio
 class InterfaceStruct(BaseModel):
     name: str = Field(..., description="The name of the struct field")
     documentation: Optional[str] = Field(None, description="A brief description of the struct field")
-    members: List[AnyArg] = Field(..., description="A list of members in the struct")
+    values: List[AnyArg] = Field(..., description="A list of values in the struct")
 
 
 class ComponentExport(BaseModel):
@@ -137,7 +137,7 @@ class InterfaceComponent(BaseModel):
 
 
 class InterfaceSignal(InterfaceComponent):
-    payload: List[AnyArg] = Field([], description="A list of arguments for the signal")
+    values: List[AnyArg] = Field([], description="A list of arguments for the signal")
 
 
 class InterfaceMethod(InterfaceComponent):

@@ -32,7 +32,7 @@ class TestSpecCreateFromStructure(unittest.TestCase):
             },
             "signals": {
                 "mySignal": {
-                    "payload": [
+                    "values": [
                         {"name": "one", "type": "integer"},
                         {"name": "two", "type": "string"},
                     ]

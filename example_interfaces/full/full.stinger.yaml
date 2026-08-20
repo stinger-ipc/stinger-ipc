@@ -11,7 +11,7 @@ structures:
 
   favorite_foods:
     documentation: Structure representing someone's favorite foods.
-    members:
+    values:
       - name: drink
         type: string
       - name: slices_of_pizza
@@ -22,7 +22,7 @@ structures:
 
   lunch:
     documentation: Structure representing a lunch order.
-    members:
+    values:
       - name: drink
         type: boolean
         description: Whether or not lunch comes with a drink
@@ -78,7 +78,7 @@ enums:
 signals:
   
   todayIs:
-    payload:
+    values:
       - name: dayOfMonth
         type: integer
         description: The calendar day of the month.
@@ -87,7 +87,7 @@ signals:
         enumName: dayOfTheWeek
 
   randomWord:
-    payload:
+    values:
       - name: word
         type: string
       - name: time

@@ -667,7 +667,7 @@ class ClientScreen(Screen):
                         {%elif prop.value.arg_type.name == 'BINARY'%}
                         values.append(f"{value!r}")  # binary
                         {%elif prop.value.arg_type.name == 'STRUCT'%}
-                        {%for mem in prop.value.struct.members %}
+                        {%for mem in prop.value.struct.values %}
                         values.append(f"[bold]{{prop.value.name}}.{{mem.name}}[/bold]: {% if mem.arg_type.name == 'ARRAY'%}{ ", ".join([ str(v) for v in value.{{mem.name|snake_case}}]) }{%else%}{ value.{{mem.name|snake_case}}{%if mem.arg_type.name == 'BINARY'%}!r{%endif%} }{% endif %}") # struct member {{mem.arg_type.name}}
                         {%endfor%}
                         {%elif prop.value.arg_type.name == 'ARRAY'%}

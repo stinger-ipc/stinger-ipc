@@ -47,7 +47,7 @@ class TestIpcSignalFromStinger(unittest.TestCase):
     def setUp(self):
         self.spec = _make_stinger_spec()
         self.signal_spec = {
-            "payload": [
+            "values": [
                 {"name": "temperature", "type": "float"},
                 {"name": "humidity", "type": "float"},
             ],
@@ -75,7 +75,7 @@ class TestIpcSignalFromStingerWithVersion(unittest.TestCase):
         self.spec = _make_stinger_spec()
         self.signal = IpcSignal.new_signal_from_stinger(
             "reading",
-            {"payload": [{"name": "x", "type": "integer"}], "version": "1.0.0"},
+            {"values": [{"name": "x", "type": "integer"}], "version": "1.0.0"},
             self.spec,
         )
 
@@ -88,34 +88,34 @@ class TestIpcSignalFromStingerWithDocumentation(unittest.TestCase):
         spec = _make_stinger_spec()
         signal = IpcSignal.new_signal_from_stinger(
             "reading",
-            {"documentation": "A sensor reading.", "payload": [{"name": "x", "type": "integer"}]},
+            {"documentation": "A sensor reading.", "values": [{"name": "x", "type": "integer"}]},
             spec,
         )
         self.assertEqual(signal.documentation, "A sensor reading.")
 
     def test_documentation_defaults_to_none(self):
         spec = _make_stinger_spec()
-        signal = IpcSignal.new_signal_from_stinger("reading", {"payload": [{"name": "x", "type": "integer"}]}, spec)
+        signal = IpcSignal.new_signal_from_stinger("reading", {"values": [{"name": "x", "type": "integer"}]}, spec)
         self.assertIsNone(signal.documentation)
 
 
 class TestIpcSignalFromStingerValidationErrors(unittest.TestCase):
-    def test_missing_payload_raises(self):
+    def test_missing_values_raises(self):
         spec = _make_stinger_spec()
         with self.assertRaises(InvalidStingerStructure):
             IpcSignal.new_signal_from_stinger("bad", {}, spec)
 
-    def test_payload_not_a_list_raises(self):
+    def test_values_not_a_list_raises(self):
         spec = _make_stinger_spec()
         with self.assertRaises(InvalidStingerStructure):
-            IpcSignal.new_signal_from_stinger("bad", {"payload": "not_a_list"}, spec)
+            IpcSignal.new_signal_from_stinger("bad", {"values": "not_a_list"}, spec)
 
     def test_arg_missing_name_raises(self):
         spec = _make_stinger_spec()
         with self.assertRaises(InvalidStingerStructure):
-            IpcSignal.new_signal_from_stinger("bad", {"payload": [{"type": "integer"}]}, spec)
+            IpcSignal.new_signal_from_stinger("bad", {"values": [{"type": "integer"}]}, spec)
 
     def test_arg_missing_type_raises(self):
         spec = _make_stinger_spec()
         with self.assertRaises(InvalidStingerStructure):
-            IpcSignal.new_signal_from_stinger("bad", {"payload": [{"name": "x"}]}, spec)
+            IpcSignal.new_signal_from_stinger("bad", {"values": [{"name": "x"}]}, spec)

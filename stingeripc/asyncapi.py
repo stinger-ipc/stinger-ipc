@@ -112,7 +112,7 @@ def _struct_to_schema(ist: InterfaceStruct) -> Schema:
 
     properties: dict[str, dict] = {}
     required: list[str] = []
-    for member in ist.members:
+    for member in ist.values:
         if member.arg_type == ArgType.ENUM:
             assert isinstance(member, ArgEnum)
             if member.optional:

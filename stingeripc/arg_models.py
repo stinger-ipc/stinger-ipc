@@ -325,18 +325,18 @@ class ArgStruct(Arg):
         return self.interface_struct
 
     @property
-    def members(self) -> list[Arg]:
-        """The members of the referenced struct."""
-        return self.interface_struct.members
+    def values(self) -> list[Arg]:
+        """The values of the referenced struct."""
+        return self.interface_struct.values
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         """Return a random example struct value expressed in the target language."""
         # Build a dict of example values keyed appropriately depending on language.
         example_list: dict[str, str]
         if lang in ["rust", "python"]:
-            example_list = {stringmanip.snake_case(a.name): str(a.get_random_example_value(lang, seed=seed)) for a in self.members}
+            example_list = {stringmanip.snake_case(a.name): str(a.get_random_example_value(lang, seed=seed)) for a in self.values}
         else:
-            example_list = {a.name: str(a.get_random_example_value(lang, seed=seed)) for a in self.members}
+            example_list = {a.name: str(a.get_random_example_value(lang, seed=seed)) for a in self.values}
         if lang == "c++":
             return self.cpp.type + "{" + ", ".join(example_list.values()) + "}"  # type: ignore[attr-defined]
         elif lang == "python":

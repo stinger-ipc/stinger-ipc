@@ -21,7 +21,7 @@ interface:
 signals:
 
   foo:
-    payload:
+    values:
       - name: message
         type: string
 

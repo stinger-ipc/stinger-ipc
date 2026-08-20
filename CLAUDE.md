@@ -11,9 +11,9 @@ against a shared, strongly-typed contract.
 
 1. **Interface definition files** — The project consumes interface definitions written
    as `*.stinger.yaml` files. Each file describes an IPC interface: its signals,
-   methods, properties, and the data types of their arguments. A signal takes a list
-   of payload args and a method a list of `arguments`, while a method's `returnValue`
-   and a property's `value` are each a single arg. An argument may also
+   methods, properties, and the data types of their arguments. A signal and a struct
+   each take a list of `values`, and a method a list of `arguments`, while a method's
+   `returnValue` and a property's `value` are each a single arg. An argument may also
    carry an optional `schema:` block — a JSON Schema that further constrains its value
    (see "Schema validation" below). See [example_interfaces/](example_interfaces/) for
    samples (e.g. [weather.stinger.yaml](example_interfaces/weather/weather.stinger.yaml)).

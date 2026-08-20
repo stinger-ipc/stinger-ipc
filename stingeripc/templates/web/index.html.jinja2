@@ -41,7 +41,7 @@
         {%elif arg.arg_type|lower == "argtype.struct"%}
         <div class="struct-arg">
           {%set new_model_parts = model_parts + [arg.name] %}
-          {{ arglist(arg.members, new_model_parts, read_only) }}
+          {{ arglist(arg.values, new_model_parts, read_only) }}
         </div>
         {%elif arg.arg_type|lower == "argtype.binary"%}
         {%if arg.content_type and arg.content_type.startswith('image/')%}
@@ -57,7 +57,7 @@
         <table class="arglist array-of-struct">
           <thead>
             <tr>
-              {%for member in arg.element.members %}
+              {%for member in arg.element.values %}
               <th class="arg-name">{{ member.name }}</th>
               {%endfor%}
               {%if not read_only%}<th></th>{%endif%}
@@ -65,7 +65,7 @@
           </thead>
           <tbody>
             <tr ng-repeat="(index, item) in {{modelpath}}.{{arg.name}} track by $index" class="argrow">
-              {%for member in arg.element.members %}
+              {%for member in arg.element.values %}
               <td class="arg-value-cell">
                 {%if member.arg_type|lower == "argtype.enum"%}
                 <select {%if read_only%}disabled {%endif%}ng-model="{{modelpath}}.{{arg.name}}[index].{{member.name}}" ng-options="n.id as n.name for n in enums.{{member.enum.name|lowerCamelCase}}"></select>
@@ -82,7 +82,7 @@
           {%if not read_only%}
           <tfoot>
             <tr>
-              <td colspan="{{ arg.element.members|length + 1 }}">
+              <td colspan="{{ arg.element.values|length + 1 }}">
                 <button type="button" class="publish-button" ng-click="{{modelpath}}.{{arg.name}}.push({})">+ Add row</button>
               </td>
             </tr>

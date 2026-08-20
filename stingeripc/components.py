@@ -227,7 +227,7 @@ class StingerSpec:
     def _all_args(self) -> list["Arg"]:
         """Flat list of every argument that appears anywhere in the interface.
 
-        Struct members and array element types are included recursively so that
+        Struct values and array element types are included recursively so that
         callers can reason about the full set of data types actually used.
         """
         top_level: list["Arg"] = []
@@ -238,7 +238,7 @@ class StingerSpec:
         for method in self.methods.values():
             top_level += method.arg_list + method.return_arg_list
         for struct in self.structs.values():
-            top_level += struct.members
+            top_level += struct.values
 
         collected: list["Arg"] = []
         stack = list(top_level)
@@ -248,9 +248,9 @@ class StingerSpec:
             element = getattr(arg, "element", None)
             if element is not None:
                 stack.append(element)
-            members = getattr(arg, "members", None)
-            if members is not None:
-                stack.extend(members)
+            values = getattr(arg, "values", None)
+            if values is not None:
+                stack.extend(values)
         return collected
 
     def _uses_arg_type(self, arg_type: ArgType) -> bool:

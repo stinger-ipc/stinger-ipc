@@ -23,7 +23,7 @@ enums:
 
 structures:
   forecast_for_hour:
-    members:
+    values:
       - name: temperature
         type: float
         description: Forecasted temperature in degrees fahrenheit.
@@ -37,7 +37,7 @@ structures:
       This structure contains the forecast for a single hour.
 
   location:
-    members:
+    values:
       - name: latitude
         type: float
       - name: longitude
@@ -46,7 +46,7 @@ structures:
       This structure contains a geographic location.
 
   current_condition:
-    members:
+    values:
       - name: condition
         type: enum
         enumName: weather_condition
@@ -56,7 +56,7 @@ structures:
       This structure contains the current weather conditions.
 
   forecast_for_day:
-    members:
+    values:
       - name: high_temperature
         type: float
         description: High temperature for the day in degrees fahrenheit.
@@ -79,7 +79,7 @@ signals:
     documentation: |
       Once in a while (at intervals decided by the provider) the current date
       and time will be published.  (Mostly for example purposes).
-    payload:
+    values:
       - name: current_time
         type: string
 

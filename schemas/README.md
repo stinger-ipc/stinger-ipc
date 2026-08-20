@@ -22,6 +22,7 @@ Changes in `0.3.0`:
 
 * A method returns at most one value.  The `returnValues` list was replaced by a single `returnValue` argument (see [Methods](#methods)).
 * A property holds exactly one value.  The `values` list was replaced by a single `value` argument (see [Properties](#properties)).
+* A structure's list of arguments is named `values` (previously `members`), and a signal's list of arguments is named `values` (previously `payload`).
 
 Changes in `0.2.0`:
 
@@ -31,8 +32,8 @@ Changes in `0.2.0`:
 
 Structures, signals, and methods take a list of arguments, though they might call the list different things.  Methods and properties instead name a single argument:
 
-Structures: `members`
-Signals: `payload`
+Structures: `values`
+Signals: `values`
 Methods: Have a list of `arguments` and a single `returnValue`
 Properties: a single `value`
 
@@ -174,7 +175,7 @@ Enum values have a required `name` field.  They can have an optional `descriptio
 structures:
   Point:
     documentation: A 2D point
-    members:
+    values:
       - name: x
         type: float
         description: The x coordinate
@@ -197,7 +198,7 @@ Client <<- Server : Signal(Parameters)
 signals:
   PositionUpdated:
     documentation: Signal emitted when the position is updated
-    payload:
+    values:
       - name: position
         type: struct
         structName: Point
@@ -295,14 +296,14 @@ Signals, methods, properties, enums, and structures can each have an optional `v
 
 Signals, methods, and properties can also have an optional `consumers` field, which is a list of names representing interface consumers allowed to access that component.  If `consumers` is specified, `version` is required.  This can be used to dictate whether the component is to be bridged to another broker, or ACL'ed for a client ID.
 
-Each argument in the payload can be marked with an `index` (a positive integer) for payload ordering in serialization formats like protocol buffers.
+Each argument in the values list can be marked with an `index` (a positive integer) for payload ordering in serialization formats like protocol buffers.
 
 Here is an example of a signal with versioning and consumers:
 
 ```yaml
 signals:
   circle_created:
-    payload:
+    values:
       - name: color
         type: enum
         enumName: color

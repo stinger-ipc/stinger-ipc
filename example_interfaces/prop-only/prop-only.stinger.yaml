@@ -11,7 +11,7 @@ structures:
 
   address:
     documentation: Structure representing a mailing address.
-    members:
+    values:
       - name: street
         type: string
         description: The street address.
