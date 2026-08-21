@@ -222,6 +222,15 @@ $defs:
     description: >
       A semantic version that can be used to determine data consistency in this specification.
 
+  consumersField:
+    type: array
+    items:
+      type: string
+      pattern: "^[a-zA-Z0-9_-]+$"
+    uniqueItems: true
+    description: >
+      A list of names representing interface consumers that are allowed access to this signal, property, or method.
+
   argDescription:
     type: string
     description: "A short description of an argument as a single line."
@@ -233,6 +242,9 @@ $defs:
     uniqueItems: true
     items:
       $ref: "#/$defs/arg"
+
+  protobufPayload:
+    type: string
 
   enumValueDescription:
     type: string
@@ -447,21 +459,22 @@ $defs:
       description: false
       values:
         $ref: "#/$defs/payload"
+      protobuf:
+        $ref: "#/$defs/protobufPayload"
+      protoBuf: false # Use all lowercase 'protobuf'
       payload: false # Use 'values' instead
       arguments: false # Use 'values' instead
       args: false # Use 'values' instead
       params: false # Use 'values' instead
       consumers:
-        type: array
-        items:
-          type: string
-          pattern: "^[a-zA-Z0-9_-]+$"
-        uniqueItems: true
-        description: >
-          A list of names representing interface consumers that are allowed receive this signal.
+        $ref: "#/$defs/consumersField"
       consumer: false # Use 'consumers' instead
       version:
         $ref: "#/$defs/versionField"
+    not:
+      required:
+        - values
+        - protobuf
     dependencies:
       consumers:
         - version
@@ -482,6 +495,9 @@ $defs:
           fields together.
         allOf:
           - $ref: "#/$defs/arg"
+      protobuf:
+        $ref: "#/$defs/protobufPayload"
+      protoBuf: false # Use all lowercase 'protobuf'
       values: false # Use 'value' instead
       payload: false # Use 'value' instead
       arguments: false # Use 'value' instead
@@ -494,18 +510,21 @@ $defs:
         description: >
           If true, this property can only be read by clients, not written to.
       consumers:
-        type: array
-        items:
-          type: string
-          pattern: "^[a-zA-Z0-9_-]+$"
-        uniqueItems: true
-        description: >
-          A list of names representing interface consumers that are allowed access to this property.
+        $ref: "#/$defs/consumersField"
       consumer: false # Use 'consumers' instead
       version:
         $ref: "#/$defs/versionField"
-    required:
-      - value
+    oneOf:
+      - required:
+          - value
+        not:
+          required:
+            - protobuf
+      - required:
+          - protobuf
+        not:
+          required:
+            - value
     dependencies:
       consumers:
         - version
@@ -522,6 +541,9 @@ $defs:
       description: false
       arguments:
         $ref: "#/$defs/payload"
+      protobuf:
+        $ref: "#/$defs/protobufPayload"
+      protoBuf: false # Use all lowercase 'protobuf'
       argument: false # use 'arguments' instead
       params: false # use 'arguments' instead
       payload: false # use 'arguments' instead
@@ -533,6 +555,9 @@ $defs:
           returns nothing; use a struct to return several fields together.
         allOf:
           - $ref: "#/$defs/arg"
+      returnProtobuf:
+        $ref: "#/$defs/protobufPayload"
+      returnProtoBuf: false # use 'returnProtobuf' instead
       returnValues: false # use 'returnValue' instead
       returnArgs: false # use 'returnValue' instead
       returnParams: false # use 'returnValue' instead
@@ -540,18 +565,28 @@ $defs:
       returns: false # use 'returnValue' instead
       returnArg: false # use 'returnValue' instead
       consumers:
-        type: array
-        items:
-          type: string
-          pattern: "^[a-zA-Z0-9_-]+$"
-        uniqueItems: true
-        description: >
-          A list of names representing interface consumers that are allowed to call this method.
+        $ref: "#/$defs/consumersField"
       consumer: false # Use 'consumers' instead
       version:
         $ref: "#/$defs/versionField"
-    required:
-      - arguments
+    oneOf:
+      - required:
+          - arguments
+        not:
+          anyOf:
+            - required:
+                - protobuf
+            - required:
+                - returnProtobuf
+      - required:
+          - protobuf
+          - returnProtobuf
+        not:
+          anyOf:
+            - required:
+                - arguments
+            - required:
+                - returnValue
     dependencies:
       consumers:
         - version
