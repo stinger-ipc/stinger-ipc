@@ -1,11 +1,10 @@
 //! {{stinger.name}} IPC Library
-//! 
+//!
 //! This library provides client, server, and payload functionality for the {{stinger.name}} IPC system.
 //! Use features to control which modules are included:
-//! 
-//! - `client`: Includes client and payloads modules
-//! - `server`: Includes server and payloads modules  
-//! - `payloads`: Includes only payloads module
+//!
+//! - `client`: Includes client functionality
+//! - `server`: Includes server functionality
 
 pub mod interface;
 {%if stinger.properties|length > 0%}
@@ -18,11 +17,9 @@ mod message;
 #[cfg(feature = "client")]
 pub mod discovery;
 
-#[cfg(feature = "payloads")]
 pub mod payloads;
 
 {%- if stinger.uses_binary() or stinger.uses_datetime() or stinger.uses_duration() %}
-#[cfg(feature = "payloads")]
 pub mod serde_formats;
 {%- endif %}
 
@@ -38,7 +35,6 @@ pub mod lwt;
 pub mod constants;
 {% endif %}
 
-// Re-export commonly used types from payloads when available
-#[cfg(feature = "payloads")]
+// Re-export commonly used types from payloads.
 pub use payloads::*;
 

@@ -8,9 +8,10 @@ This library uses feature flags to control which modules are included in your bu
 
 ### Available Features
 
-- **`payloads`**: Includes only the payload types, enums, and structures.
-- **`client`**: Includes client functionality and payloads.
-- **`server`**: Includes server functionality and payloads.
+- **`client`**: Includes client functionality.
+- **`server`**: Includes server functionality.
+
+Payload types, enums, and structures are always included.
 
 ## Usage
 
@@ -21,8 +22,6 @@ Add this to your `Cargo.toml`:
 full_ipc = { path = ".", features = ["client"] }  # For client functionality
 # OR
 full_ipc = { path = ".", features = ["server"] }  # For server functionality
-# OR  
-full_ipc = { path = ".", features = ["payloads"] } # For just payload types
 ```
 
 ## Examples
@@ -47,10 +46,6 @@ cargo build --features client
 
 # Build with server feature
 cargo build --features server
-
-# Build with just payloads (not a common use case to only need the payload structures)
-cargo build --features payloads
-
 ```
 
 ## Library Structure
