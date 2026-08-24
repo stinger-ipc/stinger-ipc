@@ -297,6 +297,7 @@ tasks:
       - cargo check --all-features
       - cargo check --example {{.IFACE_SNAKE}}_client_demo --features client,lwt
       - cargo check --example {{.IFACE_SNAKE}}_server_demo --features server,lwt
+      - cargo doc --all-features --no-deps
     vars:
       IFACE: '{{index .MATCH 0}}'
       IFACE_SNAKE: '{{index .MATCH 0 | replace "-" "_"}}'

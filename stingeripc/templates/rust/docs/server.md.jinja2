@@ -1,0 +1,212 @@
+{%- set server_roles = [] -%}
+{%- if stinger.signals|length > 0 %}{% do server_roles.append("emits signals") %}{% endif -%}
+{%- if stinger.methods|length > 0 %}{% do server_roles.append("answers method calls") %}{% endif -%}
+{%- if stinger.commands|length > 0 %}{% do server_roles.append("receives commands") %}{% endif -%}
+{%- if stinger.properties|length > 0 %}{% do server_roles.append("owns the authoritative property values") %}{% endif -%}
+# Writing a {{stinger.name}} server
+
+A server is the *provider* of the {{stinger.name}} interface. It {{ server_roles[:-1]|join(', ') }}{% if server_roles|length > 2 %},{% endif %}{% if server_roles|length > 1 %} and {% endif %}{{ server_roles[-1] }}.
+Everything it does goes through [`{{stinger.rust.server_struct_name}}`](crate::server::{{stinger.rust.server_struct_name}}), which needs the `server` feature.
+
+More than one server instance may be on a broker at the same time, so each one is given
+an **instance id** at construction. That id goes into every topic the server publishes
+on, and it is what a client picks between during discovery.
+
+## Wiring one up
+
+There are four steps, in this order:
+
+1. Create and start an MQTT client — any type that implements `Mqtt5PubSub`.
+{%- if stinger.methods|length > 0 %}
+2. Implement [`{{stinger.name|UpperCamelCase}}MethodHandlers`](crate::server::{{stinger.name|UpperCamelCase}}MethodHandlers) — one `async fn` per method.
+{%- else %}
+2. Decide on an instance id for this server.
+{%- endif %}
+3. Construct the server{% if stinger.properties|length > 0 %}, handing it the initial value of every property{% endif %}.
+4. Spawn [`run_loop`](crate::server::{{stinger.rust.server_struct_name}}::run_loop) and keep the handle alive.
+
+Until `run_loop` is running, the server is subscribed but not processing: incoming
+messages queue up rather than being dispatched.
+
+```ignore
+use std::sync::Arc;
+use tokio::sync::Mutex;
+{%- if stinger.methods|length > 0 %}
+use {{stinger.rust.package_name}}::server::{{'{'}}{{stinger.name|UpperCamelCase}}MethodHandlers, {{stinger.rust.server_struct_name}}};
+{%- else %}
+use {{stinger.rust.package_name}}::server::{{stinger.rust.server_struct_name}};
+{%- endif %}
+{%- if stinger.properties|length > 0 %}
+use {{stinger.rust.package_name}}::property::{{stinger.name|UpperCamelCase}}InitialPropertyValues;
+{%- endif %}
+
+// 1. Your MQTT client, already connected.
+let connection = /* ... */;
+{% if stinger.methods|length > 0 %}
+// 2. Your implementation of the interface's methods.
+let handlers: Arc<Mutex<Box<dyn {{stinger.name|UpperCamelCase}}MethodHandlers<_>>>> =
+    Arc::new(Mutex::new(Box::new(MyHandlers::new())));
+{% endif %}
+// 3. Construct the server.
+let mut server = {{stinger.rust.server_struct_name}}::new(
+    connection,
+{%- if stinger.methods|length > 0 %}
+    handlers.clone(),
+{%- endif %}
+    "my-instance-1".to_string(),
+{%- if stinger.properties|length > 0 %}
+    initial_property_values,
+{%- endif %}
+{%- for topic_param in config.topics.params %}
+    {{topic_param|snake_case}},   // topic parameter
+{%- endfor %}
+).await;
+
+// 4. Keep the message loop running for as long as the server should serve.
+let mut server_for_loop = server.clone();
+tokio::spawn(async move { server_for_loop.run_loop().await });
+```
+
+Constructing the server also publishes the interface's **discovery message**, which is
+how clients find this instance. It advertises the instance id, the interface version,
+{%- if stinger.methods|length > 0 or stinger.commands|length > 0 %} the version of each method and command,{% endif %} and the current value of every property. Call
+[`shutdown`](crate::server::{{stinger.rust.server_struct_name}}::shutdown) to retract that
+announcement when the process is going away on purpose.
+{%- if stinger.methods|length > 0 %}
+
+## Methods
+
+Every method in the interface is one required `async fn` on the
+[`{{stinger.name|UpperCamelCase}}MethodHandlers`](crate::server::{{stinger.name|UpperCamelCase}}MethodHandlers)
+trait, so the compiler will not let you forget one. Each returns
+`Result<T, MethodReturnCode>`: returning `Err` sends that return code back to the calling
+client instead of a value.
+
+The trait's `initialize` is called once with a clone of the server, which is how a
+handler gets the ability to{% if stinger.signals|length > 0 %} emit signals or{% endif %} change properties from inside a method call.
+
+```ignore
+#[async_trait]
+impl {{stinger.name|UpperCamelCase}}MethodHandlers<MyMqttClient> for MyHandlers {
+    async fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}<MyMqttClient>) -> Result<(), MethodReturnCode> {
+        self.server = Some(server);
+        Ok(())
+    }
+{% for method_name, method in stinger.methods.items() %}
+    async fn handle_{{method_name|snake_case}}(&self{% for arg in method.arg_list %}, {{arg.name|snake_case}}: {{arg.rust.type}}{% endfor %}) -> Result<{{method.rust.return_value_type}}, MethodReturnCode> {
+        todo!("{{method_name}}")
+    }
+{% endfor %}
+    fn as_any(&self) -> &dyn std::any::Any { self }
+}
+```
+
+The methods of this interface are:
+{% for method_name, method in stinger.methods.items() %}
+- **`{{method_name}}`** → `handle_{{method_name|snake_case}}`{% if method.arg_list|length > 0 %} taking {% for arg in method.arg_list %}`{{arg.name|snake_case}}: {{arg.rust.type}}`{% if not loop.last %}, {% endif %}{% endfor %}{% else %} taking no arguments{% endif %}, returning `{{method.rust.return_value_type}}`.
+{%- endfor %}
+{%- endif %}
+{%- if stinger.signals|length > 0 %}
+
+## Signals
+
+Signals go server → client with no reply, so emitting one cannot fail in the sense of
+being rejected — it can only fail to reach the broker. Each signal has two forms:
+
+- `emit_<signal>(args…).await` returns a future you can await to learn that the publish
+  was accepted by the broker.
+- `emit_<signal>_nowait(args…)` publishes and returns immediately.
+
+Either way, a signal is only delivered to clients that are subscribed *at the time it is
+sent*; there is no replay for a client that connects later.
+
+```ignore
+{%- for sig_name, sig in stinger.signals.items() %}
+server.emit_{{sig_name|snake_case}}({% for arg in sig.arg_list %}{{arg.name|snake_case}}{% if not loop.last %}, {% endif %}{% endfor %}).await;
+{%- endfor %}
+```
+
+The signals of this interface are:
+{% for sig_name, sig in stinger.signals.items() %}
+- **`{{sig_name}}`** — `emit_{{sig_name|snake_case}}({% for arg in sig.arg_list %}{{arg.name|snake_case}}: {{arg.rust.type}}{% if not loop.last %}, {% endif %}{% endfor %})`
+{%- endfor %}
+{%- endif %}
+{%- if stinger.commands|length > 0 %}
+
+## Commands
+
+Commands arrive client → server with no reply. On the server they are handed out as
+[`tokio::sync::broadcast`] receivers, the same way the *client* receives signals, and for
+the same reason: any number of places in your program may consume the same command, and
+consuming it is entirely optional. A command that arrives with nothing subscribed is
+logged and dropped.
+
+Because a broadcast channel does not replay, **subscribe before the command arrives** —
+in practice, right after constructing the server and before spawning `run_loop`.
+
+There is no response channel, so a command that fails to deserialize or fails schema
+validation is logged and dropped. The server never publishes an error back, and it never
+learns which client sent the command.
+
+```ignore
+{%- for cmd_name, cmd in stinger.commands.items() %}
+let mut {{cmd_name|snake_case}}_rx = server.get_{{cmd_name|snake_case}}_receiver();
+tokio::spawn(async move {
+    while let Ok(payload) = {{cmd_name|snake_case}}_rx.recv().await {
+        // handle {{cmd_name}}
+    }
+});
+{% endfor -%}
+```
+
+The commands of this interface are:
+{% for cmd_name, cmd in stinger.commands.items() %}
+- **`{{cmd_name}}`** — `get_{{cmd_name|snake_case}}_receiver() -> broadcast::Receiver<{% if cmd.arg_list|length == 0 %}(){% elif cmd.arg_list|length == 1 %}{{cmd.arg_list[0].rust.type}}{% else %}{{cmd.rust.payload_struct_name}}{% endif %}>`
+{%- endfor %}
+
+The payload type follows the number of arguments: `()` for none, the argument's own type
+for exactly one, and a generated `<Name>CommandPayload` struct for several.
+{%- endif %}
+{%- if stinger.properties|length > 0 %}
+
+## Properties
+
+The server owns every property value. Clients hold a cached copy and may *request* a
+change; the server decides whether to apply it and publishes the value that actually
+took effect, along with a monotonically increasing version number.
+
+Three accessors per property:
+
+- `watch_<property>()` — a `tokio::sync::watch` receiver, for observing changes
+  (including ones a client requested).
+- `set_<property>(value)` — set the value and publish it to all clients.
+- `get_<property>_handle()` — the underlying lock, when you need to read-modify-write
+  under one commit rather than clobbering a concurrent change.
+
+Because the discovery message carries current property values, a client that connects
+later still starts out with the right ones — properties, unlike signals, do not lose
+their state.
+
+The properties of this interface are:
+{% for prop_name, prop in stinger.properties.items() %}
+- **`{{prop_name}}`**: `{{prop.rust.type}}`{% if prop.read_only %} — read-only, so clients can watch it but cannot request changes{% endif %}
+{%- endfor %}
+{%- endif %}
+{%- if stinger.uses_schemas() %}
+
+## Schema validation
+
+Some arguments in this interface carry JSON Schema constraints. The server checks them at
+every boundary — method request and response, property update and publish, and signal
+emit — and refuses to send or accept non-conforming data, failing with the appropriate
+`MethodReturnCode` rather than putting bad data on the wire. Payload types expose
+`validate_schema()` if you want to check a value yourself first.
+{%- endif %}
+
+## Errors and diagnostics
+
+[`MethodReturnCode`](crate::payloads::MethodReturnCode) is the shared error type on the
+wire, covering client and server faults, serialization failures, timeouts, and
+`NotImplemented`. Anything the server logs goes through the `tracing` crate, so install a
+subscriber to see it. With the `metrics` feature, `get_metrics()` exposes counters for
+messages handled and errors seen.

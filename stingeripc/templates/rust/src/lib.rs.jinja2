@@ -1,10 +1,23 @@
-//! {{stinger.name}} IPC Library
-//!
-//! This library provides client, server, and payload functionality for the {{stinger.name}} IPC system.
-//! Use features to control which modules are included:
-//!
-//! - `client`: Includes client functionality
-//! - `server`: Includes server functionality
+#![doc = include_str!("../docs/overview.md")]
+
+/// Long-form guides for using this interface.
+///
+/// These modules hold no code — they exist so that `cargo doc` has somewhere to put the
+/// prose that does not belong on any one type.
+///
+/// - [`server_guide`](docs::server_guide) — providing the interface.
+/// - [`client_guide`](docs::client_guide) — consuming the interface.
+pub mod docs {
+    /// Guide to writing a {{stinger.name}} server.
+    #[allow(rustdoc::broken_intra_doc_links)] // Links into the `server` module resolve only when that feature is on.
+    #[doc = include_str!("../docs/server.md")]
+    pub mod server_guide {}
+
+    /// Guide to writing a {{stinger.name}} client.
+    #[allow(rustdoc::broken_intra_doc_links)] // Links into the `client` module resolve only when that feature is on.
+    #[doc = include_str!("../docs/client.md")]
+    pub mod client_guide {}
+}
 
 pub mod interface;
 {%if stinger.properties|length > 0%}
@@ -37,4 +50,3 @@ pub mod constants;
 
 // Re-export commonly used types from payloads.
 pub use payloads::*;
-

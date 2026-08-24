@@ -3,6 +3,11 @@ name = "{{stinger.rust.package_name}}"
 version = "{{stinger.version}}"
 edition = "2021"
 
+# Nothing is enabled by default, so docs must be built with every feature on to
+# include the client and server pages.
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
 default = []
 client = ["tracing", "tracing-subscriber", "stinger-rwlock-watch/read_only", "stinger-rwlock-watch/write_request"]
