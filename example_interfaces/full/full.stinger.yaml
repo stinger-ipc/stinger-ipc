@@ -133,6 +133,29 @@ methods:
       name: success
       type: boolean
 
+commands:
+
+  set_the_table:
+    documentation: |
+      Tell the server to lay the table for a meal.  Nothing is sent back; the
+      client does not learn whether the table was actually set.
+    arguments:
+      - name: seats
+        type: integer
+        description: How many places to lay.
+      - name: day
+        type: enum
+        enumName: dayOfTheWeek
+        description: The day the meal is served.
+      - name: serve_at
+        type: datetime
+        description: When the meal should be served.
+        optional: true
+
+  clear_the_table:
+    documentation: Tell the server that the meal is over and the table can be cleared.
+    arguments: []
+
 properties:
 
   favorite_number:

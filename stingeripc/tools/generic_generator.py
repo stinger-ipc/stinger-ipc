@@ -86,6 +86,7 @@ def main(
 
     print(f"🚥 [bold cyan]SIGNALS:[/bold cyan] {len(stinger.signals)}")
     print(f"💠 [bold cyan]METHODS:[/bold cyan] {len(stinger.methods)}")
+    print(f"📣 [bold cyan]COMMANDS:[/bold cyan] {len(stinger.commands)}")
     print(f"🍌   [bold cyan]PROPS:[/bold cyan] {len(stinger.properties)}")
 
     params: dict[str, Any] = {

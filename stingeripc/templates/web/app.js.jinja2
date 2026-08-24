@@ -50,6 +50,8 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
     $scope.activeTab = 'properties';
     {%elif stinger.methods %}
     $scope.activeTab = 'methods';
+    {%elif stinger.commands %}
+    $scope.activeTab = 'commands';
     {%else%}
     $scope.activeTab = null;
     {%endif%}
@@ -111,6 +113,19 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
         {%-endfor%}
     };
 
+    $scope.commands = {
+        {%-for command_name, command in stinger.commands.items() %}
+        "{{command_name | lowerCamelCase}}": {
+            "name": "{{command_name}}",
+            "mqtt_topic": `{{ utils.topic_template_to_js(command.topic(), config.topics.params) }}`,
+            "args": { {%-for arg in command.arg_list %}
+                "{{arg.name}}": null{%if not loop.last%},{%endif%}
+            {%endfor-%} },
+            "sent_time": null
+        }{%if not loop.last%},{%endif%}
+        {%-endfor%}
+    };
+
     $scope.console = {
         showing: false,
         requests: []
@@ -160,6 +175,18 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
         $scope.console.requests.unshift({"name":prop_obj.name, "correlationData":correlationData, "topic": prop_obj.update_topic, "payload": payload, "response": null, "requestTime": Date.now()});
         console.log("PUBLISH UPDATE", prop_obj.update_topic, payload, props);
         client.publish(prop_obj.update_topic, payload, { "qos": 1, retain: false, properties: props});
+        return;
+    }
+
+    function publish_command(command, payload) {
+        console.log("COMMAND", command, payload);
+        // Commands are fire-and-forget: no correlation data and no response topic are provided.
+        let props = {
+            "contentType": "application/json"
+        };
+        $scope.console.requests.unshift({"name":command.name, "topic": command.mqtt_topic, "payload": payload, "eventTime": new Date().toLocaleTimeString()});
+        console.log("PUBLISH COMMAND", command.mqtt_topic, payload, props);
+        client.publish(command.mqtt_topic, payload, { "qos": {{stinger.command_qos}}, retain: false, properties: props});
         return;
     }
 
@@ -285,6 +312,17 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
         publish_property_update(prop, payload);
     };
  
+    $scope.sendCommand = function(command) {
+        const payload = {};
+        for (const key in command.args) {
+            if (!command.args.hasOwnProperty(key)) continue;
+            payload[key] = command.args[key];
+        }
+        const payload_str = JSON.stringify(payload);
+        publish_command(command, payload_str);
+        command.sent_time = new Date();
+    };
+
     $scope.callMethod = function(method) {
         const payload = {};
         for (const key in method.args) {

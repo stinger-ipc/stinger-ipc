@@ -8,6 +8,7 @@ from stingeripc.config import StingerConfig, TopicConfig
 if TYPE_CHECKING:
     from stingeripc.ipc_signal import IpcSignal
     from stingeripc.ipc_method import IpcMethod
+    from stingeripc.ipc_command import IpcCommand
     from stingeripc.ipc_property import IpcProperty
 
 from . import topic_util
@@ -37,7 +38,7 @@ from stingeripc.arg_datatypes import InterfaceConstant, InterfaceEnum, Interface
 
 
 class InterfaceComponent(BaseModel):
-    """Base class for the elements of an interface: signals, methods, and properties.
+    """Base class for the elements of an interface: signals, methods, commands, and properties.
 
     Every interface component has a unique ``name`` within the interface and an
     optional human-readable ``documentation`` string.  Instances also hold a
@@ -82,8 +83,8 @@ class StingerSpec:
     """Root model of a parsed Stinger IPC interface.
 
     Holds the interface metadata (name, version, title, summary, documentation,
-    license) and the collections of signals, methods, properties, enums,
-    structs, and constants defined by the interface.  It also exposes the
+    license) and the collections of signals, methods, commands, properties,
+    enums, structs, and constants defined by the interface.  It also exposes the
     helpers used by the templates to compute topics and answer feature
     questions (e.g. whether the interface uses enums, binary payloads, or JSON
     schema constraints).
@@ -114,6 +115,7 @@ class StingerSpec:
         self.signals: dict[str, IpcSignal] = {}
         self.properties: dict[str, IpcProperty] = {}
         self.methods: dict[str, IpcMethod] = {}
+        self.commands: dict[str, IpcCommand] = {}
         self.enums: dict[str, InterfaceEnum] = {}
         self.structs: dict[str, InterfaceStruct] = {}
         self.constants: dict[str, InterfaceConstant] = {}
@@ -189,6 +191,13 @@ class StingerSpec:
         assert isinstance(method, IpcMethod)
         self.methods[method.name] = method
 
+    def add_command(self, command: IpcCommand):
+        """Register a command on the interface, keyed by its name."""
+        from stingeripc.ipc_command import IpcCommand
+
+        assert isinstance(command, IpcCommand)
+        self.commands[command.name] = command
+
     def add_property(self, prop: IpcProperty):
         """Register a property on the interface, keyed by its name."""
         from stingeripc.ipc_property import IpcProperty
@@ -237,6 +246,8 @@ class StingerSpec:
             top_level += prop.arg_list
         for method in self.methods.values():
             top_level += method.arg_list + method.return_arg_list
+        for command in self.commands.values():
+            top_level += command.arg_list
         for struct in self.structs.values():
             top_level += struct.values
 
@@ -293,6 +304,11 @@ class StingerSpec:
     @property
     def signal_qos(self) -> int:
         """QoS level used when publishing/subscribing to signal topics."""
+        return 2
+
+    @property
+    def command_qos(self) -> int:
+        """QoS level used when publishing/subscribing to command topics."""
         return 2
 
     @property
@@ -360,13 +376,24 @@ class StingerSpec:
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, signal_name="+")
         return topic_template
 
+    def all_commands_topic(self) -> str:
+        """Return the topic template that matches messages for every command.
+
+        The ``command_name`` placeholder is replaced with the MQTT wildcard
+        ``+`` so a single subscription receives all commands.
+        """
+        topic_template = self._config.topics.commands
+        topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, command_name="+")
+        return topic_template
+
     @classmethod
     def new_spec_from_stinger(cls, stinger: dict[str, Any], config: StingerConfig) -> StingerSpec:
         """Construct a fully populated StingerSpec from a parsed Stinger YAML dict.
 
         Validates the declared format version, then builds the enums, structs,
-        constants, signals, methods, and properties in dependency order (enums
-        and structs first because other elements may reference them).
+        constants, signals, methods, commands, and properties in dependency
+        order (enums and structs first because other elements may reference
+        them).
         """
         if "stingeripc" not in stinger:
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
@@ -380,6 +407,7 @@ class StingerSpec:
 
         from stingeripc.ipc_signal import IpcSignal
         from stingeripc.ipc_method import IpcMethod
+        from stingeripc.ipc_command import IpcCommand
         from stingeripc.ipc_property import IpcProperty
 
         # Enums must come before other components because other components may use enum values.
@@ -435,6 +463,19 @@ class StingerSpec:
                     stinger_spec.add_method(method)
         except TypeError as e:
             raise InvalidStingerStructure(f"Method specification appears to be invalid: {e}")
+
+        try:
+            if "commands" in stinger:
+                for command_name, command_spec in stinger["commands"].items():
+                    command = IpcCommand.new_command_from_stinger(
+                        command_name,
+                        command_spec,
+                        stinger_spec,
+                    )
+                    assert command is not None, f"Did not create command from {command_name} and {command_spec}"
+                    stinger_spec.add_command(command)
+        except TypeError as e:
+            raise InvalidStingerStructure(f"Command specification appears to be invalid: {e}")
 
         try:
             if "properties" in stinger:

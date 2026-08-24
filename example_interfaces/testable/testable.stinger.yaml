@@ -829,6 +829,119 @@ methods:
       description: The first list of enums.
     version: 0.1.0
 
+commands:
+
+  commandWithNothing:
+    documentation: A command with no arguments.
+    arguments: []
+
+  commandOneInteger:
+    documentation: A command with a single integer argument.
+    arguments:
+      - name: input1
+        type: integer
+        description: The integer value.
+
+  jsonSchemaValidatedCommand:
+    documentation: A command whose integer argument is validated against a JSON schema.
+    arguments:
+      - name: input1
+        type: integer
+        description: The integer value.
+        schema:
+          minimum: 0
+          maximum: 100
+
+  commandOptionalInteger:
+    documentation: A command with a single optional integer argument.
+    arguments:
+      - name: input1
+        type: integer
+        optional: true
+        description: The integer value.
+
+  commandThreeStrings:
+    documentation: A command with three string arguments, the third is optional.
+    arguments:
+      - name: input1
+        type: string
+        description: The first string value.
+      - name: input2
+        type: string
+        description: The second string value.
+      - name: input3
+        type: string
+        description: The third string value.
+        optional: true
+
+  commandOneEnum:
+    documentation: A command with a single enum argument.
+    arguments:
+      - name: input1
+        type: enum
+        enumName: Numbers
+        enumVersion: 2.0.0
+        description: The enum value.
+    version: 0.1.0
+
+  commandOneStruct:
+    documentation: A command with a single struct argument.
+    arguments:
+      - name: input1
+        type: struct
+        structName: AllTypes
+        description: The struct value.
+
+  commandOptionalStruct:
+    documentation: A command with a single optional struct argument.
+    arguments:
+      - name: input1
+        type: struct
+        structName: AllTypes
+        optional: true
+        description: The struct value.
+
+  commandOneDateTime:
+    documentation: A command with a single date and time argument.
+    arguments:
+      - name: input1
+        type: datetime
+        description: The date and time value.
+
+  commandOneDuration:
+    documentation: A command with a single duration argument.
+    arguments:
+      - name: input1
+        type: duration
+        description: The duration value.
+
+  commandOneBinary:
+    documentation: A command with a single binary argument.
+    arguments:
+      - name: input1
+        type: binary
+        contentType: application/octet-stream
+        description: The binary value.
+
+  commandOneListOfIntegers:
+    documentation: A command with a single array-of-integers argument.
+    arguments:
+      - name: input1
+        type: array
+        itemType:
+          type: integer
+        description: The array of integers.
+
+  commandForPeopleOnly:
+    documentation: A command restricted to the 'people' consumer.
+    arguments:
+      - name: input1
+        type: integer
+        description: The integer value.
+    version: 0.2.0
+    consumers:
+      - people
+
 properties:
 
   read_write_integer:

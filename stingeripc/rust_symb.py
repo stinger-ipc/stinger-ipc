@@ -23,6 +23,8 @@ class RustSymbolsProvider(ISymbolsProvider):
             return RustStructSymbols(model)
         elif model_class_name == "IpcMethod":
             return RustMethodSymbols(model)
+        elif model_class_name == "IpcCommand":
+            return RustCommandSymbols(model)
         elif model_class_name == "IpcProperty":
             return RustPropertySymbols(model)
         elif model_class_name == "ArgEnum":
@@ -133,6 +135,19 @@ class RustMethodSymbols(RustSymbols):
     def return_struct_name(self) -> str:
         """Rust struct name of the method's generated response payload."""
         return stringmanip.upper_camel_case(self._method.return_value_name)
+
+
+class RustCommandSymbols(RustSymbols):
+    """Rust symbols for an :class:`IpcCommand`."""
+
+    def __init__(self, command):
+        super().__init__()
+        self._command = command
+
+    @property
+    def payload_struct_name(self) -> str:
+        """Rust struct name of the command's generated payload."""
+        return f"{stringmanip.upper_camel_case(self._command.name)}CommandPayload"
 
 
 class RustArgSymbols(RustSymbols):

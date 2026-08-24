@@ -145,6 +145,10 @@ class InterfaceMethod(InterfaceComponent):
     returnValue: Optional[AnyArg] = Field(None, description="The value returned by the method, if it returns one")
 
 
+class InterfaceCommand(InterfaceComponent):
+    arguments: List[AnyArg] = Field([], description="A list of arguments for the command")
+
+
 class InterfaceProperty(InterfaceComponent):
     value: AnyArg = Field(..., description="The single value held by the property")
     readOnly: Optional[bool] = Field(False, description="Whether the property is read-only")
@@ -157,4 +161,5 @@ class StingerSpec(BaseModel):
     structs: Optional[Dict[str, InterfaceStruct]] = Field(None, description="A dictionary of structs used in the interface")
     signals: Optional[Dict[str, InterfaceSignal]] = Field(None, description="A dictionary of signals in the interface")
     methods: Optional[Dict[str, InterfaceMethod]] = Field(None, description="A dictionary of methods in the interface")
+    commands: Optional[Dict[str, InterfaceCommand]] = Field(None, description="A dictionary of commands in the interface")
     properties: Optional[Dict[str, InterfaceProperty]] = Field(None, description="A dictionary of properties in the interface")

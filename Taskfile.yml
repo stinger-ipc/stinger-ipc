@@ -8,9 +8,15 @@ vars:
   GENERATED_DIR: '{{default "./generated" .GENERATED_DIR}}'
 
 tasks:
+  # The aggregate tasks below use `cmds` rather than `deps` because `deps` run in
+  # parallel, and each stage transitively depends on the stage before it.  Run in
+  # parallel, two stages can therefore drive the same sub-task in the same directory at
+  # once -- two concurrent `make -j` runs in one build directory can truncate a static
+  # archive.  `cmds` run in sequence, and each stage still fans out over the interfaces
+  # in parallel through its own deps, so little parallelism is lost.
   default:
     desc: Generate and compile all interfaces
-    deps:
+    cmds:
       - task: python:generate
       - task: python:unittest
       - task: cpp:compile
@@ -22,21 +28,21 @@ tasks:
 
   python:
     desc: Generate, test, and type check all Python interfaces
-    deps:
+    cmds:
       - task: python:generate
       - task: python:unittest
       - task: python:mypy
 
   cpp:
     desc: Generate, compile, and test all C++ interfaces
-    deps:
+    cmds:
       - task: cpp:generate
       - task: cpp:compile
       - task: cpp:unittest
 
   rust:
     desc: Generate, check, and test all Rust interfaces
-    deps:
+    cmds:
       - task: rust:generate
       - task: rust:check
       - task: rust:unittest
@@ -192,13 +198,6 @@ tasks:
         task: python:mypy:{{ .ITEM }}
       - for: { var: INTERFACES }
         task: python-alt1:mypy:{{ .ITEM }}
-
-  python:
-    desc: Run all python releated tasks
-    deps:
-      - task: python:generate
-      - task: python:unittest
-      - task: python:mypy
 
   cpp:generate:*:
     desc: Generate C++ code for an interface

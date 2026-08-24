@@ -232,7 +232,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     }
     {%endfor%}
 
-    {%if stinger.methods | length > 0 or stinger.properties | length > 0 %}
+    {%if stinger.methods | length > 0 or stinger.properties | length > 0 or stinger.commands | length > 0 %}
     /// Builds the topic-template parameters that stay constant for the lifetime of
     /// this client (interface name, service instance id, client id and any
     /// configured topic parameters).  Callers insert the request-specific keys
@@ -390,6 +390,36 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                 Err(return_code)
             }
         }
+    }
+
+    {%endfor%}
+    {%for cmd_name, cmd in stinger.commands.items()-%}
+    /// Sends the `{{cmd_name}}` command.
+    /// Command arguments are packed into a {{cmd.rust.payload_struct_name}} structure
+    /// and published to the `{{cmd.topic()}}` MQTT topic.
+    ///
+    /// A command is fire-and-forget: the server sends no response, so there is
+    /// nothing to await and no way to learn whether the server acted on it.
+    pub async fn send_{{cmd_name|snake_case}}(&mut self{%if cmd.arg_list | length > 0 %}, {%endif%}{%for arg in cmd.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+        let data = {{cmd.rust.payload_struct_name}} {
+            {%-for arg in cmd.arg_list%}
+            {{arg.name|snake_case}},
+            {%-endfor%}
+        };
+        if let Err(err) = data.validate_schema() {
+            error!("Payload for '{{cmd_name}}' command failed schema validation, not sending: {}", err);
+            return;
+        }
+        let mut topic_param_map = self.base_topic_params();
+        topic_param_map.insert("command_name".to_string(), "{{cmd_name}}".to_string());
+        let topic: String = strfmt("{{cmd.topic()}}", &topic_param_map).unwrap();
+        {%if cmd.version -%}
+        let msg = message::stable_command(&topic, &data, "{{cmd.version}}").unwrap();
+        {%else -%}
+        let msg = message::command(&topic, &data).unwrap();
+        {%endif -%}
+        info!("Sending '{{cmd_name}}' command to topic '{}': {:?}", topic, data);
+        let _ = self.mqtt_client.publish(msg).await;
     }
 
     {%endfor%}
@@ -711,6 +741,35 @@ mod tests {
             let response_topic = sent_message.response_topic.as_ref().unwrap();
             assert!(!response_topic.contains('+'), "In the method request message, the response_topic should not contain '+'");
             assert!(!response_topic.contains('#'), "In the method request message, the response_topic should not contain '#'");
+        }
+        {%endfor%}
+
+        {%for cmd_name, cmd in stinger.commands.items()%}
+        { // Test sending the {{cmd_name}} command.
+            mock_mqtt.clear_published_messages();
+
+            // Example values always satisfy any schema constraint declared on the argument,
+            // so the client publishes rather than dropping the command.
+            client.send_{{cmd_name | snake_case}}(
+                {%for arg in cmd.arg_list%}
+                {{arg.get_random_example_value(lang='rust')}},
+                {%endfor%}).await;
+
+            match mock_mqtt.last_published_message() {
+                Some(sent_message) => {
+                    assert!(sent_message.topic.ends_with("{{cmd_name}}"), "Expected the '{{cmd_name}}' command to be published to its own topic, not '{}'", sent_message.topic);
+                    assert!(!sent_message.retain, "Commands are not retained");
+                    assert!(sent_message.response_topic.is_none(), "A command has no response, so it must not carry a response topic");
+                    assert!(sent_message.correlation_data.is_none(), "A command has no response, so it must not carry correlation data");
+                    assert_eq!(sent_message.content_type.as_deref(), Some("application/json"));
+                    {%for topic_param in config.topics.params%}
+                    {%if '{' + topic_param + '}' in cmd.topic() %}
+                    assert!(sent_message.topic.contains(server_topic_param_map.get("{{topic_param}}").unwrap()), "Expected the '{{cmd_name}}' command topic to contain the topic parameter '{{topic_param}}'");
+                    {%endif%}
+                    {%endfor%}
+                }
+                None => panic!("Expected the '{{cmd_name}}' command to be published"),
+            }
         }
         {%endfor%}
 

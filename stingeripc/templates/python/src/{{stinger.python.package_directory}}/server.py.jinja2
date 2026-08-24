@@ -35,6 +35,9 @@ from stinger_python_utils.return_codes import (
 )
 from .interface_types import *
 {%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}{%endif%}], Union[{{method.python.return_value_annotation}}, Coroutine[Any, Any, {{method.python.return_value_annotation}}]]]{%endmacro%}
+{%for command_name, command in stinger.commands.items()-%}
+{{command.python.callback_type_name}} = Union[Callable[[{%for arg in command.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None], Callable[[Any{%for arg in command.arg_list%}{%if loop.first%}, {%endif%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]]
+{%endfor%}
 {%if stinger.properties | length > 0 %}
 {%if config.properties.stinger_owned_values%}
 from .property import {{stinger.name|UpperCamelCase}}InitialPropertyValues
@@ -115,6 +118,10 @@ class {{stinger.python.server_class_name}}:
         self._conn.subscribe("{{method.request_topic()}}".format(**self._topic_template_kwargs), self._process_{{method_name | snake_case}}_call) # type: ignore[str-format]
         self._method_{{method_name|snake_case}}_handler = None # type: Optional[{{method_type_annotation(method)}}]
         {%endfor%}
+        {%-for command_name, command in stinger.commands.items()%}
+        self._command_recv_callbacks_for_{{command_name|snake_case}}: List[{{command.python.callback_type_name}}] = []
+        self._conn.subscribe("{{command.topic()}}".format(**self._topic_template_kwargs), self._receive_{{command_name | snake_case}}_command_message) # type: ignore[str-format]
+        {%endfor%}
         {%-if stinger.properties|length > 0 %}
         self._publish_all_properties()
         {%-endif%}
@@ -175,6 +182,13 @@ class {{stinger.python.server_class_name}}:
                 {%- for method_name, method in stinger.methods.items() %}
                 {%- if method.version %}
                 "{{method_name}}": "{{method.version}}",
+                {%- endif %}
+                {%- endfor %}
+            },
+            commands={
+                {%- for command_name, command in stinger.commands.items() %}
+                {%- if command.version %}
+                "{{command_name}}": "{{command.version}}",
                 {%- endif %}
                 {%- endfor %}
             },
@@ -313,6 +327,40 @@ class {{stinger.python.server_class_name}}:
         sig_msg = MessageCreator.signal_message(signal_topic, payload)
         self._conn.publish(sig_msg)
 
+    {%endfor%}
+
+    {%for command_name, command in stinger.commands.items()%}
+    def receive_{{command_name | snake_case}}(self, handler: {{command.python.callback_type_name}}):
+        """ Registers a callback to be called when the '{{command_name}}' command is received.
+        Can be used as a decorator.  Any number of callbacks may be registered.
+        """
+        self._command_recv_callbacks_for_{{command_name|snake_case}}.append(handler)
+        return handler
+
+    def _receive_{{command_name | snake_case}}_command_message(self, message: Message):
+        """ This processes a received '{{command_name}}' command.  It deserializes the payload to find
+        the command arguments, then calls every registered handler with those arguments.
+
+        A command has no response, so a payload we cannot make sense of can only be logged
+        and dropped; there is nowhere to report the error to.
+        """
+        if message.content_type is None or message.content_type != 'application/json':
+            self._logger.warning("Received '{{command_name}}' command with non-JSON content type")
+            return
+        try:
+            payload = {{command.python.payload_class_name}}.model_validate_json(message.payload)
+        except (json.JSONDecodeError, ValidationError) as e:
+            self._logger.warning("Deserialization error while handling the '{{command_name}}' command: %s", e)
+            return
+        if not self._command_recv_callbacks_for_{{command_name|snake_case}}:
+            self._logger.warning("Received '{{command_name}}' command, but no handler is registered for it")
+            return
+        # Read the fields off the model rather than dumping it, so handlers are given the
+        # native Python values (bytes, structs, enums) instead of their JSON encodings.
+        for handler in self._command_recv_callbacks_for_{{command_name|snake_case}}:
+            handler({%-for arg in command.arg_list%}
+                {{arg.name|snake_case}}=payload.{{arg.name|snake_case}},{%endfor%}
+            ) # type: ignore[call-arg]
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
@@ -458,9 +506,12 @@ class {{stinger.python.server_class_name}}Builder:
     """
 
     def __init__(self):
-        {%if stinger.methods|length == 0 and (not config.properties.stinger_owned_values or stinger.properties|length == 0) %}pass{%endif%}
+        {%if stinger.methods|length == 0 and stinger.commands|length == 0 and (not config.properties.stinger_owned_values or stinger.properties|length == 0) %}pass{%endif%}
         {%for method_name, method in stinger.methods.items()%}
         self._{{method_name|snake_case}}_method_handler: Optional[{{method_type_annotation(method)}}] = None
+        {%-endfor%}
+        {%for command_name, command in stinger.commands.items()%}
+        self._command_recv_callbacks_for_{{command_name|snake_case}}: List[{{command.python.callback_type_name}}] = []
         {%-endfor%}
         {%if config.properties.stinger_owned_values%}
         {%for prop_name, property in stinger.properties.items()%}
@@ -476,6 +527,16 @@ class {{stinger.python.server_class_name}}Builder:
             self._{{method_name|snake_case}}_method_handler = wrapper
         else:
             raise Exception("Method handler already set")
+        return wrapper
+    {%endfor%}
+    {%for command_name, command in stinger.commands.items()%}
+    def receive_{{command_name | snake_case}}(self, handler: {{command.python.callback_type_name}}):
+        """ This method registers a callback to be called whenever the '{{command_name}}' command is received.
+        """
+        @functools.wraps(handler)
+        def wrapper(*args, **kwargs):
+            return handler(*args, **kwargs)
+        self._command_recv_callbacks_for_{{command_name|snake_case}}.append(wrapper)
         return wrapper
     {%endfor%}
     {%if config.properties.stinger_owned_values %}
@@ -500,6 +561,13 @@ class {{stinger.python.server_class_name}}Builder:
                 new_server.handle_{{method_name|snake_case}}(self._{{method_name|snake_case}}_method_handler.__get__(binding, binding.__class__))
             else:
                 new_server.handle_{{method_name|snake_case}}(self._{{method_name|snake_case}}_method_handler)
+        {%-endfor%}
+        {%for command_name, command in stinger.commands.items()%}
+        for {{command_name|snake_case}}_callback in self._command_recv_callbacks_for_{{command_name|snake_case}}:
+            if binding:
+                new_server.receive_{{command_name|snake_case}}({{command_name|snake_case}}_callback.__get__(binding, binding.__class__))
+            else:
+                new_server.receive_{{command_name|snake_case}}({{command_name|snake_case}}_callback)
         {%-endfor%}
         {%if config.properties.stinger_owned_values%}
         {%for prop_name, prop in stinger.properties.items()%}

@@ -132,6 +132,11 @@
         <span class="mdi mdi-function"></span> Methods
       </button>
       {%endif%}
+      {%if stinger.commands %}
+      <button class="tab-btn" ng-class="{'active': activeTab === 'commands'}" ng-click="activeTab = 'commands'">
+        <span class="mdi mdi-send"></span> Commands
+      </button>
+      {%endif%}
     </div>
 
     <!------------- SIGNALS ------------->
@@ -207,6 +212,33 @@
         </div>
     </div>
     {%endfor%} {# end methods loop #}
+    </div>
+
+    <!------------- COMMANDS ------------->
+    <div ng-show="activeTab === 'commands'">
+    {%for command_name, command in stinger.commands.items() %}
+    <div class="component-box command-box" id="command-box-{{ command_name }}">
+        <h3 class="component-title command-title"><span class="mdi mdi-send"></span> {{ command_name }}</h3>
+        {%if command.documentation %}
+        <details class="component-doc command-doc">
+          <summary>Documentation</summary>
+{%markdown%}
+{{ command.documentation }}
+{%endmarkdown%}
+        </details>
+        {%endif%}
+        <!--<div class="command-topic topic">Publish: {{ command.topic() }}</div>-->
+        <div class="command-form-box">
+            <form ng-submit="sendCommand(commands.{{command_name|lowerCamelCase}})">
+                {{ arglist(command.arg_list, ['commands', command_name, 'args'], false) | indent(8) }}
+                <button type="submit" class="publish-button">Send {{ command_name }}</button>
+            </form>
+        </div>
+        <div class="command-sent-status" ng-show="commands['{{ command_name | lowerCamelCase }}'].sent_time">
+            <span class="mdi mdi-send-check-outline"></span> Sent at <span ng-bind="commands['{{ command_name | lowerCamelCase }}'].sent_time | date:'HH:mm:ss'"></span>.  A command is fire-and-forget, so there is no response.
+        </div>
+    </div>
+    {%endfor%} {# end commands loop #}
     </div>
 
     {%raw%}

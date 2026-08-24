@@ -1,0 +1,46 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It contains the payload structures for the commands of the {{stinger.name}} interface.
+A command is sent from a client to the server; it is fire-and-forget, so there is no
+response payload.
+
+{%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
+*/
+
+
+#pragma once
+#include <string>
+#include <chrono>
+#include <vector>
+#include <optional>
+#include "{{stinger.cpp.enum_header_file}}"
+#include "structs.hpp"
+
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
+
+{%for command_name, command in stinger.commands.items()%}
+
+struct {{command.cpp.payload_struct_name}} {
+    void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
+    static {{command.cpp.payload_struct_name}} FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    // Validates fields that declare a JSON schema constraint.  Returns true if all such fields conform to their schema (or if none declare one).
+    bool ValidateSchema() const;
+    {%-if command.arg_list | length > 0 %}
+    // Arguments...
+    {%-for arg in command.arg_list %}
+    {{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}};
+    {%-endfor%}
+    {%endif%}
+};
+
+{%endfor%}
+
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor-%}

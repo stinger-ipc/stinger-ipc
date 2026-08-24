@@ -43,6 +43,7 @@ public:
     std::optional<std::string> {{topic_param|lowerCamelCase}};
     {%-endfor%}
     std::map<std::string, std::string> methods; // Maps method names to their version string, for methods that declare a version.
+    std::map<std::string, std::string> commands; // Maps command names to their version string, for commands that declare a version.
     {%if stinger.properties | length > 0 %}InitialPropertyValues initial_property_values; // Not included in (de-)serialization.{%endif%}
 
     /**

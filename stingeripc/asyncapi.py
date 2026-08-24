@@ -28,6 +28,7 @@ from stinger_python_utils.return_codes import (
 
 from stingeripc.arg_datatypes import InterfaceEnum, InterfaceStruct
 from stingeripc.arg_models import Arg, ArgArray, ArgEnum, ArgStruct, ArgPrimitive
+from stingeripc.ipc_command import IpcCommand
 from stingeripc.ipc_method import IpcMethod
 from stingeripc.ipc_property import IpcProperty
 from stingeripc.ipc_signal import IpcSignal
@@ -376,6 +377,69 @@ class AsyncApiMethodHelper:
         )
 
 
+class AsyncApiCommandHelper:
+    def __init__(self, command: IpcCommand, config: StingerConfig):
+        self.command = command
+        self.config = config
+
+    def channel_name(self) -> str:
+        return f"{self.command.name}_command"
+
+    def get_payload_schema(self) -> Schema:
+        return arg_list_to_schema(self.command.arg_list)
+
+    def get_message(self) -> models.Message:
+        payload_schema = self.get_payload_schema()
+        return models.Message(
+            name=self.command.name,
+            summary=f"The message for the '{self.command.name}' command.",
+            description="""The payload represents the arguments for the command.  It is encoded as a JSON object.
+
+            No correlation data and no response topic are provided, because a command has no response.
+            """,
+            payload=payload_schema,
+            contentType="application/json",
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+            tags=[models.base.Tag(name="command")],
+        )
+
+    def to_channel(self) -> models.Channel:
+        message = self.get_message()
+        address = self.command.topic()
+        return models.Channel(
+            address=address,
+            description=self.command.documentation,
+            messages=models.message.Messages(root={self.command.name: message}),
+            parameters=_parameters_for_address(address, self.config),
+        )
+
+    def to_operation(self) -> models.Operation:
+        name = self.channel_name()
+        return models.Operation(
+            summary=f"Send the '{self.command.name}' command.",
+            description=f"""
+            A client publishes a message to the command topic in order to send the command to the server.
+            The server subscribes to the command topic and invokes any handlers it has registered for the command.
+
+            ```plantuml
+            Server -> MQTT Broker: Subscribe
+            Client -> MQTT Broker: '{self.command.name}' Command
+            MQTT Broker -> Server: '{self.command.name}' Command
+            Server -> Server: Execute '{self.command.name}' command handlers
+            ```
+
+            A command is fire-and-forget: there is no response message, so the client never learns whether the
+            server acted on the command.  A server that cannot deserialize or validate a command logs it and
+            drops it.  The message is not retained, so only servers subscribed at the time receive it.
+            """,
+            action="send",
+            channel=models.base.Reference(ref=f"#/channels/{name}"),
+            messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.command.name}")],
+            bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+            tags=[models.base.Tag(name="command")],
+        )
+
+
 class AsyncApiPropertyHelper:
     def __init__(self, prop: IpcProperty, config: StingerConfig):
         self.prop = prop
@@ -633,6 +697,11 @@ def _interface_info_schema(config: StingerConfig) -> Schema:
             "additionalProperties": {"type": "string"},
             "description": "Maps method names to their version string, for methods that declare a version.",
         },
+        "commands": {
+            "type": "object",
+            "additionalProperties": {"type": "string"},
+            "description": "Maps command names to their version string, for commands that declare a version.",
+        },
     }
     required = ["interface_name", "title", "version", "instance", "connection_topic", "timestamp"]
     for topic_param in config.topics.params:
@@ -718,6 +787,10 @@ def stinger_to_asyncapi(spec: StingerSpec, config: StingerConfig | None = None) 
         operations[method_helper.request_channel_name()] = method_helper.request_to_operation()
         channels[method_helper.response_channel_name()] = method_helper.response_to_channel()
         operations[method_helper.response_channel_name()] = method_helper.response_to_operation()
+    for command_name, command in spec.commands.items():
+        command_helper = AsyncApiCommandHelper(command, config_obj)
+        channels[command_helper.channel_name()] = command_helper.to_channel()
+        operations[command_helper.channel_name()] = command_helper.to_operation()
     for prop_name, prop in spec.properties.items():
         prop_helper = AsyncApiPropertyHelper(prop, config_obj)
         schemas[f"{prop.name}_property"] = prop_helper.payload_schema()
@@ -737,6 +810,7 @@ def stinger_to_asyncapi(spec: StingerSpec, config: StingerConfig | None = None) 
             tags=[
                 models.base.Tag(name="signal"),
                 models.base.Tag(name="method"),
+                models.base.Tag(name="command"),
                 models.base.Tag(name="property"),
                 models.base.Tag(name="discovery"),
             ],

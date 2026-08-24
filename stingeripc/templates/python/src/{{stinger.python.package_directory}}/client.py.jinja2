@@ -301,6 +301,33 @@ class {{stinger.python.client_class_name}}:
             self._logger.warning("Future for '{{method_name}}' method was already done!")
     {%endfor%}
 
+    {%for command_name, command in stinger.commands.items()%}
+    def send_{{command_name | snake_case}}(self, {%for arg in command.arg_list%}{{arg.name|snake_case}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+        """ Client application code should call this method to send the '{{command_name}}' command to the server.
+
+        A command is fire-and-forget: the server sends nothing back, so this returns
+        nothing and the client does not learn whether the server acted on it.
+        """
+        payload = {{command.python.payload_class_name}}({%-for arg in command.arg_list%}
+            {{arg.name|snake_case}}={{arg.name|snake_case}}{%if arg.optional%} if {{arg.name|snake_case}} is not None else None{%endif%},
+        {%endfor%})
+        return self.send_{{command_name | snake_case}}_payload(payload)
+
+    def send_{{command_name | snake_case}}_payload(self, payload: {{command.python.payload_class_name}}):
+        """ Serializes and publishes an already-built '{{command_name}}' command payload.
+        """
+        self._logger.debug("Sending '{{command_name}}' command with payload %s", payload)
+        command_topic = "{{command.topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
+        cmd_msg = Message(
+            topic=command_topic,
+            payload=payload.model_dump_json(by_alias=True).encode("utf-8"),
+            qos={{stinger.command_qos}},
+            retain=False,
+            content_type="application/json",
+        )
+        self._conn.publish(cmd_msg)
+    {%endfor%}
+
 class {{stinger.python.client_class_name}}Builder:
     """ Using decorators from {{stinger.python.client_class_name}} doesn't work if you are trying to create multiple instances of {{stinger.python.client_class_name}}.
     Instead, use this builder to create a registry of callbacks, and then build clients using the registry.

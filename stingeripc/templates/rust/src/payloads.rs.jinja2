@@ -269,6 +269,17 @@ pub struct {{sig_name | UpperCamelCase}}SignalPayload {
 {{ validate_schema_impl((sig_name | UpperCamelCase) ~ "SignalPayload", sig.arg_list) }}
 {%endfor%}
 
+// ---- COMMANDS ----
+{%for cmd_name, cmd in stinger.commands.items()%}
+// Structures for `{{cmd_name}}` command
+#[allow(dead_code, non_snake_case)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct {{cmd.rust.payload_struct_name}} {
+    {{ arg_members(cmd.arg_list) }}
+}
+{{ validate_schema_impl(cmd.rust.payload_struct_name, cmd.arg_list) }}
+{%endfor%}
+
 {%for prop_name, prop in stinger.properties.items()%}
 // `{{prop_name}}` property structure.
 #[allow(dead_code, non_snake_case)]

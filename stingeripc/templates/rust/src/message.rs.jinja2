@@ -285,3 +285,31 @@ pub fn stable_signal<T: Serialize>(topic: &str, payload: &T, version: &str) -> R
     Ok(msg)
 }
 {%endif%}{# end has any stable signals#}
+{%if stinger.commands|length > 0 %}
+// A command is a signal in reverse: the client publishes it to the server and
+// never learns whether it was acted on.  There is therefore no response topic
+// and no correlation data on the message.
+#[cfg(any(feature = "client", test))]
+pub fn command<T: Serialize>(topic: &str, payload: &T) -> Result<MqttMessage, MethodReturnCode> {
+    let msg = MqttMessageBuilder::default()
+        .topic(topic)
+        .object_payload(payload).map_err(|e| MethodReturnCode::ClientSerializationError(e.to_string()))?
+        .qos(QoS::ExactlyOnce)
+        .retain(false)
+        .build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;
+    Ok(msg)
+}
+{%endif%}{# end has any commands#}
+{%if stinger.commands.values()|selectattr('version')|list|length > 0 %}
+#[cfg(any(feature = "client", test))]
+pub fn stable_command<T: Serialize>(topic: &str, payload: &T, version: &str) -> Result<MqttMessage, MethodReturnCode> {
+    let msg = MqttMessageBuilder::default()
+        .topic(topic)
+        .object_payload(payload).map_err(|e| MethodReturnCode::ClientSerializationError(e.to_string()))?
+        .qos(QoS::ExactlyOnce)
+        .retain(false)
+        .user_property("Version", version)
+        .build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;
+    Ok(msg)
+}
+{%endif%}{# end has any stable commands#}

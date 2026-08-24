@@ -68,6 +68,17 @@ void InstanceInfo::UpdateFromRapidJsonObject(const rapidjson::Value& jsonObj)
             }
         }
     }
+    if (jsonObj.HasMember("commands") && jsonObj["commands"].IsObject())
+    {
+        commands.clear();
+        for (auto it = jsonObj["commands"].MemberBegin(); it != jsonObj["commands"].MemberEnd(); ++it)
+        {
+            if (it->value.IsString())
+            {
+                commands[it->name.GetString()] = it->value.GetString();
+            }
+        }
+    }
 };
 
 void InstanceInfo::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
@@ -92,6 +103,15 @@ void InstanceInfo::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Doc
             methodsObj.AddMember(rapidjson::Value(methodName.c_str(), allocator), rapidjson::Value(methodVersion.c_str(), allocator), allocator);
         }
         parent.AddMember("methods", methodsObj, allocator);
+    }
+    if (!commands.empty())
+    {
+        rapidjson::Value commandsObj(rapidjson::kObjectType);
+        for (const auto& [commandName, commandVersion] : commands)
+        {
+            commandsObj.AddMember(rapidjson::Value(commandName.c_str(), allocator), rapidjson::Value(commandVersion.c_str(), allocator), allocator);
+        }
+        parent.AddMember("commands", commandsObj, allocator);
     }
 }
 

@@ -1,0 +1,38 @@
+
+#include "command_payloads.hpp"
+#include <rapidjson/document.h>
+#include <rapidjson/schema.h>
+#include <stinger/utils/conversions.hpp>
+
+{% import "partials/deserialize.jinja2"  as deser %}
+{% import "partials/serialize.jinja2" as ser %}
+{% import "partials/validate.jinja2" as val %}
+
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
+
+{%for command_name, command in stinger.commands.items()%}
+// --- (De-)Serialization for {{command_name}} command payload ---
+{{command.cpp.payload_struct_name}} {{command.cpp.payload_struct_name}}::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{
+    {{command.cpp.payload_struct_name}} {{command.name | lowerCamelCase }}Payload;
+    {{deser.deserialize((command.name|lowerCamelCase)+"Payload", command.arg_list, 'jsonObj') | indent(4)}}
+
+    return {{command.name | lowerCamelCase }}Payload;
+};
+
+void {{command.cpp.payload_struct_name}}::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+{
+    {%for arg in command.arg_list%}
+    {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
+    {%- endfor %}
+}
+{{ val.validate_schema_body(command.cpp.payload_struct_name, command.arg_list) }}
+{% endfor %}
+
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor-%}

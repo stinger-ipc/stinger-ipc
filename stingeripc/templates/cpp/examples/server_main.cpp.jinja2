@@ -43,6 +43,15 @@ int main(int argc, char** argv) {
     });
     {%endfor%}
 
+    {%-for command_name, command in stinger.commands.items() %}
+    // Commands are fire-and-forget, so the handler returns nothing.  Any number of
+    // handlers can be registered for the same command.
+    server->receive{{command_name | UpperCamelCase}}Command([]({%for arg in command.arg_list%}{{arg.cpp.temp_type}} unused{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%})
+    {
+        std::cout << "Received {{command_name}} command\n";
+    });
+    {%endfor%}
+
     // Start a background thread that emits signals every 60 seconds.
     std::atomic<bool> keepRunning{true};
     std::thread periodicEmitter([server, &keepRunning]() {

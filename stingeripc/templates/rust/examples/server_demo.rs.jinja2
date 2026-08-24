@@ -125,6 +125,27 @@ async fn main() {
             {%- for topic_param in config.topics.params %} "example".to_string(), {% endfor %}).await;
     {%endif%}
 
+    {%if stinger.commands|length > 0 %}
+    // Receive each command through its broadcast channel.  Commands are fire-and-forget,
+    // so nothing is sent back and the client never learns whether the command was acted on.
+    // Any number of receivers may be subscribed to the same command.
+    {%for cmd_name, cmd in stinger.commands.items()-%}
+    let mut {{cmd_name|snake_case}}_rx = server.get_{{cmd_name|snake_case}}_receiver();
+    let _{{cmd_name|snake_case}}_task = tokio::spawn(async move {
+        loop {
+            match {{cmd_name|snake_case}}_rx.recv().await {
+                Ok(payload) => {
+                    println!("*** Received '{{cmd_name}}' command with payload: {:?}", payload);
+                },
+                Err(e) => {
+                    eprintln!("Error receiving '{{cmd_name}}' command: {:?}", e);
+                    break;
+                }
+            }
+        }
+    });
+    {%endfor%}
+    {%endif%}
     // Start the server connection loop in a separate task.
     let mut looping_server = server.clone();
     let _loop_join_handle = tokio::spawn(async move {

@@ -199,6 +199,20 @@ int main(int argc, char** argv)
     }
     {%-endfor%}
 
+    // Send each command with example values.
+    {%-for command_name, command in stinger.commands.items() %}
+
+    // ----------------------COMMAND {{command_name|CONST_CASE}}-----------------------------------------
+    { // Restrict scope for the `{{command_name}}` command.
+        // Commands are fire-and-forget, so there is no response to wait for.
+        std::cout << "SENDING {{command_name|CONST_CASE}}" << std::endl;
+        {%-for arg in command.arg_list%}{%if arg.arg_type.name.lower() == 'struct'%}
+        {{arg.cpp.type}} {{arg.name|lowerCamelCase}}Arg = {{arg.get_random_example_value('c++')}};
+        {%endif%}{%endfor-%}
+        client.send{{command_name | UpperCamelCase}}Command({%for arg in command.arg_list%}{%if arg.arg_type.name.lower() == 'struct'%}{{arg.name|lowerCamelCase}}Arg{%else%}{{arg.get_random_example_value('c++')}}{%endif%}{%if not loop.last%}, {%endif%}{%endfor%});
+    }
+    {%-endfor%}
+
     std::cout << "Connected and waiting.  Use Ctrl-C to exit." << std::endl;
 
     while (true) {

@@ -19,7 +19,7 @@ from pyqttier.mock import MockConnection
 from pyqttier.message import Message
 import json
 from pydantic import BaseModel
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
     """Convert a Pydantic model to a JSON-serializable dict."""
@@ -487,5 +487,67 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
         expected_resp_dict = to_jsonified_dict(expected_return_obj)
         {%endif-%}
         assert resp_payload == expected_resp_dict, f"Response payload '{resp_payload}' does not match expected '{expected_resp_dict}'"
+    {%endfor%}
+{%endif%}
+
+{%if stinger.commands | length > 0 %}
+class Test{{stinger.name|UpperCamelCase}}ServerCommands:
+    {%for command_name, command in stinger.commands.items()%}
+    def test_server_receive_{{command_name|snake_case}}_command(self, server, mock_connection):
+        """Test that a received '{{command_name|snake_case}}' command reaches every registered handler."""
+        received_args = [] # type: List[Dict[str, Any]]
+        def handler({%for arg in command.arg_list %}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}) -> None:
+            received_args.append({
+                {%-for arg in command.arg_list%}
+                "{{arg.name|snake_case}}": {{arg.name|snake_case}},
+                {%-endfor%}
+            })
+
+        # A command allows any number of handlers, so register two of them.
+        server.receive_{{command_name|snake_case}}(handler)
+        server.receive_{{command_name|snake_case}}(handler)
+
+        command_data = {
+            {%-for arg in command.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
+            {%-endfor%}
+        } # type: Dict[str, Any]
+        command_obj = {{command.python.payload_class_name}}(**command_data)
+        mock_connection.clear_published_messages() # ignore the property values and interface info published at startup
+        incoming_msg = Message(
+            topic="{{command.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
+            payload=command_obj.model_dump_json(by_alias=True).encode('utf-8'),
+            qos={{stinger.command_qos}},
+            retain=False,
+            content_type="application/json",
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert len(received_args) == 2, f"Both handlers for the '{{command_name|snake_case}}' command should have been called, but got {len(received_args)} call(s)"
+        for call_args in received_args:
+            assert call_args == command_data, f"Handler arguments {call_args} do not match expected {command_data}"
+
+        # A command is fire-and-forget, so nothing at all may be published in response.
+        assert len(mock_connection.published_messages) == 0, f"The '{{command_name|snake_case}}' command must not publish a response, but published {mock_connection.published_messages}"
+
+    def test_server_{{command_name|snake_case}}_command_without_handler_is_dropped(self, server, mock_connection):
+        """Test that a '{{command_name|snake_case}}' command with no registered handler is dropped rather than raising."""
+        command_data = {
+            {%-for arg in command.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
+            {%-endfor%}
+        } # type: Dict[str, Any]
+        command_obj = {{command.python.payload_class_name}}(**command_data)
+        mock_connection.clear_published_messages() # ignore the property values and interface info published at startup
+        incoming_msg = Message(
+            topic="{{command.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
+            payload=command_obj.model_dump_json(by_alias=True).encode('utf-8'),
+            qos={{stinger.command_qos}},
+            retain=False,
+            content_type="application/json",
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert len(mock_connection.published_messages) == 0, f"The '{{command_name|snake_case}}' command must not publish anything, but published {mock_connection.published_messages}"
     {%endfor%}
 {%endif%}

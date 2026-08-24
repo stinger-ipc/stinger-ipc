@@ -8,7 +8,7 @@ Stinger-IPC
 StingerIPC provides **inter-process communications (IPC)** between a server and
 multiple clients running on the same or separate hosts.  It uses an MQTT server
 to pass messages between processes, implementing several IPC patterns: signals,
-properties, and procedures.
+commands, properties, and procedures.
 
 Given a declarative description of an interface (a ``*.stinger.yaml`` file),
 Stinger-IPC generates ready-to-use client and server code in multiple target

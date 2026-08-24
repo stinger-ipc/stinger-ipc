@@ -291,6 +291,45 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
     _broker->Log(LOG_DEBUG, "End of response handler for {{method_name}}");
 }
 {%endfor%}{# end for each method #}
+{%for command_name, command in stinger.commands.items()%}
+void {{stinger.cpp.client_class_name}}::send{{command_name | UpperCamelCase}}Command({%for arg in command.arg_list%}{{arg.cpp.func_param_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
+{
+    {{command.cpp.payload_struct_name}} commandPayload{ {%for arg in command.arg_list%}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    if (!commandPayload.ValidateSchema()) {
+        _broker->Log(LOG_WARNING, "Payload for '{{command_name}}' command failed schema validation; not sending.");
+        return;
+    }
+
+    rapidjson::Document doc;
+    doc.SetObject();
+    commandPayload.AddToRapidJsonObject(doc, doc.GetAllocator());
+
+    rapidjson::StringBuffer buf;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+    doc.Accept(writer);
+
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    {%-for topic_param in config.topics.params %}
+    topicParams["{{topic_param}}"] = _instanceInfo.{{topic_param|lowerCamelCase}}.value_or("error_{{topic_param}}_not_found");
+    {%-endfor%}
+
+    auto topic = stinger::utils::format("{{command.topic()}}", topicParams);
+
+    // Commands are fire-and-forget, so the message carries no response topic and no
+    // correlation data; nothing comes back from the server.
+    stinger::mqtt::Properties commandProperties;
+    commandProperties.contentType = "application/json";
+    {%-if command.version%}
+    commandProperties.version = "{{command.version}}";
+    {%-endif%}
+    auto msg = stinger::mqtt::Message(topic, buf.GetString(), {{stinger.command_qos}}, false, commandProperties);
+
+    _broker->Publish(msg);
+}
+{%endfor%}{# end for each command #}
 {%for prop_name, prop in stinger.properties.items()%}
 void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}PropertyUpdate(const stinger::mqtt::Message& msg)
 {

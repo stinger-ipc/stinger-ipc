@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
+import math
 import random
 from abc import abstractmethod
 from copy import copy
-from typing import Any, Optional, Mapping, TYPE_CHECKING
+from typing import Any, Callable, Optional, Mapping, Sequence, TYPE_CHECKING
 
+import jsonschema_rs
 from jacobsjinjatoo import stringmanip
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -25,6 +28,98 @@ YamlIfaceProperty = dict[str, str | bool | YamlArgList]
 
 # These names cannot be used for method/property/signal names because they are reserved keywords.
 RESTRICTED_NAMES = ["type", "class", "struct", "enum", "list", "map", "set", "optional", "bool", "int", "float", "string", "datetime", "duration", "binary"]
+
+
+# Draft 4 validators, keyed by the schema they were built from.  Building one is not
+# free and the same handful of schemas are asked about repeatedly while rendering.
+_VALIDATOR_CACHE: dict[str, Any] = {}
+
+# How many integers to walk when deriving a value from a numeric constraint.
+_DERIVE_SCAN_LIMIT = 2000
+
+# The stock example values for each primitive type.  They are the plain JSON values rather
+# than language-rendered snippets, so a candidate can be checked against a 'schema'
+# constraint before it is rendered.
+_BOOLEAN_EXAMPLES: tuple[bool, ...] = (True, False)
+_FLOAT_EXAMPLES: tuple[float, ...] = (3.14, 1.0, 2.5, 97.9, 1.53, 2.718, 1.618, 1.4142, 0.333333333, 98.6)
+_INTEGER_EXAMPLES: tuple[int, ...] = (42, 1981, 2020, 2022, 1200, 5, 99, 123, 2025, 1955, 2, 0, 10, 100, 25, 216, 256)
+_STRING_EXAMPLES: tuple[str, ...] = ("apples", "Joe", "example", "foo", "bar", "tiger", "bear", "root beer", "smart home", "pegasus", "general", "be wise")
+
+
+def _draft4_validator(schema: dict[str, Any]) -> Any:
+    """Return a cached Draft 4 validator for an argument's ``schema`` constraint.
+
+    Argument schemas are Draft 4 — the subset the RapidJSON C++ validator implements —
+    so this generator and the generated code agree on what a constraint means.
+    """
+    key = json.dumps(schema, sort_keys=True, default=str)
+    validator = _VALIDATOR_CACHE.get(key)
+    if validator is None:
+        validator = jsonschema_rs.Draft4Validator(schema)
+        _VALIDATOR_CACHE[key] = validator
+    return validator
+
+
+def _derive_integers(schema: dict[str, Any]) -> list[int]:
+    """Integers to try when no stock example satisfies a constraint.
+
+    The bounds narrow the walk; the validator decides which of the values is acceptable,
+    so ``exclusiveMinimum``, ``multipleOf``, and friends need no special handling here.
+    """
+    low, high = schema.get("minimum"), schema.get("maximum")
+    if low is not None:
+        start = int(math.ceil(low))
+    elif high is not None:
+        start = int(math.floor(high)) - _DERIVE_SCAN_LIMIT
+    else:
+        start = 0
+    end = int(math.floor(high)) if high is not None else start + _DERIVE_SCAN_LIMIT
+    if end < start:
+        return []
+    return list(range(start, min(end, start + _DERIVE_SCAN_LIMIT) + 1))
+
+
+def _derive_floats(schema: dict[str, Any]) -> list[float]:
+    """Floats to try when no stock example satisfies a constraint."""
+    low, high = schema.get("minimum"), schema.get("maximum")
+    step = schema.get("multipleOf")
+    probes: list[float] = []
+    if low is not None and high is not None:
+        span = high - low
+        probes += [low + span * fraction for fraction in (0.5, 0.25, 0.75, 0.1, 0.9)]
+        probes += [float(low), float(high)]
+    elif low is not None:
+        probes += [float(low), low + 0.5, low + 1.0, low + 10.0]
+    elif high is not None:
+        probes += [float(high), high - 0.5, high - 1.0, high - 10.0]
+    if step:
+        base = low if low is not None else 0.0
+        first = step * math.ceil(base / step)
+        probes += [first + step * n for n in range(4)]
+    return probes
+
+
+def _derive_strings(schema: dict[str, Any]) -> list[str]:
+    """Strings to try when no stock example satisfies a length constraint.
+
+    A ``pattern`` constraint cannot be satisfied by construction, so nothing here tries
+    to; the caller reports an unsatisfiable constraint instead of guessing.
+    """
+    min_length = int(schema.get("minLength", 0) or 0)
+    max_length = schema.get("maxLength")
+    filler = "example value long enough to satisfy a generous maxLength constraint"
+    lengths = {max(min_length, 1)}
+    if max_length is not None:
+        lengths.add(int(max_length))
+    if min_length == 0:
+        lengths.add(0)
+    probes: list[str] = []
+    for length in sorted(lengths):
+        if length <= 0:
+            probes.append("")
+            continue
+        probes.append((filler * (length // len(filler) + 1))[:length])
+    return probes
 
 
 def _spec_version_at_least(version: Optional[str], minimum: tuple[int, ...]) -> bool:
@@ -57,6 +152,51 @@ class Arg(BaseModel):
         if "description" in spec and isinstance(spec["description"], str):
             self.description = spec["description"].strip()
         return self
+
+    def schema_allows(self, value: Any) -> bool:
+        """True if ``value`` satisfies this argument's ``schema`` constraint.
+
+        An argument that declares no constraint allows everything.
+        """
+        if not self.value_schema:
+            return True
+        return bool(_draft4_validator(self.value_schema).is_valid(value))
+
+    def _pick_example_value(self, candidates: Sequence[Any], derive: Optional[Callable[[dict[str, Any]], Sequence[Any]]] = None) -> Any:
+        """Choose a random example value that satisfies this argument's ``schema`` constraint.
+
+        An argument with no constraint gets a plain random choice, so its example values
+        are exactly what they were before constraints were taken into account.  When a
+        constraint is declared, the stock candidates are narrowed to the conforming ones;
+        if none conform, the constraint's own ``enum`` and then values derived from its
+        bounds are tried.  The point is that generated demos, tests, and documentation
+        never carry a value that the generated validation code would reject.
+        """
+        if not self.value_schema:
+            return random.choice(list(candidates))
+
+        conforming = [candidate for candidate in candidates if self.schema_allows(candidate)]
+        if conforming:
+            return random.choice(conforming)
+
+        schema_enum = self.value_schema.get("enum")
+        if isinstance(schema_enum, list):
+            for candidate in schema_enum:
+                if self.schema_allows(candidate):
+                    return candidate
+
+        if derive is not None:
+            for candidate in derive(self.value_schema):
+                if self.schema_allows(candidate):
+                    return candidate
+
+        raise InvalidStingerStructure(
+            f"Could not build an example value for the '{self.name}' argument that satisfies its "
+            f"'schema' constraint {self.value_schema}.  Example values are used by the generated "
+            f"demos, tests, and documentation, so the constraint needs at least one value that a "
+            f"generated example can actually take.  Widen the constraint, or state it in a form "
+            f"that a concrete value can satisfy (a 'pattern' cannot be satisfied by construction)."
+        )
 
     def try_set_schema_from_spec(self, spec: Mapping[str, Any]) -> "Arg":
         """Set ``value_schema`` from a parsed spec dict's ``schema`` block if present."""
@@ -209,10 +349,21 @@ class ArgEnum(Arg):
         LanguageSymbolMixin.enhance(self)
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str:
-        """Return a randomly chosen enum member expressed for the target language."""
+        """Return a randomly chosen enum member expressed for the target language.
+
+        An enum value travels the wire as its integer, so a ``schema`` constraint on the
+        argument narrows which members an example may use.
+        """
         random_state = random.getstate()
         random.seed(seed)
-        random_enum_item = random.choice(self.enum.items)
+        allowed_items = [item for item in self.enum.items if self.schema_allows(item.integer)]
+        if not allowed_items:
+            random.setstate(random_state)
+            raise InvalidStingerStructure(
+                f"No member of the '{self.enum.name}' enum satisfies the 'schema' constraint "
+                f"{self.value_schema} declared on the '{self.name}' argument, so no example value can be built."
+            )
+        random_enum_item = random.choice(allowed_items)
         if lang == "python":
             retval = f"{self.enum.class_name}.{stringmanip.const_case(random_enum_item.name) }"
         elif lang == "c++":
@@ -260,28 +411,34 @@ class ArgPrimitive(Arg):
         return ArgPrimitiveType.to_json_type(self.primitive_type)
 
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | float | int | bool | None:
-        """Return a random example value for this primitive in the target language."""
+        """Return a random example value for this primitive in the target language.
+
+        When the argument declares a ``schema`` constraint, the value satisfies it, so the
+        generated demos and tests never carry a value the generated code would reject.
+        """
         random_state = random.getstate()
         random.seed(seed)
-        retval: str | float | int | bool | None = None
-        if self.primitive_type == ArgPrimitiveType.BOOLEAN:
-            retval = random.choice([True, False])
-            if lang != "python":
-                retval = str(retval).lower()
-        elif self.primitive_type == ArgPrimitiveType.FLOAT:
-            retval = random.choice([3.14, 1.0, 2.5, 97.9, 1.53])
-        elif self.primitive_type == ArgPrimitiveType.INTEGER:
-            retval = random.choice([42, 1981, 2020, 2022, 1200, 5, 99, 123, 2025, 1955])
-        elif self.primitive_type == ArgPrimitiveType.STRING:
-            retval = random.choice(['"apples"', '"Joe"', '"example"', '"foo"', '"bar"', '"tiger"', '"bear"', '"root beer"'])
-            if lang == "rust":
-                retval = f"{retval}.to_string()"
-            if self.optional and lang in ["cpp", "c++"]:
-                retval = f"std::make_optional(std::string({retval}))"
-        if self.optional and lang == "rust":
-            retval = f"Some({retval})"
-        random.setstate(random_state)
-        return retval
+        try:
+            retval: str | float | int | bool | None = None
+            if self.primitive_type == ArgPrimitiveType.BOOLEAN:
+                retval = self._pick_example_value(_BOOLEAN_EXAMPLES)
+                if lang != "python":
+                    retval = str(retval).lower()
+            elif self.primitive_type == ArgPrimitiveType.FLOAT:
+                retval = self._pick_example_value(_FLOAT_EXAMPLES, _derive_floats)
+            elif self.primitive_type == ArgPrimitiveType.INTEGER:
+                retval = self._pick_example_value(_INTEGER_EXAMPLES, _derive_integers)
+            elif self.primitive_type == ArgPrimitiveType.STRING:
+                retval = f'"{self._pick_example_value(_STRING_EXAMPLES, _derive_strings)}"'
+                if lang == "rust":
+                    retval = f"{retval}.to_string()"
+                if self.optional and lang in ["cpp", "c++"]:
+                    retval = f"std::make_optional(std::string({retval}))"
+            if self.optional and lang == "rust":
+                retval = f"Some({retval})"
+            return retval
+        finally:
+            random.setstate(random_state)
 
     def __repr__(self) -> str:
         return f"<ArgPrimitive name={self.name} type={ArgPrimitiveType.to_python_type(self.primitive_type)}>"
@@ -482,26 +639,44 @@ class ArgArray(Arg):
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
 
+    def _example_element_count(self, default: int) -> int:
+        """How many example elements to emit, clamped to any ``minItems``/``maxItems`` constraint."""
+        schema = self.value_schema or {}
+        count = default
+        min_items = schema.get("minItems")
+        max_items = schema.get("maxItems")
+        if isinstance(min_items, int):
+            count = max(count, min_items)
+        if isinstance(max_items, int):
+            count = min(count, max_items)
+        return max(count, 0)
+
+    def _example_elements(self, lang: str, seed: int, count: int) -> str:
+        """Render ``count`` example elements, each from its own seed, as a comma-separated list."""
+        return ", ".join(str(self.element.get_random_example_value(lang, seed=seed + offset)) for offset in range(count))
+
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
-        """Return a random array example expressed in the target language."""
-        example_value = self.element.get_random_example_value(lang, seed=seed)
-        example_value2 = self.element.get_random_example_value(lang, seed=seed + 1)
-        example_value3 = self.element.get_random_example_value(lang, seed=seed + 2)
+        """Return a random array example expressed in the target language.
+
+        A ``schema`` constraint on the array itself decides how many elements an example
+        carries, and one on the element type constrains each element.
+        """
         if lang == "python":
-            return f"[{example_value}, {example_value2}]"
+            return f"[{self._example_elements(lang, seed, self._example_element_count(2))}]"
         elif lang == "rust":
             if self.optional:
-                return f"Some(vec![{example_value}, {example_value2}, {example_value3}])"
-            return f"vec![{example_value}, {example_value2}]"
+                return f"Some(vec![{self._example_elements(lang, seed, self._example_element_count(3))}])"
+            return f"vec![{self._example_elements(lang, seed, self._example_element_count(2))}]"
         elif lang in ["c++", "cpp"]:
-            return f"std::vector<{self.element.cpp.temp_type}>{{{example_value}, {example_value2}, {example_value3}}}"  # type: ignore[attr-defined]
+            return f"std::vector<{self.element.cpp.temp_type}>{{{self._example_elements(lang, seed, self._example_element_count(3))}}}"  # type: ignore[attr-defined]
         elif lang == "json":
-            if self.optional and random.choice([True, False, False, False, False]):
+            # An empty array or a null is only offered when the constraint actually permits it.
+            if self.optional and self.schema_allows(None) and random.choice([True, False, False, False, False]):
                 retval = "null"
-            elif random.choice([True, False, False, True, False]):
+            elif self.schema_allows([]) and random.choice([True, False, False, True, False]):
                 retval = "[]"
             else:
-                retval = f"[{example_value}, {example_value2}]"
+                retval = f"[{self._example_elements(lang, seed, self._example_element_count(2))}]"
             return retval
         elif hasattr(self, lang) and hasattr(getattr(self, lang), "get_random_example_value"):
             return getattr(self, lang).get_random_example_value(seed=seed)

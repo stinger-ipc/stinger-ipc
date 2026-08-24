@@ -62,7 +62,7 @@ def _collect_struct_dependencies(struct_spec: Dict[str, Any], used_enums: Set[st
 
 def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, Any]:
     """
-    Filter a StingerInterface to only include methods, properties, signals, and events that specify the given consumer.
+    Filter a StingerInterface to only include methods, commands, properties, signals, and events that specify the given consumer.
 
     Args:
         interface: The original StingerInterface.
@@ -73,6 +73,7 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
 
     Methodology:
         - Methods are included if they have the consumer in their consumers list.
+        - Commands are included if they have the consumer in their consumers list.
         - Properties are included if they have the consumer in their consumers list.
         - Signals are included if they have the consumer in their consumers list
 
@@ -127,6 +128,18 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
                 _collect_used_types(_method_return_args(method_spec), used_enums, used_structs)
         filtered_dict["methods"] = filtered_methods
 
+    # Filter commands
+    if "commands" in filtered_dict:
+        filtered_commands = {}
+        for command_name, command_spec in filtered_dict["commands"].items():
+            consumers = command_spec.get("consumers", [])
+            if consumer_name in consumers:
+                filtered_commands[command_name] = command_spec
+                # Collect types used in arguments
+                arguments = command_spec.get("arguments", [])
+                _collect_used_types(arguments, used_enums, used_structs)
+        filtered_dict["commands"] = filtered_commands
+
     # Now collect dependencies from used structs
     interface_dict = cast(Dict[str, Any], interface)  # StingerSpec acts as dict-like
     if "structures" in interface_dict:
@@ -157,7 +170,7 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
     Also make sure the two versions are compatible, which means the major and minor versions must match.
 
     Raises:
-        ValueError: If any method, property, signal, or event specifies consumers but does not specify a version.
+        ValueError: If any method, command, property, signal, or event specifies consumers but does not specify a version.
     """
 
     def check_args(args: list[Dict[str, Any]], component_name: str, component_type: str) -> None:
@@ -269,6 +282,17 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
 
             # Check the return value
             check_args(_method_return_args(method_spec), method_name, "Method")
+
+    # Check commands
+    if "commands" in interface:
+        for command_name, command_spec in interface["commands"].items():
+            # Check if consumers specified but version is missing
+            if command_spec.get("consumers") and not command_spec.get("version"):
+                raise ValueError(f"Command '{command_name}' specifies consumers but does not specify a version")
+
+            # Check arguments
+            arguments = command_spec.get("arguments", [])
+            check_args(arguments, command_name, "Command")
 
     # Check struct values recursively
     if "structures" in interface:

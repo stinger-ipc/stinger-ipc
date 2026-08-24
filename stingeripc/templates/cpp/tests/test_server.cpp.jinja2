@@ -7,7 +7,8 @@ stinger-cpp-utils to drive the server without a real MQTT broker:
   - construction registers the expected request/update subscriptions,
   - emitting a signal publishes it to the broker,
   - a simulated incoming method request invokes the registered handler and publishes a response,
-  - setting a property publishes its value, and a simulated update request is re-published.
+  - setting a property publishes its value, and a simulated update request is re-published,
+  - a simulated incoming command invokes every registered handler.
 
 {%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 */
@@ -31,6 +32,7 @@ stinger-cpp-utils to drive the server without a real MQTT broker:
 #include "structs.hpp"
 #include "signal_payloads.hpp"
 #include "method_payloads.hpp"
+#include "command_payloads.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
 {%if stinger.properties | length > 0 %}#include "{{stinger.cpp.property_struct_header_file}}"{%endif%}
 
@@ -103,14 +105,17 @@ std::unique_ptr<{{stinger.cpp.server_class_name}}> {{stinger.cpp.server_class_na
 
 } // anonymous namespace
 
-// The server should subscribe to one topic per method request and per property update.
+// The server should subscribe to one topic per method request, per command, and per property update.
 TEST_F({{stinger.cpp.server_class_name}}Test, SubscribesToExpectedTopics)
 {
-    const std::size_t expected = {{ stinger.methods|length + stinger.properties|length }};
+    const std::size_t expected = {{ stinger.methods|length + stinger.commands|length + stinger.properties|length }};
     EXPECT_EQ(_conn->GetSubscriptions().size(), expected);
 
     {%-for method_name, method in stinger.methods.items() %}
     EXPECT_TRUE(_conn->IsSubscribed(stinger::utils::format("{{method.request_topic()}}", topicArgs()))) << "Not subscribed to {{method_name}} request topic";
+    {%-endfor%}
+    {%-for command_name, command in stinger.commands.items() %}
+    EXPECT_TRUE(_conn->IsSubscribed(stinger::utils::format("{{command.topic()}}", topicArgs()))) << "Not subscribed to {{command_name}} command topic";
     {%-endfor%}
     {%-for prop_name, prop in stinger.properties.items() %}
     EXPECT_TRUE(_conn->IsSubscribed(stinger::utils::format("{{prop.update_topic()}}", topicArgs()))) << "Not subscribed to {{prop_name}} update topic";
@@ -118,7 +123,6 @@ TEST_F({{stinger.cpp.server_class_name}}Test, SubscribesToExpectedTopics)
 }
 
 {%for sig_name, sig in stinger.signals.items()%}
-{%-if sig.arg_list | selectattr('value_schema') | list | length == 0 %}
 // Emitting `{{sig_name}}` should publish the signal to the broker.
 TEST_F({{stinger.cpp.server_class_name}}Test, {{sig_name | UpperCamelCase}}EmitPublishes)
 {
@@ -134,11 +138,9 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{sig_name | UpperCamelCase}}EmitP
     EXPECT_FALSE(doc.Parse(published[0].payload.c_str()).HasParseError()) << "Published signal payload is not valid JSON";
     EXPECT_TRUE(doc.IsObject());
 }
-{%endif%}
 {%endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-{%-if method.arg_list | selectattr('value_schema') | list | length == 0 %}
 // A simulated `{{method_name}}` request should invoke the registered handler and publish a response.
 TEST_F({{stinger.cpp.server_class_name}}Test, {{method_name | UpperCamelCase}}RequestInvokesHandler)
 {
@@ -172,7 +174,6 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{method_name | UpperCamelCase}}Re
     // The server publishes a response (success or error) to the response topic.
     EXPECT_EQ(_conn->GetPublishedMessages(responseTopic).size(), 1u);
 }
-{%endif%}
 {%endfor%}
 
 {%for prop_name, prop in stinger.properties.items()%}
@@ -210,4 +211,38 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{prop_name | UpperCamelCase}}Upda
     EXPECT_EQ(_conn->GetPublishedMessages(valueTopic).size(), 1u);
 }
 {%endif%}
+{%endfor%}
+
+{%for command_name, command in stinger.commands.items()%}
+// A simulated `{{command_name}}` command should be dispatched to the registered handler.
+TEST_F({{stinger.cpp.server_class_name}}Test, {{command_name | UpperCamelCase}}CommandInvokesHandler)
+{
+    // Captured by value (shared_ptr) so the registered handler stays valid for the
+    // lifetime of the shared server, even after this test returns.
+    auto handlerCalled = std::make_shared<bool>(false);
+    _server->receive{{command_name | UpperCamelCase}}Command([handlerCalled]({%for arg in command.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})
+    {
+        *handlerCalled = true;
+    });
+
+    {%if command.arg_list | length > 0 %}
+    {{command.cpp.payload_struct_name}} commandPayload{ {%for arg in command.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    const std::string payload = serializeToString(commandPayload);
+    {%else%}
+    const std::string payload = "{}";
+    {%endif%}
+
+    const std::string commandTopic = stinger::utils::format("{{command.topic()}}", topicArgs());
+    // Commands are published without a response topic or correlation data.
+    stinger::mqtt::Properties commandProperties;
+    commandProperties.contentType = "application/json";
+    auto msg = stinger::mqtt::Message(commandTopic, payload, {{stinger.command_qos}}, false, commandProperties);
+
+    _conn->ClearPublishedMessages();
+    _conn->SimulateIncomingMessage(msg);
+
+    EXPECT_TRUE(*handlerCalled);
+    // Commands have no response channel, so the server must not publish anything back.
+    EXPECT_EQ(_conn->GetPublishedMessages(commandTopic).size(), 0u);
+}
 {%endfor%}

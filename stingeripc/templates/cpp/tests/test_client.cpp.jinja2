@@ -7,7 +7,8 @@ stinger-cpp-utils to drive the client without a real MQTT broker:
   - construction registers the expected topic subscriptions,
   - calling a method publishes a request to the broker,
   - updating a (writable) property publishes an update request,
-  - a simulated incoming signal message invokes the registered callback.
+  - a simulated incoming signal message invokes the registered callback,
+  - sending a command publishes it to the broker.
 
 {%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 */
@@ -29,6 +30,7 @@ stinger-cpp-utils to drive the client without a real MQTT broker:
 #include "structs.hpp"
 #include "signal_payloads.hpp"
 #include "method_payloads.hpp"
+#include "command_payloads.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
 {%if stinger.properties | length > 0 %}#include "{{stinger.cpp.property_struct_header_file}}"{%endif%}
 
@@ -110,7 +112,6 @@ TEST_F({{stinger.cpp.client_class_name}}Test, SubscribesToExpectedTopics)
 }
 
 {%for sig_name, sig in stinger.signals.items()%}
-{%-set sig_has_schema = sig.arg_list | selectattr('value_schema') | list | length > 0 %}
 // A simulated incoming `{{sig_name}}` signal should be dispatched to the registered callback.
 TEST_F({{stinger.cpp.client_class_name}}Test, {{sig_name | UpperCamelCase}}SignalInvokesCallback)
 {
@@ -128,18 +129,11 @@ TEST_F({{stinger.cpp.client_class_name}}Test, {{sig_name | UpperCamelCase}}Signa
 
     _conn->SimulateIncomingMessage(msg);
 
-    {%-if sig_has_schema %}
-    // This signal declares a JSON-schema constraint; whether the example payload
-    // passes validation (and therefore reaches the callback) depends on the value,
-    // so we only assert that processing the message does not crash.
-    {%-else %}
     EXPECT_TRUE(callbackInvoked);
-    {%-endif %}
 }
 {%endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-{%-if method.arg_list | selectattr('value_schema') | list | length == 0 %}
 // Calling `{{method_name}}` should publish a request to the broker.
 TEST_F({{stinger.cpp.client_class_name}}Test, {{method_name | UpperCamelCase}}PublishesRequest)
 {
@@ -155,7 +149,6 @@ TEST_F({{stinger.cpp.client_class_name}}Test, {{method_name | UpperCamelCase}}Pu
     EXPECT_FALSE(doc.Parse(published[0].payload.c_str()).HasParseError()) << "Published request payload is not valid JSON";
     EXPECT_TRUE(doc.IsObject());
 }
-{%endif%}
 {%endfor%}
 
 {%for prop_name, prop in stinger.properties.items()%}
@@ -176,4 +169,28 @@ TEST_F({{stinger.cpp.client_class_name}}Test, {{prop_name | UpperCamelCase}}Upda
     EXPECT_TRUE(doc.IsObject());
 }
 {%endif%}
+{%endfor%}
+
+{%for command_name, command in stinger.commands.items()%}
+// Sending `{{command_name}}` should publish the command to the broker.
+TEST_F({{stinger.cpp.client_class_name}}Test, {{command_name | UpperCamelCase}}CommandPublishes)
+{
+    _conn->ClearPublishedMessages();
+    {%-for arg in command.arg_list%}{%if arg.arg_type.name.lower() == 'struct'%}
+    {{arg.cpp.type}} {{arg.name|lowerCamelCase}}Arg = {{arg.get_random_example_value(lang="c++")}};
+    {%-endif%}{%endfor%}
+
+    _client->send{{command_name | UpperCamelCase}}Command({%for arg in command.arg_list%}{%if arg.arg_type.name.lower() == 'struct'%}{{arg.name|lowerCamelCase}}Arg{%else%}{{arg.get_random_example_value(lang="c++")}}{%endif%}{%if not loop.last%}, {%endif%}{%endfor%});
+
+    auto published = _conn->GetPublishedMessages();
+    ASSERT_EQ(published.size(), 1u);
+    EXPECT_EQ(published[0].topic, stinger::utils::format("{{command.topic()}}", topicParams()));
+    // Commands are fire-and-forget, so they carry no response topic and no correlation data.
+    EXPECT_FALSE(published[0].properties.responseTopic.has_value());
+    EXPECT_FALSE(published[0].properties.correlationData.has_value());
+
+    rapidjson::Document doc;
+    EXPECT_FALSE(doc.Parse(published[0].payload.c_str()).HasParseError()) << "Published command payload is not valid JSON";
+    EXPECT_TRUE(doc.IsObject());
+}
 {%endfor%}

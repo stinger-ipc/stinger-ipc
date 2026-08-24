@@ -118,3 +118,33 @@ class TestClientMethods:
         assert message.topic == expected_topic, f"Incorrect topic for '{{method_name|snake_case}}' method call: {message.topic}"
     {%endfor%}
 {%endif%}
+{%if stinger.commands | length > 0 %}
+class TestClientCommands:
+
+    {%for command_name, command in stinger.commands.items()%}
+    def test_send_{{command_name|snake_case}}_publishes_command(self, mock_connection, client):
+        kwargs = {
+        {%-for arg in command.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value()}},
+        {%endfor-%}
+        } # type: Dict[str, Any]
+        client.send_{{command_name|snake_case}}(**kwargs)
+
+        published_list = mock_connection.find_published("{{command.topic() | regex_replace("\{[A-Za-z_]+\}", "+") }}")
+        assert len(published_list) == 1, f"No message was published for the '{{command_name|snake_case}}' command.  Messages: {mock_connection.published_messages}"
+
+        message = published_list[0]
+        expected_topic = "{{command.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
+        assert message.topic == expected_topic, f"Incorrect topic for the '{{command_name|snake_case}}' command: {message.topic}"
+        assert message.qos == {{stinger.command_qos}}, "Command '{{command_name|snake_case}}' was published with incorrect QoS"
+        assert message.retain is False, "Command '{{command_name|snake_case}}' was published with incorrect retain flag"
+        assert message.content_type == "application/json", "Command '{{command_name|snake_case}}' was published with incorrect content type"
+        assert message.response_topic is None, "Command '{{command_name|snake_case}}' must not carry a response topic"
+
+        # Verify payload
+        expected_obj = {{command.python.payload_class_name}}(**kwargs) # type: ignore[arg-type]
+        expected_dict = to_jsonified_dict(expected_obj)
+        payload_dict = json.loads(message.payload.decode('utf-8'))
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
+    {%endfor%}
+{%endif%}

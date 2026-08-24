@@ -51,6 +51,18 @@ methods:
       type: integer
       description: My favorite number
   
+commands:
+
+  ring_the_bell:
+    documentation: A simple command telling the server to ring the school bell.
+    arguments:
+      - name: times
+        type: integer
+        description: How many times to ring the bell.
+        schema:
+          minimum: 1
+          maximum: 12
+
 properties:
 
   school:

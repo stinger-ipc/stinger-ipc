@@ -56,6 +56,7 @@ class TopicConfig(BaseModel):
     property_values: str = Field(default="{interface_name}/{service_id}/property/{property_name}/value", description="Topic template for property values")
     property_updates: str = Field(default="{interface_name}/{service_id}/property/{property_name}/update", description="Topic template for property updates")
     property_update_responses: str = Field(default="client/{client_id}/{interface_name}/property/{property_name}/update/response", description="Topic template for property update responses")
+    commands: str = Field(default="{interface_name}/{service_id}/command/{command_name}", description="Topic template for commands")
     method_requests: str = Field(default="{interface_name}/{service_id}/method/{method_name}/request", description="Topic template for method requests")
     method_responses: str = Field(default="client/{client_id}/{interface_name}/method/{method_name}/response", description="Topic template for method responses")
     interface_discovery: str = Field(default="{interface_name}/{service_id}/interface", description="Topic template for interface discovery")
@@ -68,6 +69,15 @@ class TopicConfig(BaseModel):
             raise ValueError('"property_values" topic template must contain {property_name} placeholder')
         if get_argument_position(v, "service_id") is None:
             raise ValueError('"property_values" topic template must contain {service_id} placeholder')
+        return v
+
+    @field_validator("commands")
+    @classmethod
+    def validate_commands(cls, v: str) -> str:
+        if get_argument_position(v, "command_name") is None:
+            raise ValueError('"commands" topic template must contain {command_name} placeholder')
+        if get_argument_position(v, "service_id") is None:
+            raise ValueError('"commands" topic template must contain {service_id} placeholder')
         return v
 
     @field_validator("property_update_responses")
@@ -87,7 +97,7 @@ class TopicConfig(BaseModel):
     @field_validator("params")
     @classmethod
     def validate_params(cls, v: List[str]) -> List[str]:
-        reserved_params = {"interface_name", "service_id", "signal_name", "property_name", "method_name", "client_id", "instance_id"}
+        reserved_params = {"interface_name", "service_id", "signal_name", "property_name", "method_name", "command_name", "client_id", "instance_id"}
         for param in v:
             if param in reserved_params:
                 raise ValueError(f"Custom topic parameters cannot use reserved names: {param}")

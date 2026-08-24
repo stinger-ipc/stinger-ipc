@@ -24,6 +24,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 #include "{{stinger.cpp.enum_header_file}}"
 #include "method_payloads.hpp"
 #include "signal_payloads.hpp"
+#include "command_payloads.hpp"
 #include "discovery.hpp"
 
 {%if stinger.properties | length > 0 %}#include "{{stinger.cpp.property_struct_header_file}}"{%endif%}
@@ -59,6 +60,15 @@ public:
     // Calls the `{{method_name}}` method.
     // Returns a future.  When that future resolves, it will have the {%if method.return_value is none%}method's completion{%else%}`{{method.return_value.name}}` return value{%endif%}.
     std::future<{{method.cpp.return_value_class}}> {{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
+    {%endfor%}
+    {%endif%}
+    {%if stinger.commands|length > 0 -%}
+    // ------------------- COMMANDS -------------------
+    {%for command_name, command in stinger.commands.items()%}
+    // Sends the `{{command_name}}` command to the server.
+    // Commands are fire-and-forget: there is no response, so nothing is returned and
+    // the client never learns whether the server acted on it.
+    void send{{command_name | UpperCamelCase}}Command({%for arg in command.arg_list%}{{arg.cpp.func_param_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
     {%endfor%}
     {%endif%}
     {%if stinger.properties|length > 0 -%}

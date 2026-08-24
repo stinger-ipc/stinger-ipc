@@ -24,6 +24,9 @@ Interface elements
 .. automodule:: stingeripc.ipc_method
    :members:
 
+.. automodule:: stingeripc.ipc_command
+   :members:
+
 .. automodule:: stingeripc.ipc_property
    :members:
 

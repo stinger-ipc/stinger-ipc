@@ -49,6 +49,7 @@ properties:
       signals: false # 'signals' is allowed only at the top level
       properties: false # 'properties' is allowed only at the top level
       methods: false # 'methods' is allowed only at the top level
+      commands: false # 'commands' is allowed only at the top level
       constants: false # 'constants' is allowed only at the top level
     required:
       - name
@@ -174,6 +175,19 @@ properties:
 
   method: false # Use 'methods' instead
 
+  commands:
+    type: object
+    propertyNames:
+      pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
+    additionalProperties:
+      $ref: "#/$defs/command"
+
+  command: false # Use 'commands' instead
+  cmds: false # Use 'commands' instead
+  cmd: false # Use 'commands' instead
+
   constants:
     type: object
     propertyNames:
@@ -229,7 +243,7 @@ $defs:
       pattern: "^[a-zA-Z0-9_-]+$"
     uniqueItems: true
     description: >
-      A list of names representing interface consumers that are allowed access to this signal, property, or method.
+      A list of names representing interface consumers that are allowed access to this signal, property, method, or command.
 
   argDescription:
     type: string
@@ -596,6 +610,52 @@ $defs:
             $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
           returnValue:
             $ref: "#/$defs/enumOrStructArgMustHaveVersion"
+
+  command:
+    type: object
+    properties:
+      documentation:
+        $ref: "#/$defs/documentation"
+      description: false
+      arguments:
+        $ref: "#/$defs/payload"
+      protobuf:
+        $ref: "#/$defs/protobufPayload"
+      protoBuf: false # Use all lowercase 'protobuf'
+      argument: false # use 'arguments' instead
+      params: false # use 'arguments' instead
+      payload: false # use 'arguments' instead
+      args: false # use 'arguments' instead
+      arg: false # use 'arguments' instead
+      values: false # use 'arguments' instead
+      value: false # use 'arguments' instead
+      returnValue: false # A command has no response; use a method if you need one
+      returnValues: false # A command has no response; use a method if you need one
+      returns: false # A command has no response; use a method if you need one
+      returnProtobuf: false # A command has no response; use a method if you need one
+      consumers:
+        $ref: "#/$defs/consumersField"
+      consumer: false # Use 'consumers' instead
+      version:
+        $ref: "#/$defs/versionField"
+    oneOf:
+      - required:
+          - arguments
+        not:
+          required:
+            - protobuf
+      - required:
+          - protobuf
+        not:
+          required:
+            - arguments
+    dependencies:
+      consumers:
+        - version
+      version:
+        properties:
+          arguments:
+            $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
 
   # A restricted JSON Schema describing only the constructs that the RapidJSON
   # C++ schema validator implements (JSON Schema Draft 4).  The generated C++

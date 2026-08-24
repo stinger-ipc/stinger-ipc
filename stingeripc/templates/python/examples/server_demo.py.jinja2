@@ -103,6 +103,13 @@ if __name__ == '__main__':
         print(f"--> Running {{method_name | snake_case}}({%for arg in method.arg_list %}{ {{-arg.name-}}{% if 'bytes' in arg.python.annotation %}!r{%endif-%} }{%if not loop.last%}, {%endif%}{%endfor%})'")
         return {{method.get_return_value_random_example_value('python')}}
     {%endfor%}
+    {%for command_name, command in stinger.commands.items()%}
+    @server.receive_{{command_name | snake_case}}
+    def on_{{command_name | snake_case}}({%for arg in command.arg_list%}{{arg.name}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+        """ This is an example handler for the '{{command_name}}' command.  A command has no
+        response, so this returns nothing. """
+        print(f"==> Received the '{{command_name}}' command: {%for arg in command.arg_list %}{{arg.name}}={ {{-arg.name-}}{% if 'bytes' in arg.python.annotation %}!r{%endif-%} }{%if not loop.last%}, {%endif%}{%endfor%}")
+    {%endfor%}
     {%if config.properties.stinger_owned_values %}
     {%for prop_name, prop in stinger.properties.items()%}
     {%if not prop.read_only %}

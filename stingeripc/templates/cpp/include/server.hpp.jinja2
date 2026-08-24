@@ -30,6 +30,9 @@ It contains enumerations used by the {{stinger.name}} interface.
 {%if stinger.methods | length > 0%}
 #include "method_payloads.hpp"
 {%endif%}
+{%if stinger.commands | length > 0%}
+#include "command_payloads.hpp"
+{%endif%}
 
 {%for ns in config.cpp.namespace%}
 namespace {{ns}} {
@@ -54,6 +57,14 @@ public:
     void register{{method_name | UpperCamelCase}}Handler(std::function<{{method.cpp.return_value_class}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func);
     {%endfor%}
 
+    {%for command_name, command in stinger.commands.items()%}
+    // Register a handler for the `{{command_name}}` command.
+    // Any number of handlers may be registered; each one is called when a `{{command_name}}`
+    // command is received.  Commands are fire-and-forget, so a handler returns nothing and
+    // nothing is sent back to the client that sent the command.
+    void receive{{command_name | UpperCamelCase}}Command(const std::function<void({%for arg in command.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& handler);
+    {%endfor%}
+
     {%for prop_name, prop in stinger.properties.items()%}
     {{ pr.public_declarations(prop_name, prop, false) | indent(4) }}
     void republish{{prop_name | UpperCamelCase}}Property() const;
@@ -72,6 +83,22 @@ private:
     std::function<{{method.cpp.return_value_class}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{method_name | camelCase}}Handler;
     int _{{method_name | camelCase}}MethodSubscriptionId;
     {%endfor%}
+
+    {%if stinger.commands|length > 0 -%}
+    // ------------------- COMMANDS -------------------
+    {%for command_name, command in stinger.commands.items()%}
+    // Internal method for handling a received `{{command_name}}` command.
+    void _receive{{command_name | UpperCamelCase}}Command(const stinger::mqtt::Message& msg);
+
+    // List of handlers to be called whenever the `{{command_name}}` command is received.
+    // An empty list is legal; received commands are then dropped.
+    std::vector<std::function<void({%for arg in command.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>> _{{command_name | lowerCamelCase}}CommandHandlers;
+    std::mutex _{{command_name | lowerCamelCase}}CommandHandlersMutex;
+
+    // MQTT Subscription ID for `{{command_name}}` command receptions.
+    int _{{command_name | lowerCamelCase}}CommandSubscriptionId = -1;
+    {%endfor%}
+    {%endif%}
 
     {%if stinger.properties|length > 0 -%}
     // ---------------- PROPERTIES ------------------

@@ -11,7 +11,7 @@ from {{stinger.python.module_name}}.discovery import {{stinger.python.client_cla
 from {{stinger.python.module_name}}.interface_types import *
 import threading
 
-{% if (stinger.methods|length + stinger.properties_rw|length) > 0%}
+{% if (stinger.methods|length + stinger.properties_rw|length + stinger.commands|length) > 0%}
 def request_loop(client: {{stinger.python.client_class_name}}):
     """Example request loop that runs in a separate thread."""
     sleep(30)
@@ -25,11 +25,17 @@ def request_loop(client: {{stinger.python.client_class_name}}):
             print(f"Timed out waiting for response to '{{method_name|snake_case}}' call")
         sleep(5)
         {%endfor%}{# for each method #}
+        {%for command_name, command in stinger.commands.items()%}
+        print("Sending the '{{command_name|snake_case}}' command")
+        # A command is fire-and-forget, so there is nothing to wait for.
+        client.send_{{command_name|snake_case}}({%for arg in command.arg_list%}{{arg.name|snake_case}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+        sleep(5)
+        {%endfor%}{# for each command #}
         {%for prop_name, prop in stinger.properties_rw.items()%}
         client.{{prop_name|snake_case}} = {{prop.value.get_random_example_value()}}
         {%endfor%} {# for each property #}
         sleep(10)
-{%endif%} {# any methods or properties #}
+{%endif%} {# any methods, commands, or properties #}
 
 if __name__ == '__main__':
     import sys
@@ -73,7 +79,7 @@ if __name__ == '__main__':
         exit(1)
 
     sleep(2)
-    {% if (stinger.methods|length + stinger.properties_rw|length) > 0%}
+    {% if (stinger.methods|length + stinger.properties_rw|length + stinger.commands|length) > 0%}
     threading.Thread(target=request_loop, args=(client,), daemon=True).start()
     {%endif%}
     print("Ctrl-C will stop the program.")

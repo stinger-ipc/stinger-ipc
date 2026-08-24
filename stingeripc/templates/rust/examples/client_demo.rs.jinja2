@@ -130,6 +130,26 @@ async fn main() {
     });
     {%endif%}
 
+    {%if stinger.commands|length > 0 %}
+    // Commands travel client -> server and are fire-and-forget: there is nothing to await
+    // and no way to learn whether the server acted on them.
+    let mut client_for_command_sending = {{stinger.name|snake_case}}_client.clone();
+    let command_sending_task = tokio::spawn(async move {
+        sleep(Duration::from_secs(23)).await;
+        loop {
+            {%for cmd_name, cmd in stinger.commands.items()%}
+            println!("~~> Sending {{cmd_name}} command with example values...");
+            client_for_command_sending.send_{{cmd_name | snake_case}}(
+                {%for arg in cmd.arg_list%}
+                {{arg.get_random_example_value(lang='rust')}},
+                {%endfor%}).await;
+            sleep(Duration::from_secs(13)).await;
+            {%endfor%}
+            sleep(Duration::from_secs(31)).await;
+        }
+    });
+    {%endif%}
+
     // Property handles are Send so we can move them into tasks.
     {%for prop_name, prop in stinger.properties.items()%}
     let {{prop_name|snake_case}}_handle = {{stinger.name|snake_case}}_client.get_{{prop_name|snake_case}}_handle();
@@ -175,9 +195,12 @@ async fn main() {
     {%if stinger.methods|length > 0 %}
     method_calling_task.abort();
     {%endif%}
+    {%if stinger.commands|length > 0 %}
+    command_sending_task.abort();
+    {%endif%}
 
     // Join on all the signal emitting tasks.
-    let _ = join!({%if stinger.properties|length > 0 %}property_update_task, {%endif%}{%for _ in stinger.signals%}sig_rx_task{{loop.index}}, {%endfor%}{%if stinger.methods|length > 0 %}method_calling_task, {%endif%});
+    let _ = join!({%if stinger.properties|length > 0 %}property_update_task, {%endif%}{%for _ in stinger.signals%}sig_rx_task{{loop.index}}, {%endfor%}{%if stinger.methods|length > 0 %}method_calling_task, {%endif%}{%if stinger.commands|length > 0 %}command_sending_task, {%endif%});
 
     // Ctrl-C to stop
 }

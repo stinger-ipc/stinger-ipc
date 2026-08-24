@@ -23,6 +23,8 @@ class PythonSymbolsProvider(ISymbolsProvider):
             return PythonEnumSymbols(model)
         elif model_class_name == "IpcMethod":
             return PythonMethodSymbols(model, self.config)
+        elif model_class_name == "IpcCommand":
+            return PythonCommandSymbols(model, self.config)
         elif model_class_name == "IpcProperty":
             return PythonPropertySymbols(model, self.config)
         elif model_class_name == "ArgEnum":
@@ -337,6 +339,24 @@ class PythonMethodSymbols(PythonSymbols):
     def request_class_name(self) -> str:
         """Python class name of the generated method request payload."""
         return f"{stringmanip.upper_camel_case(self._method.name)}MethodRequest"
+
+
+class PythonCommandSymbols(PythonSymbols):
+    """Python symbols for an :class:`IpcCommand`."""
+
+    def __init__(self, command, config: StingerConfig | None = None):
+        super().__init__(config)
+        self._command = command
+
+    @property
+    def payload_class_name(self) -> str:
+        """Python class name of the generated command payload."""
+        return f"{stringmanip.upper_camel_case(self._command.name)}CommandPayload"
+
+    @property
+    def callback_type_name(self) -> str:
+        """Name of the callback type alias for handlers of this command."""
+        return f"{stringmanip.upper_camel_case(self._command.name)}CommandCallbackType"
 
 
 class PythonPropertySymbols(PythonSymbols):
