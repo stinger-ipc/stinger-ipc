@@ -1,0 +1,48 @@
+{%if not config.python.python37%}
+API Reference
+=============
+
+Client
+------
+
+.. automodule:: {{ stinger.python.module_name }}.client
+   :members:
+   :show-inheritance:
+
+Server
+------
+
+.. automodule:: {{ stinger.python.module_name }}.server
+   :members:
+   :show-inheritance:
+
+Interface Types
+----------------
+
+.. automodule:: {{ stinger.python.module_name }}.interface_types
+   :members:
+   :show-inheritance:
+
+{%if stinger.properties | length > 0 %}
+Property Access
+----------------
+
+.. automodule:: {{ stinger.python.module_name }}.property
+   :members:
+   :show-inheritance:
+{%endif%}
+
+Discovery
+---------
+
+.. automodule:: {{ stinger.python.module_name }}.discovery
+   :members:
+   :show-inheritance:
+
+Internals
+---------
+
+Supporting modules not typically used directly by application code: ``lwt`` (presence
+via Last-Will-and-Testament), ``method_codes`` (method return code enum), ``constants``
+(interface-defined constants), and ``semver`` (interface version comparisons).
+{%endif%}

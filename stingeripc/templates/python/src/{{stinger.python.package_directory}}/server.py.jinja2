@@ -7,6 +7,7 @@ This is the Server for the {{stinger.name}} interface.
 {%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 """
 {% import "partials/imports.jinja2" as imports %}
+{% import "partials/docstrings.jinja2" as docstrings %}
 import json
 import logging
 import threading
@@ -312,9 +313,7 @@ class {{stinger.python.server_class_name}}:
 
     {%for sig_name, sig in stinger.signals.items()-%}
     def emit_{{sig_name|snake_case}}(self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
-        """ Server application code should call this method to emit the '{{sig_name}}' signal.
-
-        {{sig_name|UpperCamelCase}}SignalPayload is a pydantic BaseModel which will validate the arguments.
+        """ {{ docstrings.google_docstring(sig.documentation, 8, args=sig.arg_list, extra="Server application code should call this method to emit the '" ~ sig_name ~ "' signal.") }}
         """
         {%for arg in sig.arg_list%}
         assert isinstance({{arg.name|snake_case}}, {{arg.python.type}}){%if arg.optional%} or {{arg.name|snake_case}} is None{%endif%}, f"The '{{arg.name}}' argument must be of type {{arg.python.annotation}}, but was {type({{arg.name|snake_case}})}"
@@ -331,8 +330,7 @@ class {{stinger.python.server_class_name}}:
 
     {%for command_name, command in stinger.commands.items()%}
     def receive_{{command_name | snake_case}}(self, handler: {{command.python.callback_type_name}}):
-        """ Registers a callback to be called when the '{{command_name}}' command is received.
-        Can be used as a decorator.  Any number of callbacks may be registered.
+        """ {{ docstrings.google_docstring(command.documentation, 8, args=command.arg_list, extra="Registers a callback to be called when the '" ~ command_name ~ "' command is received. Can be used as a decorator. Any number of callbacks may be registered.") }}
         """
         self._command_recv_callbacks_for_{{command_name|snake_case}}.append(handler)
         return handler
@@ -364,8 +362,9 @@ class {{stinger.python.server_class_name}}:
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
+    {%- set handler_returns = (method.python.return_value_annotation, method.return_value.description or "The result to send back to the client.") if method.return_value else ("None", "Nothing; an empty response is sent back to the client.") %}
     def handle_{{method_name | snake_case}}(self, handler: {{method_type_annotation(method)}}):
-        """ This is a decorator to decorate a method that will handle the '{{method_name}}' method calls.
+        """ {{ docstrings.google_docstring(method.documentation, 8, args=method.arg_list, returns=handler_returns, extra="This is a decorator to decorate a method that will handle the '" ~ method_name ~ "' method calls. The decorated handler is called with the method's arguments and must return the value described below.") }}
         """
         if self._method_{{method_name|snake_case}}_handler is None and handler is not None:
             self._method_{{method_name|snake_case}}_handler = handler
@@ -443,20 +442,14 @@ class {{stinger.python.server_class_name}}:
     {%-set arg = prop.value %}
     @property
     def {{prop_name | snake_case}}(self) -> {%if arg.optional%}{{prop.python.annotation}}{%else%}Optional[{{prop.python.annotation}}]{%endif%}:
-        """ This property returns the last received ({{prop.python.annotation}}) value for the '{{prop_name}}' property.
-        {%if not config.properties.stinger_owned_values%}
-        This calls back into the application code to get the current value of the property.
-        {%-endif%}
+        """ {{ docstrings.google_docstring(prop.documentation, 8, returns=(prop.python.annotation, "The last received value of the '" ~ prop_name ~ "' property."), extra="This calls back into the application code to get the current value of the property." if not config.properties.stinger_owned_values else none) }}
         """
         return self._property_{{prop_name|snake_case}}.get_value()
 
     {%if config.properties.stinger_owned_values or not prop.read_only %} {# if the property is read-only, we have no way of setting app-owned values. #}
     @{{prop_name | snake_case}}.setter
     def {{prop_name | snake_case}}(self, {{arg.name|snake_case}}: {{prop.python.annotation}}):
-        """ This property sets (publishes) a new {{prop.python.annotation}} value for the '{{prop_name}}' property.
-        {%if not config.properties.stinger_owned_values%}
-        This call the setter callback into the application code to set the property value.
-        {%-endif%}
+        """ {{ docstrings.google_docstring(prop.documentation, 8, extra="This property sets (publishes) a new value for the '" ~ prop_name ~ "' property." ~ (" This calls the setter callback into the application code to set the property value." if not config.properties.stinger_owned_values else "")) }}
         """
         if {%if arg.optional%}({{arg.name|snake_case}} is not None) and {%endif%}(not isinstance({{arg.name|snake_case}}, {{prop.python.local_type}})):
             raise ValueError(f"The value must be {{prop.python.class_name}} {%if arg.optional%}or None{%endif%}.")
@@ -480,7 +473,7 @@ class {{stinger.python.server_class_name}}:
 
     {%if config.properties.stinger_owned_values or not prop.read_only %} {# if the property is read-only, we have no way of setting app-owned values. #}
     def set_{{prop_name | snake_case}}(self, {{prop.value.name|snake_case}}: {{prop.value.python.annotation}}):
-        """ This method sets (publishes) a new value for the '{{prop_name}}' property.
+        """ {{ docstrings.google_docstring(prop.documentation, 8, extra="This method sets (publishes) a new value for the '" ~ prop_name ~ "' property.") }}
         """
         {%-set arg = prop.value%}
         if not isinstance({{arg.name|snake_case}}, {{arg.python.class_name}}){%if arg.optional%} and {{arg.name|snake_case}} is not None{%endif%}:
@@ -494,7 +487,7 @@ class {{stinger.python.server_class_name}}:
 
     {%if config.properties.stinger_owned_values and not prop.read_only %}
     def on_{{prop_name | snake_case}}_updated(self, handler: Callable[[{{prop.value.python.annotation}}], Union[None, Coroutine[Any, Any, None]]]):
-        """ This method registers a callback to be called whenever a new '{{prop_name}}' property update is received.
+        """ {{ docstrings.google_docstring(prop.documentation, 8, extra="This method registers a callback to be called whenever a new '" ~ prop_name ~ "' property update is received.") }}
         """
         self._property_{{prop_name|snake_case}}.callbacks.append(handler)
     {%endif%}{# stinger owned value that are read/write. #}
@@ -531,7 +524,7 @@ class {{stinger.python.server_class_name}}Builder:
     {%endfor%}
     {%for command_name, command in stinger.commands.items()%}
     def receive_{{command_name | snake_case}}(self, handler: {{command.python.callback_type_name}}):
-        """ This method registers a callback to be called whenever the '{{command_name}}' command is received.
+        """ {{ docstrings.google_docstring(command.documentation, 8, args=command.arg_list, extra="This method registers a callback to be called whenever the '" ~ command_name ~ "' command is received.") }}
         """
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):
@@ -543,7 +536,7 @@ class {{stinger.python.server_class_name}}Builder:
     {%for prop_name, prop in stinger.properties.items()%}
     {%if not prop.read_only %}
     def on_{{prop_name | snake_case}}_updated(self, handler: Callable[[{{prop.value.python.annotation}}], Union[None, Coroutine[Any, Any, None]]]):
-        """ This method registers a callback to be called whenever a new '{{prop_name}}' property update is received.
+        """ {{ docstrings.google_docstring(prop.documentation, 8, extra="This method registers a callback to be called whenever a new '" ~ prop_name ~ "' property update is received.") }}
         """
         @functools.wraps(handler)
         def wrapper(*args, **kwargs):

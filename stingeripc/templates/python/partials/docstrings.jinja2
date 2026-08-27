@@ -1,0 +1,46 @@
+{#
+    Shared Google-style (Napoleon-compatible) docstring formatting for generated
+    client/server methods.
+
+    Import into a template with:
+        {% import "partials/docstrings.jinja2" as docstrings %}
+
+    Imported macros do not inherit the calling template's context (globals like
+    ``config``/``stinger`` are not visible), but attribute access on objects passed as
+    arguments, and environment-registered filters such as ``snake_case``, work exactly
+    as they do everywhere else -- so ``args`` can be a raw list of ``Arg`` objects
+    rather than something the caller has to pre-flatten.
+#}
+
+{#
+    Renders a docstring body: an optional summary, an optional ``extra`` prose block,
+    an ``Args:`` section built from a raw list of ``Arg`` objects, and an optional
+    ``Returns:`` section from a caller-supplied ``(type_str, description)`` tuple.
+
+    The whole body is assembled at a zero-indentation baseline and indented exactly
+    once at the end. Black's docstring auto-formatter re-indents docstring bodies to
+    match the enclosing code, so pre-indenting some lines (e.g. a multi-line summary)
+    but not others (e.g. this macro's own "Args:" block) produces a mixed baseline
+    that gets double-indented on the already-indented lines. ``indent_width`` should
+    match the indentation of the ``def``/``class`` this docstring belongs to (4 for a
+    top-level function, 8 for a method on a class, ...).
+#}
+{%- macro google_docstring(summary, indent_width, args=[], returns=none, extra=none) -%}
+{%- set body %}
+{%- if summary %}{{ summary }}
+{% endif -%}
+{%- if extra %}
+{{ extra }}
+{% endif -%}
+{%- if args | length > 0 %}
+Args:
+{% for arg in args %}    {{ arg.name | snake_case }} ({{ arg.python.annotation }}): {{ arg.description or "No description provided." }}
+{% endfor -%}
+{% endif -%}
+{%- if returns %}
+Returns:
+    {{ returns[0] }}: {{ returns[1] or "No description provided." }}
+{% endif -%}
+{%- endset %}
+{{- body | indent(indent_width) }}
+{%- endmacro -%}

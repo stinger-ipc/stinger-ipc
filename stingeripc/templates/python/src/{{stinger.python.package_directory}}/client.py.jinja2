@@ -7,6 +7,7 @@ This is the Client for the {{stinger.name}} interface.
 {%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 """
 {% import "partials/imports.jinja2" as imports %}
+{% import "partials/docstrings.jinja2" as docstrings %}
 from typing import Dict, Callable, List, Any, Optional, Union
 from uuid import uuid4
 from functools import partial, wraps
@@ -104,14 +105,14 @@ class {{stinger.python.client_class_name}}:
     {%for prop_name, prop_spec in stinger.properties.items()-%}
     @property
     def {{prop_name|snake_case}}(self) -> {{prop_spec.python.getter_value_annotation}}:
-        """ Property '{{prop_name}}' getter.
+        """ {{ docstrings.google_docstring(prop_spec.documentation, 8, returns=(prop_spec.python.getter_value_annotation, "The last known value of the '" ~ prop_name ~ "' property.")) }}
         """
         with self._property_{{prop_name|snake_case}}_mutex:
             return self._property_{{prop_name|snake_case}}
     {%if not prop_spec.read_only %}
     @{{prop_name|snake_case}}.setter
     def {{prop_name|snake_case}}(self, value: {{prop_spec.python.setter_value_annotation}}):
-        """ Serializes and publishes the '{{prop_name}}' property.
+        """ {{ docstrings.google_docstring(prop_spec.documentation, 8, extra="Serializes and publishes a new value for the '" ~ prop_name ~ "' property.") }}
         """
         {%if prop_spec.arg_list | length > 1 -%}
         # value must be the model object.
@@ -234,7 +235,7 @@ class {{stinger.python.client_class_name}}:
 
     {%for sig_name, sig in stinger.signals.items()%}
     def receive_{{sig_name | snake_case }}(self, handler: {{sig_name | UpperCamelCase}}SignalCallbackType):
-        """ Used as a decorator for methods which handle particular signals.
+        """ {{ docstrings.google_docstring(sig.documentation, 8, args=sig.arg_list, extra="Used as a decorator for methods which handle the '" ~ sig_name ~ "' signal; the handler receives the signal's arguments as keyword arguments.") }}
         """
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}.append(handler)
         if len(self._signal_recv_callbacks_for_{{sig_name | snake_case}}) == 1:
@@ -254,8 +255,9 @@ class {{stinger.python.client_class_name}}:
         return handler
 
     {%for method_name, method in stinger.methods.items()%}
+    {%- set method_returns = ("concurrent.futures.Future", "Resolves to " ~ (method.return_value.description or method.python.return_value_annotation) ~ " once the server responds.") if method.return_value else ("concurrent.futures.Future", "Resolves to None once the server responds.") %}
     def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
-        """ Calling this method with individual arguments initiates a `{{method_name}}` IPC method call.
+        """ {{ docstrings.google_docstring(method.documentation, 8, args=method.arg_list, returns=method_returns, extra="Calling this method with individual arguments initiates a `" ~ method_name ~ "` IPC method call.") }}
         """
         payload = {{method_name|UpperCamelCase}}MethodRequest( {%-for arg in method.arg_list%}
             {{arg.name}}={{arg.name|snake_case}},{%endfor%}
@@ -263,7 +265,7 @@ class {{stinger.python.client_class_name}}:
         return self.call_{{method_name | snake_case}}(payload)
 
     def call_{{method_name | snake_case}}(self, payload: {{method_name|UpperCamelCase}}MethodRequest) -> futures.Future:
-        """ Calling this method with a model payload initiates a `{{method_name}}` IPC method call.
+        """ {{ docstrings.google_docstring(method.documentation, 8, returns=method_returns, extra="Equivalent to `" ~ (method_name|snake_case) ~ "()`, but takes an already-built `" ~ method_name|UpperCamelCase ~ "MethodRequest` payload instead of individual arguments.") }}
         """
         fut = futures.Future() # type: futures.Future
         correlation_id = str(uuid4())
@@ -303,10 +305,7 @@ class {{stinger.python.client_class_name}}:
 
     {%for command_name, command in stinger.commands.items()%}
     def send_{{command_name | snake_case}}(self, {%for arg in command.arg_list%}{{arg.name|snake_case}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
-        """ Client application code should call this method to send the '{{command_name}}' command to the server.
-
-        A command is fire-and-forget: the server sends nothing back, so this returns
-        nothing and the client does not learn whether the server acted on it.
+        """ {{ docstrings.google_docstring(command.documentation, 8, args=command.arg_list, extra="Client application code should call this method to send the '" ~ command_name ~ "' command to the server. A command is fire-and-forget: the server sends nothing back, so this returns nothing and the client does not learn whether the server acted on it.") }}
         """
         payload = {{command.python.payload_class_name}}({%-for arg in command.arg_list%}
             {{arg.name|snake_case}}={{arg.name|snake_case}}{%if arg.optional%} if {{arg.name|snake_case}} is not None else None{%endif%},
@@ -314,7 +313,7 @@ class {{stinger.python.client_class_name}}:
         return self.send_{{command_name | snake_case}}_payload(payload)
 
     def send_{{command_name | snake_case}}_payload(self, payload: {{command.python.payload_class_name}}):
-        """ Serializes and publishes an already-built '{{command_name}}' command payload.
+        """ {{ docstrings.google_docstring(command.documentation, 8, extra="Equivalent to `send_" ~ (command_name|snake_case) ~ "()`, but takes an already-built `" ~ command.python.payload_class_name ~ "` payload instead of individual arguments.") }}
         """
         self._logger.debug("Sending '{{command_name}}' command with payload %s", payload)
         command_topic = "{{command.topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]

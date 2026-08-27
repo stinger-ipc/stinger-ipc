@@ -1,0 +1,208 @@
+{%if not config.python.python37%}
+{%- set doctitle = stinger.title or stinger.name %}
+{{ doctitle }}
+{{ "=" * doctitle|length }}
+
+..
+   This is automatically generated documentation.
+   {%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
+
+{%-if stinger.summary %}
+
+*{{ stinger.summary }}*
+{%endif-%}
+{%if stinger.documentation%}
+
+{{ stinger.documentation }}
+{%endif%}
+
+.. toctree::
+   :maxdepth: 2
+
+   api
+   examples
+
+{%if stinger.signals | length > 0 %}
+Signals
+-------
+
+Signals are messages from a server to clients.
+{%for sig_name, signal in stinger.signals.items()%}
+{{ sig_name }}
+{{ "~" * sig_name|length }}
+
+{{ signal.documentation or "*No documentation for this signal.*" }}
+
+.. list-table:: Parameters
+   :header-rows: 1
+   :widths: 20 20 60
+
+   * - Name
+     - Type
+     - Description
+   {%- for arg in signal.arg_list %}
+   * - ``{{ arg.name }}``
+     - ``{{ arg.python.annotation }}``
+     - {{ arg.description or "" }}
+   {%- endfor %}
+{%endfor%}
+{%endif%}
+
+{%if stinger.methods | length > 0 %}
+Methods
+-------
+
+Methods are requests from a client to a server; the server sends a response back.
+{%for method_name, method in stinger.methods.items()%}
+{{ method_name }}
+{{ "~" * method_name|length }}
+
+{{ method.documentation or "*No documentation for this method.*" }}
+
+Request parameters:
+
+{%if method.arg_list | length == 0 -%}
+There are no arguments for this request.
+{%else%}
+.. list-table::
+   :header-rows: 1
+   :widths: 20 20 60
+
+   * - Name
+     - Type
+     - Description
+   {%- for arg in method.arg_list %}
+   * - ``{{ arg.name }}``
+     - ``{{ arg.python.annotation }}``
+     - {{ arg.description or "" }}
+   {%- endfor %}
+{%endif%}
+
+Return value:
+
+{%if method.return_value is none -%}
+There is no return value for this method call. An empty response object is still sent from server to client.
+{%else%}
+.. list-table::
+   :header-rows: 1
+   :widths: 20 20 60
+
+   * - Name
+     - Type
+     - Description
+   {%- for arg in method.return_arg_list %}
+   * - ``{{ arg.name }}``
+     - ``{{ arg.python.annotation }}``
+     - {{ arg.description or "" }}
+   {%- endfor %}
+{%endif%}
+{%endfor%}
+{%endif%}
+
+{%if stinger.commands | length > 0 %}
+Commands
+--------
+
+Commands are fire-and-forget messages from a client to a server: the mirror image of
+a signal, or a method with no response.
+{%for command_name, command in stinger.commands.items()%}
+{{ command_name }}
+{{ "~" * command_name|length }}
+
+{{ command.documentation or "*No documentation for this command.*" }}
+
+* Topic: ``{{ command.topic() }}``
+* Declared version: {%if command.version%}``{{command.version}}``{%else%}*none declared*{%endif%}
+
+{%if command.arg_list | length == 0 -%}
+There are no arguments for this command.
+{%else%}
+.. list-table:: Parameters
+   :header-rows: 1
+   :widths: 20 20 60
+
+   * - Name
+     - Type
+     - Description
+   {%- for arg in command.arg_list %}
+   * - ``{{ arg.name }}``
+     - ``{{ arg.python.annotation }}``
+     - {{ arg.description or "" }}
+   {%- endfor %}
+{%endif%}
+{%endfor%}
+{%endif%}
+
+{%if stinger.properties | length > 0 %}
+Properties
+----------
+
+Properties are values held by the server. They are re-published when the value
+changes.
+{%for prop_name, prop in stinger.properties.items()%}
+{{ prop_name }}
+{{ "~" * prop_name|length }}
+
+{{ prop.documentation or "*No documentation for this property.*" }}
+{%if prop.read_only %}
+
+This property is **read-only**. It can only be modified by the server.
+{%endif%}
+
+.. list-table:: Value
+   :header-rows: 1
+   :widths: 20 20 60
+
+   * - Name
+     - Type
+     - Description
+   {%- for arg in prop.arg_list %}
+   * - ``{{ arg.name }}``
+     - ``{{ arg.python.annotation }}``
+     - {{ arg.description or "" }}
+   {%- endfor %}
+{%endfor%}
+{%endif%}
+
+{%if stinger.enums | length > 0 %}
+Enums
+-----
+{%for ie_name, ie in stinger.enums.items() %}
+{{ ie.class_name }}
+{{ "~" * ie.class_name|length }}
+
+{{ ie.documentation or "*No description exists for this enumeration.*" }}
+
+{%for enum_item in ie.items -%}
+* ``{{ enum_item.name }}`` ({{ enum_item.integer }}){%- if enum_item.description %} -- {{ enum_item.description }}{% endif %}
+{% endfor %}
+{%endfor%}
+{%endif%}
+
+{%if stinger.structs | length > 0 %}
+Structures
+----------
+
+Structures are a group of values and may be used as an argument in signals, methods,
+or properties.
+{%for istruct_name, istruct in stinger.structs.items() %}
+{{ istruct.class_name }}
+{{ "~" * istruct.class_name|length }}
+
+{{ istruct.description or "*No general description exists for this structure.*" }}
+
+.. list-table:: Fields
+   :header-rows: 1
+   :widths: 20 20 60
+
+   * - Name
+     - Type
+     - Description
+   {%- for arg in istruct.values %}
+   * - ``{{ arg.name }}``
+     - ``{{ arg.python.annotation }}``
+     - {{ arg.description or "" }}
+   {%- endfor %}
+{%endfor%}
+{%endif%}
+{%endif%}

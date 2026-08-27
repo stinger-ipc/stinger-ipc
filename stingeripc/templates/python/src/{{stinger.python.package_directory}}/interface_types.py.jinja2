@@ -55,7 +55,7 @@ class {{stinger.name|UpperCamelCase}}InterfaceInfo(BaseModel):
 {%-for ie_name, ie in stinger.enums.items() %}
 class {{ie_name | UpperCamelCase }}(IntEnum):
     """ Interface enum `{{ie_name}}`.
-    {{ ie.documentation or "_No description exists for this enumeration._" }}
+    {{ (ie.documentation or "_No description exists for this enumeration._") | indent(4) }}
     """
     {%-for item in ie.items %}
     {{item.name | CONST_CASE}} = {{item.integer}}
@@ -74,8 +74,8 @@ class {{istruct_name | UpperCamelCase }}(BaseModel):
 {%-for signal_name, signal in stinger.signals.items()%}
 class {{signal_name|UpperCamelCase}}SignalPayload(BaseModel):
     """ Interface signal `{{signal_name}}`. {%if signal.documentation%}
-    
-    {{signal.documentation}}{%endif%}
+
+    {{signal.documentation | indent(4)}}{%endif%}
     """
     {{payloads.field_list(signal.arg_list)|indent(4)}}
     {{payloads.validate_schema_method(signal.arg_list)|indent(4)}}
@@ -85,8 +85,8 @@ class {{signal_name|UpperCamelCase}}SignalPayload(BaseModel):
 {%-for prop_name, prop in stinger.properties.items()%}
 class {{prop.python.model_class_name}}(BaseModel):
     """ Interface property `{{prop_name}}` payload.{%if prop.documentation%}
-    
-    {{prop.documentation}}{%endif%}
+
+    {{prop.documentation | indent(4)}}{%endif%}
     """
     {{payloads.field_list(prop.arg_list)|indent(4)}}
     {{payloads.validate_schema_method(prop.arg_list)|indent(4)}}
@@ -97,7 +97,7 @@ class {{prop.python.model_class_name}}(BaseModel):
 class {{method.python.request_class_name}}(BaseModel):
     """ Interface method `{{method_name}}` request object. {%if method.documentation%}
 
-    {{method.documentation}}{%endif%}
+    {{method.documentation | indent(4)}}{%endif%}
     """
     {{payloads.field_list(method.arg_list)|indent(4)}}
     {{payloads.validate_schema_method(method.arg_list)|indent(4)}}
@@ -105,7 +105,7 @@ class {{method.python.request_class_name}}(BaseModel):
 class {{method.python.response_class_name}}(BaseModel):
     """ Interface method `{{method_name}}` response object. {%if method.documentation%}
 
-    {{method.documentation}}{%endif%}
+    {{method.documentation | indent(4)}}{%endif%}
     """
     {{payloads.field_list(method.return_arg_list)|indent(4)}}
     {{payloads.validate_schema_method(method.return_arg_list)|indent(4)}}
@@ -116,7 +116,7 @@ class {{method.python.response_class_name}}(BaseModel):
 class {{command.python.payload_class_name}}(BaseModel):
     """ Interface command `{{command_name}}`. {%if command.documentation%}
 
-    {{command.documentation}}{%endif%}
+    {{command.documentation | indent(4)}}{%endif%}
     """
     {{payloads.field_list(command.arg_list)|indent(4)}}
     {{payloads.validate_schema_method(command.arg_list)|indent(4)}}

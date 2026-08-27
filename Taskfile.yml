@@ -32,6 +32,7 @@ tasks:
       - task: python:generate
       - task: python:unittest
       - task: python:mypy
+      - task: python:docs
 
   cpp:
     desc: Generate, compile, and test all C++ interfaces
@@ -198,6 +199,29 @@ tasks:
         task: python:mypy:{{ .ITEM }}
       - for: { var: INTERFACES }
         task: python-alt1:mypy:{{ .ITEM }}
+
+  python:docs:*:
+    desc: Build Sphinx API docs for an interface
+    dir: generated/{{.IFACE}}/python/
+    deps:
+      - task: python:generate:{{index .MATCH 0}}
+    sources:
+      - ./src/**
+      - ./docs/**
+      - ./examples/**
+    generates:
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/python/docs/_build/html/**"
+    cmds:
+      - uv sync --group docs
+      - uv run sphinx-build -W -b html docs docs/_build/html
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  python:docs:
+    desc: Build Sphinx API docs for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: python:docs:{{ .ITEM }}
 
   cpp:generate:*:
     desc: Generate C++ code for an interface
