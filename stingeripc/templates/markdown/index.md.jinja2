@@ -72,6 +72,19 @@ Client <<- Server : Signal(Parameters)
 
 {{argtable(signal.arg_list)}}
 
+#### MQTT Details
+
+**Topic:** `{{signal.topic()}}`
+**QoS:** 1 
+**Retain:** false
+
+| Property | Value |
+|---|---|
+| content-type | `application/json` |
+{% if signal.version -%}
+| user-property | name:`Version` value:`{{ signal.version }}` |
+{% endif %}
+
 {%endfor%}{#- end for each signal -#}
 {%endif%}{#- end if there are signals -#}
 
@@ -88,6 +101,29 @@ Client <<-- Server: Response(Parameters)
 @enduml
 ```
 
+**Method Return Codes**
+
+These return codes are used in method responses.  The string representation of the integer is used in an MQTT user property.
+
+| Return Code | Value |
+|---|---|
+| SUCCESS | 0 |
+| CLIENT_ERROR | 1 |
+| SERVER_ERROR | 2 |
+| TRANSPORT_ERROR | 3 |
+| PAYLOAD_ERROR | 4 |
+| CLIENT_SERIALIZATION_ERROR | 5 |
+| CLIENT_DESERIALIZATION_ERROR | 6 |
+| SERVER_SERIALIZATION_ERROR | 7 |
+| SERVER_DESERIALIZATION_ERROR | 8 |
+| METHOD_NOT_FOUND | 9 |
+| UNAUTHORIZED | 10 |
+| TIMEOUT | 11 |
+| OUT_OF_SYNC | 12 |
+| UNKNOWN_ERROR | 13 |
+| NOT_IMPLEMENTED | 14 |
+| SERVICE_UNAVAILABLE | 15 |
+
 {%for method_name, method in stinger.methods.items()%}
 ### Method `{{method_name}}`
 
@@ -99,6 +135,22 @@ There are no arguments for this request.
 {%else-%}
 {{argtable(method.arg_list)}}
 {%endif%}{# number of args #}
+
+#### Request MQTT Details
+
+**Topic:** `{{method.request_topic()}}`
+**QoS:** 2 
+**Retain:** false
+
+| Property | Value |
+|---|---|
+| content-type | `application/json` |
+| correlation-data | Any unique data, though random UUID is common |
+| response-topic | `{{method.response_topic()}}` |
+{% if method.version -%}
+| user-property | name:`Version` value:`{{ method.version }}` |
+{% endif %}
+
 #### Return Value
 
 {%if method.return_value is none -%}
@@ -107,7 +159,42 @@ There is no return value for this method call.  An empty response object will st
 {{argtable(method.return_arg_list)}}
 {%endif-%}
 
-{%endfor-%}
+#### Response MQTT Details
+
+**Topic:** Whatever response topic was passed in the request.
+**QoS:** 1 
+**Retain:** false
+
+| Property | Value |
+|---|---|
+| content-type | `application/json` |
+| correlation-data | Exact copy of the request's correlation-data |
+| user-property | name:`ReturnCode` value:`0` |
+{% if method.version -%}
+| user-property | name:`Version` value:`{{ method.version }}` |
+{% endif %}
+
+#### Error Value
+
+In case there was an error with processing the request, an empty JSON object (`{}`) is returned back as the MQTT.
+
+#### Error Response MQTT Details
+
+**Topic:** Whatever response topic was passed in the request.
+**QoS:** 1 
+**Retain:** false
+
+| Property | Value |
+|---|---|
+| content-type | `application/json` |
+| correlation-data | Exact copy of the request's correlation-data |
+| user-property | name:`ReturnCode` value:Numerical return code |
+| user-property | name:`DebugInfo` value:A string providing extra info (optional) |
+{% if method.version -%}
+| user-property | name:`Version` value:`{{ method.version }}` |
+{% endif %}
+
+{%endfor-%}{#end for each method#}
 {%endif%}
 {#- ------------------------------------------------------- -#}
 {%if stinger.commands | length > 0 %}
@@ -126,15 +213,26 @@ Client ->> Server : Command(Parameters)
 
 {{command.documentation or "_No documentation for this command_"}}
 
-* Topic: `{{command.topic()}}`
-* Declared version: {%if command.version%}`{{command.version}}`{%else%}_none declared_{%endif%}
-
 #### Command Parameters for `{{command_name}}`
 {%if command.arg_list | length == 0%}
 There are no arguments for this command.
 {%else-%}
 {{argtable(command.arg_list)}}
 {%endif%}{# number of args #}
+
+####  MQTT Details
+
+**Topic:** `{{command.topic()}}`
+**QoS:** {{stinger.command_qos}} 
+**Retain:** false
+
+| Property | Value |
+|---|---|
+| content-type | `application/json` |
+{% if command.version -%}
+| user-property | name:`Version` value:`{{ command.version }}` |
+{% endif %}
+
 {%endfor%}{#- end for each command -#}
 {%endif%}{#- end if there are commands -#}
 {#- ------------------------------------------------------- #}
@@ -156,6 +254,21 @@ Client <<- Server: Property Updated
 This property is **read-only**.  It can only be modified by the server.{%endif%}
 
 {{argtable(prop.arg_list)}}
+
+####  MQTT Details
+
+**Topic:** `{{prop.value_topic()}}`
+**QoS:** 1 
+**Retain:** true
+
+| Property | Value |
+|---|---|
+| content-type | `application/json` |
+| user-property | name:`PropertyVersion` value:Last server-published version of the property |
+{% if prop.version -%}
+| user-property | name:`Version` value:`{{ prop.version }}` |
+{% endif %}
+
 
 {%endfor%}{# for each property #}
 {%endif%}{#end condition that there are a number of properties#}
