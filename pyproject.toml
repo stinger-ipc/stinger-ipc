@@ -20,7 +20,8 @@ dependencies = [
     "ruamel-yaml>=0.18.14",
     "semantic-version>=2.10.0",
     "stevedore>=5.5.0",
-    "stinger-python-utils~=0.1.9",
+    "stinger-python-utils~=0.2.0",
+    "protobuf>=5.29",  # Reads protoc descriptor sets to resolve the messages an interface names.
     "typer>=0.16.1",
 ]
 

@@ -1,0 +1,279 @@
+{#
+    The wire codec for the interface's payloads.
+
+    `WirePayload` is what every message constructor in `message.rs` is generic
+    over, so those constructors are written once and never branch on the
+    encoding: a payload described by JSON arguments serializes with serde, and a
+    payload declared as a protobuf message serializes with prost.
+
+    The implementations come from a `macro_rules!` applied to a list of types
+    rather than being written out per payload: an interface with a hundred
+    payloads would otherwise carry a hundred identical copies of the same six
+    lines.  The single `is_protobuf` test is in `wire_impls`, which decides which
+    list each payload joins.
+
+    Import into a template with:
+        {% from "partials/codec.jinja2" import wire_trait, wire_macros, wire_impls %}
+
+    Imported macros do not inherit the calling template's context, so anything
+    they need is passed in explicitly.
+#}
+
+{%- macro wire_trait() %}
+/// One wire body.
+///
+/// Implemented for every generated payload type, so the message constructors in
+/// `message.rs` are identical whether the payload travels as JSON or as a
+/// protobuf message.  `content_type` is an associated function rather than a
+/// method because a receiver needs to know the expected type before it has
+/// decoded anything.
+pub trait WirePayload: Sized {
+    /// The MQTT content type messages carrying this payload are published with.
+    fn content_type() -> &'static str;
+
+    /// Encode this payload into the bytes that go on the wire.
+    fn to_bytes(&self) -> Result<Bytes, String>;
+
+    /// Decode a payload from the bytes received on the wire.
+    fn from_bytes(buf: &Bytes) -> Result<Self, String>;
+}
+{%- endmacro %}
+
+{%- macro wire_macros(stinger) %}
+{%- if stinger.uses_json() %}
+/// Implements `WirePayload` for every payload carried as JSON.
+macro_rules! json_wire_payload {
+    ($($payload_type:ty),* $(,)?) => {
+        $(
+            impl WirePayload for $payload_type {
+                fn content_type() -> &'static str {
+                    "application/json"
+                }
+
+                fn to_bytes(&self) -> Result<Bytes, String> {
+                    serde_json::to_vec(self).map(Bytes::from).map_err(|e| e.to_string())
+                }
+
+                fn from_bytes(buf: &Bytes) -> Result<Self, String> {
+                    serde_json::from_slice(buf).map_err(|e| e.to_string())
+                }
+            }
+        )*
+    };
+}
+{%- endif %}
+{%- if stinger.uses_protobuf() %}
+
+/// Implements `WirePayload` for every payload carried as a protobuf message.
+macro_rules! protobuf_wire_payload {
+    ($($payload_type:ty),* $(,)?) => {
+        $(
+            impl WirePayload for $payload_type {
+                fn content_type() -> &'static str {
+                    "application/x-protobuf"
+                }
+
+                fn to_bytes(&self) -> Result<Bytes, String> {
+                    let mut buf = BytesMut::with_capacity(prost::Message::encoded_len(self));
+                    prost::Message::encode(self, &mut buf).map_err(|e| e.to_string())?;
+                    Ok(buf.freeze())
+                }
+
+                fn from_bytes(buf: &Bytes) -> Result<Self, String> {
+                    <Self as prost::Message>::decode(buf.clone()).map_err(|e| e.to_string())
+                }
+            }
+        )*
+    };
+}
+{%- endif %}
+{%- endmacro %}
+
+{%- macro wire_impls(stinger) %}
+{%- if stinger.uses_json() %}
+{%- set json_seen = [] %}
+json_wire_payload!(
+{%- for payload in stinger.all_payloads() if not payload.is_protobuf %}
+{%- if payload.rust.struct_name not in json_seen %}
+{%- do json_seen.append(payload.rust.struct_name) %}
+    {{ payload.rust.struct_name }},
+{%- endif %}
+{%- endfor %}
+);
+{%- endif %}
+{%- if stinger.uses_protobuf() %}
+
+{%- set pb_seen = [] %}
+protobuf_wire_payload!(
+{%- for payload in stinger.all_payloads() if payload.is_protobuf %}
+{%- if payload.rust.struct_name not in pb_seen %}
+{%- do pb_seen.append(payload.rust.struct_name) %}
+    {{ payload.rust.struct_name }},
+{%- endif %}
+{%- endfor %}
+);
+{%- endif %}
+{%- endmacro %}
+
+{#
+    Statements checking that a received message carries the content type this
+    payload is published with, bailing out via `bail` ("continue" or "return")
+    when it does not.  A command or signal has no response channel, so a message
+    that cannot be understood is logged and dropped.
+#}
+{%- macro expect_content_type(payload, msg_expr, label, bail) %}
+let expected_content_type = <{{ payload.rust.struct_name }} as WirePayload>::content_type();
+        match {{ msg_expr }}.content_type.as_deref() {
+            Some(ct) if ct == expected_content_type => { /* OK */ }
+            Some(ct) => {
+                warn!("Unexpected content-type '{}' for '{{ label }}'; expected '{}'.  Dropping message.", ct, expected_content_type);
+                {{ bail }};
+            }
+            None => {
+                warn!("Missing content-type for '{{ label }}'; expected '{}'.  Dropping message.", expected_content_type);
+                {{ bail }};
+            }
+        }
+{%- endmacro %}
+
+{#
+    Statements decoding a received message into `out_var`, bailing out via `bail`
+    ("continue" or "return") if the bytes cannot be decoded.  A JSON payload is
+    additionally checked against any declared schema constraints; a protobuf
+    message carries no JSON schema, so there is nothing to check.
+#}
+{%- macro decode_or(payload, msg_expr, out_var, label, bail) %}
+let {{ out_var }} = match <{{ payload.rust.struct_name }} as WirePayload>::from_bytes(&{{ msg_expr }}.payload) {
+            Ok(decoded) => {
+                {%- if not payload.is_protobuf %}
+                if let Err(e) = decoded.validate_schema() {
+                    warn!("Received '{{ label }}' payload failed schema validation: {}", e);
+                    {{ bail }};
+                }
+                {%- endif %}
+                decoded
+            }
+            Err(e) => {
+                warn!("Failed to decode '{{ label }}' payload: {}", e);
+                {{ bail }};
+            }
+        };
+{%- endmacro %}
+
+{#
+    Expression for the bytes standing in for an absent payload.
+
+    A method that answers with no body still has to hand its decoder something.
+    For JSON that is an empty object, which deserializes into a struct with no
+    fields; for protobuf it is no bytes at all, which decodes to a default message.
+#}
+{%- macro empty_payload_bytes(payload) -%}
+{%- if payload.is_protobuf -%}
+Bytes::new()
+{%- else -%}
+Bytes::from_static(b"{}")
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    The parameters an emit/send function takes.
+
+    A JSON payload is unpacked into one parameter per argument, which is the API
+    generated servers and clients have always had.  A protobuf payload arrives as
+    the message itself, since taking it apart is what protobuf callers asked not
+    to happen.
+#}
+{%- macro payload_params(payload, arg_list) -%}
+{%- if payload.is_protobuf -%}
+payload: {{ payload.rust.struct_name }}
+{%- else -%}
+{%- for arg in arg_list %}{{ arg.name|snake_case }}: {{ arg.rust.type }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    Statements binding the payload to `data`, from whichever form the parameters
+    took.  A protobuf message is already the payload; a JSON payload is assembled
+    from the individual arguments.
+#}
+{%- macro build_payload(payload, arg_list) -%}
+{%- if payload.is_protobuf -%}
+let data = payload;
+{%- else -%}
+let data = {{ payload.rust.struct_name }} {
+{%- for arg in arg_list %}
+            {{ arg.name|snake_case }},
+{%- endfor %}
+        };
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    An example value for a whole payload, for demos and generated tests.
+
+    A JSON payload is built from its arguments' example values.  A protobuf
+    message gets its default instance: stinger resolves protobuf messages by
+    name only, so there are no field values to invent yet.
+#}
+{%- macro example_payload(payload, arg_list) -%}
+{%- if payload.is_protobuf -%}
+{{ payload.protobuf.rust.external_name }}::default()
+{%- else -%}
+{%- for arg in arg_list %}{{ arg.get_random_example_value(lang="rust") }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    Like `example_payload`, but for code inside the library itself, which reaches
+    protobuf messages through `crate::proto` rather than importing the module.
+#}
+{%- macro example_payload_local(payload, arg_list) -%}
+{%- if payload.is_protobuf -%}
+{{ payload.rust.struct_name }}::default()
+{%- else -%}
+{%- for arg in arg_list %}{{ arg.get_random_example_value(lang="rust") }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    A property's value and the payload that carries it.
+
+    A JSON property wraps its single value in a generated struct with one named
+    field, so the two directions are a construction and a field access.  A
+    protobuf property's value *is* the message, so both are the identity.
+#}
+{%- macro property_wrap(prop, value_expr) -%}
+{%- if prop.payload.is_protobuf -%}
+{{ value_expr }}
+{%- else -%}
+{{ prop.payload.rust.struct_name }} {
+                        {{ prop.value.name|snake_case }}: {{ value_expr }},
+                    }
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro property_unwrap(prop, obj_expr) -%}
+{%- if prop.payload.is_protobuf -%}
+{{ obj_expr }}
+{%- else -%}
+{{ obj_expr }}.{{ prop.value.name|snake_case }}
+{%- endif -%}
+{%- endmacro -%}
+
+{# An example value for a property, for demos and generated tests. #}
+{%- macro property_example(prop) -%}
+{%- if prop.payload.is_protobuf -%}
+{{ prop.payload.rust.struct_name }}::default()
+{%- else -%}
+{{ prop.value.get_random_example_value(lang="rust") }}
+{%- endif -%}
+{%- endmacro -%}
+
+{# Like `property_example`, but for code outside the library (demos, integration tests). #}
+{%- macro property_example_external(prop) -%}
+{%- if prop.payload.is_protobuf -%}
+{{ prop.payload.protobuf.rust.external_name }}::default()
+{%- else -%}
+{{ prop.value.get_random_example_value(lang="rust") }}
+{%- endif -%}
+{%- endmacro -%}

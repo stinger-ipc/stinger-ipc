@@ -5,6 +5,13 @@
 {%-endif%}{%if arg.optional%} (optional){%endif%}|
 {{- arg.description or ''}}|
 {%- endmacro -%}
+{%- macro payloadtable(payload) -%}
+{%- if payload.is_protobuf -%}
+Carried as the protobuf message **`{{ payload.protobuf.full_name }}`**, defined in `{{ payload.protobuf.proto_file }}`.
+{% else -%}
+{{ argtable(payload.arg_list) }}
+{%- endif -%}
+{%- endmacro -%}
 {%- macro argtable(arglist) -%}
 | Name          | Type     |Description|
 |---------------|----------|-----------|
@@ -70,7 +77,7 @@ Client <<- Server : Signal(Parameters)
 
 #### Signal Parameters for `{{sig_name}}`
 
-{{argtable(signal.arg_list)}}
+{{payloadtable(signal.payload)}}
 
 #### MQTT Details
 
@@ -133,7 +140,7 @@ These return codes are used in method responses.  The string representation of t
 {%if method.arg_list | length == 0%}
 There are no arguments for this request.
 {%else-%}
-{{argtable(method.arg_list)}}
+{{payloadtable(method.request_payload)}}
 {%endif%}{# number of args #}
 
 #### Request MQTT Details
@@ -156,7 +163,7 @@ There are no arguments for this request.
 {%if method.return_value is none -%}
 There is no return value for this method call.  An empty response object will still be sent from server to client.
 {%else-%}
-{{argtable(method.return_arg_list)}}
+{{payloadtable(method.response_payload)}}
 {%endif-%}
 
 #### Response MQTT Details
@@ -217,7 +224,7 @@ Client ->> Server : Command(Parameters)
 {%if command.arg_list | length == 0%}
 There are no arguments for this command.
 {%else-%}
-{{argtable(command.arg_list)}}
+{{payloadtable(command.payload)}}
 {%endif%}{# number of args #}
 
 ####  MQTT Details
@@ -253,7 +260,7 @@ Client <<- Server: Property Updated
 
 This property is **read-only**.  It can only be modified by the server.{%endif%}
 
-{{argtable(prop.arg_list)}}
+{{payloadtable(prop.payload)}}
 
 ####  MQTT Details
 

@@ -15,7 +15,11 @@ class PythonSymbolsProvider(ISymbolsProvider):
     """
 
     def for_model(self, model_class_name: str, model) -> object | None:
-        if model_class_name == "StingerSpec":
+        if model_class_name == "ProtobufMessageRef":
+            return PythonProtobufRefSymbols(model, self.config)
+        elif model_class_name == "Payload":
+            return PythonPayloadSymbols(model, self.config)
+        elif model_class_name == "StingerSpec":
             return PythonInterfaceSymbols(model, self.config)
         elif model_class_name == "InterfaceStruct":
             return PythonStructSymbols(model, self.config)
@@ -333,12 +337,12 @@ class PythonMethodSymbols(PythonSymbols):
     @property
     def response_class_name(self) -> str:
         """Python class name of the generated method response payload."""
-        return f"{stringmanip.upper_camel_case(self._method.name)}MethodResponse"
+        return self._method.response_payload.python.class_name
 
     @property
     def request_class_name(self) -> str:
         """Python class name of the generated method request payload."""
-        return f"{stringmanip.upper_camel_case(self._method.name)}MethodRequest"
+        return self._method.request_payload.python.class_name
 
 
 class PythonCommandSymbols(PythonSymbols):
@@ -351,7 +355,7 @@ class PythonCommandSymbols(PythonSymbols):
     @property
     def payload_class_name(self) -> str:
         """Python class name of the generated command payload."""
-        return f"{stringmanip.upper_camel_case(self._command.name)}CommandPayload"
+        return self._command.payload.python.class_name
 
     @property
     def callback_type_name(self) -> str:
@@ -367,8 +371,20 @@ class PythonPropertySymbols(PythonSymbols):
         self._prop = prop
 
     @property
+    def is_protobuf(self) -> bool:
+        """True when the property holds a protobuf message rather than a JSON value."""
+        return self._prop.payload.is_protobuf
+
+    @property
     def class_name(self) -> str:
-        """Python class name for the property's value type."""
+        """Python class name for the property's value type.
+
+        A protobuf property's value is the message itself: there is no wrapper
+        model with a single named field, so the value type and the payload type
+        are the same thing.
+        """
+        if self.is_protobuf:
+            return self._prop.payload.python.class_name
         return self._prop.value.python.class_name
 
     @property
@@ -384,6 +400,8 @@ class PythonPropertySymbols(PythonSymbols):
     @property
     def annotation(self) -> str:
         """Python type annotation for the property's value."""
+        if self.is_protobuf:
+            return self._prop.payload.python.class_name
         return self._prop.value.python.annotation
 
     @property
@@ -393,10 +411,95 @@ class PythonPropertySymbols(PythonSymbols):
 
     @property
     def setter_value_annotation(self) -> str:
-        """Python type annotation used by the property setter."""
+        """Python type annotation used by the property setter.
+
+        A JSON property accepts either the bare value or the model wrapping it; a
+        protobuf property has only the one form, so the union would be redundant.
+        """
+        if self.is_protobuf:
+            return self.annotation
         return f"Union[{self.annotation}, {self.model_class_name}]"
 
     @property
     def model_class_name(self) -> str:
         """Python class name of the generated property model."""
-        return f"{stringmanip.upper_camel_case(self._prop.name)}Property"
+        return self._prop.payload.python.class_name
+
+    @property
+    def is_optional(self) -> bool:
+        """True when the property's value may be absent.
+
+        A protobuf message is never optional in this sense: an unset message is
+        still a message, with its fields at their defaults.
+        """
+        if self.is_protobuf:
+            return False
+        return bool(self._prop.value.optional)
+
+    @property
+    def value_param_name(self) -> str:
+        """Name of the parameter a setter takes for this property's value.
+
+        A JSON property names it after its single value; a protobuf property has
+        no field name to borrow, so it is simply the message.
+        """
+        if self.is_protobuf:
+            return "value"
+        return stringmanip.snake_case(self._prop.value.name)
+
+
+# The name of the generated class for each kind of payload.  These reproduce
+# exactly the names the templates used to spell inline, so that routing them through
+# the payload changes no generated output.
+_PYTHON_PAYLOAD_NAMES = {
+    "SIGNAL": lambda name: f"{stringmanip.upper_camel_case(name)}SignalPayload",
+    "COMMAND": lambda name: f"{stringmanip.upper_camel_case(name)}CommandPayload",
+    "METHOD_REQUEST": lambda name: f"{stringmanip.upper_camel_case(name)}MethodRequest",
+    "METHOD_RESPONSE": lambda name: f"{stringmanip.upper_camel_case(name)}MethodResponse",
+    "PROPERTY": lambda name: f"{stringmanip.upper_camel_case(name)}Property",
+}
+
+
+class PythonPayloadSymbols(PythonSymbols):
+    """Python symbols for a :class:`Payload`."""
+
+    def __init__(self, payload, config: StingerConfig | None = None):
+        super().__init__(config)
+        self._payload = payload
+
+    @property
+    def class_name(self) -> str:
+        """Python name of the type that carries this payload."""
+        if self._payload.is_protobuf:
+            return self._payload.protobuf.python.qualified_name
+        return _PYTHON_PAYLOAD_NAMES[self._payload.role.name](self._payload.owner_name)
+
+    @property
+    def struct_name(self) -> str:
+        """Alias for :attr:`class_name`, so templates can use one spelling across languages."""
+        return self.class_name
+
+
+class PythonProtobufRefSymbols(PythonSymbols):
+    """Python symbols for a :class:`ProtobufMessageRef`."""
+
+    def __init__(self, ref, config: StingerConfig | None = None):
+        super().__init__(config)
+        self._ref = ref
+
+    @property
+    def module(self) -> str:
+        """Name of the protoc-generated module that defines this message.
+
+        protoc names the module after the .proto *file*, not the protobuf package,
+        so this needs the reference to have been resolved against the sources.
+        """
+        stem = self._ref.proto_file.rsplit("/", 1)[-1]
+        if stem.endswith(".proto"):
+            stem = stem[: -len(".proto")]
+        return f"{stem}_pb2"
+
+    @property
+    def qualified_name(self) -> str:
+        """How generated Python code names this message, e.g. ``weather_pb2.CurrentConditions``."""
+        return f"{self.module}.{self._ref.message_name}"

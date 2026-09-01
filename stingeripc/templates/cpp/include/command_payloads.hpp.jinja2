@@ -24,6 +24,7 @@ namespace {{ns}} {
 namespace {{stinger.name|snake_case}} {
 
 {%for command_name, command in stinger.commands.items()%}
+{%- if not command.payload.is_protobuf %}
 
 struct {{command.cpp.payload_struct_name}} {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
@@ -37,7 +38,7 @@ struct {{command.cpp.payload_struct_name}} {
     {%-endfor%}
     {%endif%}
 };
-
+{% endif %}
 {%endfor%}
 
 } // namespace {{stinger.name|snake_case}}

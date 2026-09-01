@@ -20,11 +20,12 @@ namespace {{ns}} {
 namespace {{stinger.name|snake_case}} {
 
 {%for prop_name, prop in stinger.properties.items()%}
+{%- if not prop.payload.is_protobuf %}
 {%-if prop.documentation %}/**
 {{prop.documentation |commentblock(' * ')}}
  */{%endif%}
 struct {{prop.cpp.property_struct_name}} {
-    static {{prop.name | UpperCamelCase}}Property FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    static {{prop.payload.cpp.class_name}} FromRapidJsonObject(const rapidjson::Value& jsonObj);
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
     // Validates fields that declare a JSON schema constraint.  Returns true if all such fields conform to their schema (or if none declare one).
     bool ValidateSchema() const;
@@ -36,6 +37,7 @@ struct {{prop.cpp.property_struct_name}} {
     {%-endif-%}
 {%endfor-%}{# end for arg #}
 };
+{%- endif %}
 {%endfor%}{# end for each property #}
 
 } // namespace {{stinger.name|snake_case}}

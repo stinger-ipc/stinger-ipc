@@ -8,6 +8,7 @@ This is the Client for the {{stinger.name}} interface.
 """
 {% import "partials/imports.jinja2" as imports %}
 {% import "partials/docstrings.jinja2" as docstrings %}
+{%- import "partials/codec.jinja2" as codec %}
 from typing import Dict, Callable, List, Any, Optional, Union
 from uuid import uuid4
 from functools import partial, wraps
@@ -34,7 +35,8 @@ from pydantic import BaseModel
 logging.basicConfig(level=logging.DEBUG)
 
 {%for sig_name, sig in stinger.signals.items()-%}
-{{sig_name | UpperCamelCase}}SignalCallbackType = Union[Callable[[{%for arg in sig.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None], Callable[[Any{%for arg in sig.arg_list%}{%if loop.first%}, {%endif%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]]
+{{sig_name | UpperCamelCase}}SignalCallbackType = {% if sig.payload.is_protobuf %}Union[Callable[[{{sig.payload.python.class_name}}], None], Callable[[Any, {{sig.payload.python.class_name}}], None]]{% else %}Union[Callable[[{%for arg in sig.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None], Callable[[Any{%for arg in sig.arg_list%}{%if loop.first%}, {%endif%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]]{% endif %}
+{{sig_name | UpperCamelCase}}SignalPayloadCallbackType = Union[Callable[[{{sig.payload.python.class_name}}], None], Callable[[Any, {{sig.payload.python.class_name}}], None]]
 {%endfor%}
 {%-for method_name, method in stinger.methods.items()-%}
 {{method_name | UpperCamelCase}}MethodResponseCallbackType = Union[Callable[[{%if method.return_value%}{{method.python.return_value_annotation}}{%endif%}], None], Callable[[Any{%if method.return_value%}, {{method.python.return_value_annotation}}{%endif%}], None]]
@@ -82,6 +84,7 @@ class {{stinger.python.client_class_name}}:
         {%endfor-%}
         {%-for sig_name in stinger.signals.keys()-%}
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}: List[{{sig_name | UpperCamelCase}}SignalCallbackType] = []
+        self._signal_payload_callbacks_for_{{sig_name | snake_case }}: List[{{sig_name | UpperCamelCase}}SignalPayloadCallbackType] = []
         {%endfor-%}
         self._all_signals_subscription_id = UNINITIALIZED_SUBSCRIPTION_ID
         self._unmatched_signal_callbacks: List[UnmatchedSignalCallbackType] = []
@@ -122,13 +125,13 @@ class {{stinger.python.client_class_name}}:
         if isinstance(value, {{prop_spec.python.model_class_name}}):
             property_obj = value
         else:
-            property_obj = {{prop_name|UpperCamelCase}}Property({{prop_spec.arg_list[0].name|snake_case}}=value)
+            property_obj = {{ codec.property_wrap(prop_spec, 'value') }}
         {%endif-%}
         self._logger.debug("Setting '{{prop_name}}' property to %s", property_obj)
         with self._property_{{prop_name|snake_case}}_mutex:
-            req_msg = MessageCreator.property_update_request_message(
+            req_msg = MessageCreator.{{ codec.binary_prefix(prop_spec.payload) }}property_update_request_message(
                 "{{prop_spec.update_topic()}}".format(**self._topic_template_kwargs), # type: ignore[str-format]
-                property_obj, 
+                {{ codec.payload_arg(prop_spec.payload, "property_obj") }} 
                 str(self._property_{{prop_name|snake_case}}_version), 
                 "{{prop_spec.response_topic()}}".format(**self._topic_template_kwargs), # type: ignore[str-format]
                 str(uuid4())
@@ -160,14 +163,16 @@ class {{stinger.python.client_class_name}}:
     
     {%for sig_name, sig in stinger.signals.items()-%}
     def _receive_{{sig_name|snake_case}}_signal_message(self, message: Message):
-        if message.content_type is None or message.content_type != 'application/json':
-            self._logger.warning("Received '{{sig_name}}' signal with non-JSON content type")
+        if message.content_type is None or message.content_type != '{{ codec.content_type(sig.payload) }}':
+            self._logger.warning("Received '{{sig_name}}' signal with unexpected content type")
             return
 
-        model = {{sig_name|UpperCamelCase}}SignalPayload.model_validate_json(message.payload)
+        model = {{ codec.decode(sig.payload, "message.payload") }}
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name | snake_case}}, **kwargs)
+        for payload_handler in self._signal_payload_callbacks_for_{{sig_name | snake_case}}:
+            payload_handler(model) # type: ignore[call-arg]
     {%endfor%}{# end signal loop #}
 
     {%-if stinger.methods|length > 0-%}
@@ -208,18 +213,18 @@ class {{stinger.python.client_class_name}}:
     {%-for prop_name, prop_spec in stinger.properties.items()%}
     def _receive_{{prop_name | snake_case}}_property_update_message(self, message: Message):
         # Handle '{{prop_name}}' property change.
-        if message.content_type is None or message.content_type != 'application/json':
-            self._logger.warning("Received '{{prop_name}}' property change with non-JSON content type")
+        if message.content_type is None or message.content_type != '{{ codec.content_type(prop_spec.payload) }}':
+            self._logger.warning("Received '{{prop_name}}' property change with unexpected content type")
             return
         try:
-            prop_obj = {{prop_name|UpperCamelCase}}Property.model_validate_json(message.payload)
+            prop_obj = {{ codec.decode(prop_spec.payload, "message.payload") }}
             user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
             with self._property_{{prop_name|snake_case}}_mutex:
-                self._property_{{prop_name|snake_case}} = prop_obj{% if prop_spec.arg_list | length == 1 %}.{{prop_spec.arg_list[0].name|snake_case}}{% endif %}
+                self._property_{{prop_name|snake_case}} = {{ codec.property_unwrap(prop_spec, 'prop_obj') }}
                 self._property_{{prop_name|snake_case}}_version = property_version
                 {% if prop_spec.arg_list | length == 1 %}
-                self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name|snake_case}}, value=prop_obj.{{prop_spec.arg_list[0].name|snake_case}})
+                self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name|snake_case}}, value={{ codec.property_unwrap(prop_spec, 'prop_obj') }})
                 {%else%}
                 self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name|snake_case}}, value=prop_obj)
                 {%endif%}
@@ -238,11 +243,24 @@ class {{stinger.python.client_class_name}}:
         """ {{ docstrings.google_docstring(sig.documentation, 8, args=sig.arg_list, extra="Used as a decorator for methods which handle the '" ~ sig_name ~ "' signal; the handler receives the signal's arguments as keyword arguments.") }}
         """
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}.append(handler)
-        if len(self._signal_recv_callbacks_for_{{sig_name | snake_case}}) == 1:
+        self._subscribe_to_{{sig_name | snake_case}}_signal()
+        return handler
+
+    def receive_{{sig_name | snake_case }}_payload(self, handler: {{sig_name | UpperCamelCase}}SignalPayloadCallbackType):
+        """ {{ docstrings.google_docstring(sig.documentation, 8, extra="Used as a decorator for methods which handle the '" ~ sig_name ~ "' signal; the handler receives the whole `" ~ sig.payload.python.class_name ~ "` payload rather than its individual arguments.") }}
+        """
+        self._signal_payload_callbacks_for_{{sig_name | snake_case }}.append(handler)
+        self._subscribe_to_{{sig_name | snake_case}}_signal()
+        return handler
+
+    def _subscribe_to_{{sig_name | snake_case}}_signal(self):
+        """ Subscribes to the '{{sig_name}}' signal topic once, when its first handler of
+        either kind is registered.
+        """
+        if len(self._signal_recv_callbacks_for_{{sig_name | snake_case}}) + len(self._signal_payload_callbacks_for_{{sig_name | snake_case}}) == 1:
             {{sig_name|snake_case}}_topic = "{{sig.topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format] 
             self._logger.debug("Subscribing to '{{sig_name}}' signal topic %s", {{sig_name|snake_case}}_topic)
             self._conn.subscribe({{sig_name|snake_case}}_topic, self._receive_{{sig_name|snake_case}}_signal_message)
-        return handler
     {%endfor%}
 
     def unmatched_signal_handler(self, handler: UnmatchedSignalCallbackType):
@@ -256,16 +274,18 @@ class {{stinger.python.client_class_name}}:
 
     {%for method_name, method in stinger.methods.items()%}
     {%- set method_returns = ("concurrent.futures.Future", "Resolves to " ~ (method.return_value.description or method.python.return_value_annotation) ~ " once the server responds.") if method.return_value else ("concurrent.futures.Future", "Resolves to None once the server responds.") %}
+    {%- if not method.request_payload.is_protobuf %}
     def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
         """ {{ docstrings.google_docstring(method.documentation, 8, args=method.arg_list, returns=method_returns, extra="Calling this method with individual arguments initiates a `" ~ method_name ~ "` IPC method call.") }}
         """
-        payload = {{method_name|UpperCamelCase}}MethodRequest( {%-for arg in method.arg_list%}
+        payload = {{method.request_payload.python.class_name}}( {%-for arg in method.arg_list%}
             {{arg.name}}={{arg.name|snake_case}},{%endfor%}
         )
         return self.call_{{method_name | snake_case}}(payload)
+    {%- endif %}
 
-    def call_{{method_name | snake_case}}(self, payload: {{method_name|UpperCamelCase}}MethodRequest) -> futures.Future:
-        """ {{ docstrings.google_docstring(method.documentation, 8, returns=method_returns, extra="Equivalent to `" ~ (method_name|snake_case) ~ "()`, but takes an already-built `" ~ method_name|UpperCamelCase ~ "MethodRequest` payload instead of individual arguments.") }}
+    def call_{{method_name | snake_case}}(self, payload: {{method.request_payload.python.class_name}}) -> futures.Future:
+        """ {{ docstrings.google_docstring(method.documentation, 8, returns=method_returns, extra=("Initiates a `" ~ method_name ~ "` IPC method call with an already-built `" ~ method.request_payload.python.class_name ~ "` payload." if method.request_payload.is_protobuf else "Equivalent to `" ~ (method_name|snake_case) ~ "()`, but takes an already-built `" ~ method.request_payload.python.class_name ~ "` payload instead of individual arguments.")) }}
         """
         fut = futures.Future() # type: futures.Future
         correlation_id = str(uuid4())
@@ -273,7 +293,7 @@ class {{stinger.python.client_class_name}}:
 
         self._logger.debug("Calling '{{method_name}}' method with payload %s", payload)
         response_topic = "{{method.response_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
-        req_msg = MessageCreator.request_message("{{method.request_topic()}}".format(**self._topic_template_kwargs), payload, response_topic, correlation_id) # type: ignore[str-format]
+        req_msg = {{ codec.request_message(method.request_payload, '"' ~ method.request_topic() ~ '".format(**self._topic_template_kwargs)', "payload", "response_topic", "correlation_id") }} # type: ignore[str-format]
         self._conn.publish(req_msg)
         return fut
 
@@ -288,7 +308,7 @@ class {{stinger.python.client_class_name}}:
             return
 
         try:
-            resp_model = {{method.python.response_class_name}}.model_validate_json(response_json_text)
+            resp_model = {{ codec.decode(method.response_payload, "response_json_text") }}
         except Exception as e:
             fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to '{{method_name}}' method: {e}"))
 
@@ -304,6 +324,7 @@ class {{stinger.python.client_class_name}}:
     {%endfor%}
 
     {%for command_name, command in stinger.commands.items()%}
+    {%- if not command.payload.is_protobuf %}
     def send_{{command_name | snake_case}}(self, {%for arg in command.arg_list%}{{arg.name|snake_case}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
         """ {{ docstrings.google_docstring(command.documentation, 8, args=command.arg_list, extra="Client application code should call this method to send the '" ~ command_name ~ "' command to the server. A command is fire-and-forget: the server sends nothing back, so this returns nothing and the client does not learn whether the server acted on it.") }}
         """
@@ -311,19 +332,14 @@ class {{stinger.python.client_class_name}}:
             {{arg.name|snake_case}}={{arg.name|snake_case}}{%if arg.optional%} if {{arg.name|snake_case}} is not None else None{%endif%},
         {%endfor%})
         return self.send_{{command_name | snake_case}}_payload(payload)
+    {%- endif %}
 
     def send_{{command_name | snake_case}}_payload(self, payload: {{command.python.payload_class_name}}):
         """ {{ docstrings.google_docstring(command.documentation, 8, extra="Equivalent to `send_" ~ (command_name|snake_case) ~ "()`, but takes an already-built `" ~ command.python.payload_class_name ~ "` payload instead of individual arguments.") }}
         """
         self._logger.debug("Sending '{{command_name}}' command with payload %s", payload)
         command_topic = "{{command.topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
-        cmd_msg = Message(
-            topic=command_topic,
-            payload=payload.model_dump_json(by_alias=True).encode("utf-8"),
-            qos={{stinger.command_qos}},
-            retain=False,
-            content_type="application/json",
-        )
+        cmd_msg = {{ codec.command_message(command.payload, "command_topic", "payload", stinger.command_qos) }}
         self._conn.publish(cmd_msg)
     {%endfor%}
 

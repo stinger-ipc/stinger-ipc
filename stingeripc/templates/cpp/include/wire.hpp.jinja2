@@ -1,0 +1,114 @@
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+It maps each payload type of the {{stinger.name}} interface to the bytes it travels as.
+
+{%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
+*/
+
+
+#pragma once
+#include <string>
+#include <stdexcept>
+#include <rapidjson/document.h>
+#include <rapidjson/error/en.h>
+#include <rapidjson/stringbuffer.h>
+#include <rapidjson/writer.h>
+#include "method_payloads.hpp"
+#include "signal_payloads.hpp"
+#include "command_payloads.hpp"
+#include "{{stinger.cpp.property_struct_header_file}}"
+{%- import "partials/codec.jinja2" as codec %}
+{{- codec.imports(stinger) }}
+
+{%for ns in config.cpp.namespace%}
+namespace {{ns}} {
+{%endfor-%}
+namespace {{stinger.name|snake_case}} {
+
+/// How one payload type crosses the wire.
+///
+/// Every generated payload has a specialization below, so the client and server
+/// serialize and deserialize through one call rather than repeating the encoding
+/// at each publish and receive site.  A payload described by JSON arguments is
+/// carried as JSON; a payload declared as a protobuf message is carried as that
+/// message's own encoding.
+template <class T>
+struct Wire;
+
+{%- macro json_wire(type_name) %}
+
+template <>
+struct Wire<{{type_name}}> {
+    static constexpr const char* kContentType = "application/json";
+
+    static std::string ToString(const {{type_name}}& value)
+    {
+        rapidjson::Document doc;
+        doc.SetObject();
+        value.AddToRapidJsonObject(doc, doc.GetAllocator());
+        rapidjson::StringBuffer buf;
+        rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
+        doc.Accept(writer);
+        return buf.GetString();
+    }
+
+    static {{type_name}} FromString(const std::string& payload)
+    {
+        rapidjson::Document doc;
+        rapidjson::ParseResult ok = doc.Parse(payload.c_str());
+        if (!ok)
+        {
+            throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
+        }
+        if (!doc.IsObject() && !doc.IsNull())
+        {
+            throw std::runtime_error("Received payload is not an object");
+        }
+        return {{type_name}}::FromRapidJsonObject(doc);
+    }
+};
+{%- endmacro %}
+
+{%- macro protobuf_wire(type_name) %}
+
+template <>
+struct Wire<{{type_name}}> {
+    static constexpr const char* kContentType = "application/protobuf";
+
+    static std::string ToString(const {{type_name}}& value)
+    {
+        std::string out;
+        if (!value.SerializeToString(&out))
+        {
+            throw std::runtime_error("Could not serialize protobuf payload");
+        }
+        return out;
+    }
+
+    static {{type_name}} FromString(const std::string& payload)
+    {
+        {{type_name}} value;
+        if (!value.ParseFromString(payload))
+        {
+            throw std::runtime_error("Could not parse protobuf payload");
+        }
+        return value;
+    }
+};
+{%- endmacro %}
+{#- One specialization per type, not per payload: two elements may name the same
+    protobuf message, and Wire<T> can only be specialized once for a given T. -#}
+{%- set emitted = [] %}
+{%- for payload in stinger.all_payloads() %}
+{%- if payload.cpp.class_name not in emitted %}
+{%- do emitted.append(payload.cpp.class_name) %}
+{%- if payload.is_protobuf %}{{ protobuf_wire(payload.cpp.class_name) }}{% else %}{{ json_wire(payload.cpp.class_name) }}{% endif %}
+{%- endif %}
+{%- endfor %}
+
+} // namespace {{stinger.name|snake_case}}
+{%for ns in config.cpp.namespace|reverse%}
+} // namespace {{ns}}
+{%endfor%}

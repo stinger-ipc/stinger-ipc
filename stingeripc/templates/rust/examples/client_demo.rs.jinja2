@@ -1,3 +1,4 @@
+{%- from "partials/codec.jinja2" import example_payload, property_example_external -%}
 //! Client module for Full IPC
 //! 
 //! This module is only available when the "client" feature is enabled.
@@ -16,6 +17,9 @@ use {{stinger.rust.package_name}}::discovery::{{stinger.name|UpperCamelCase}}Dis
 #[cfg(feature = "lwt")]
 use {{stinger.rust.package_name}}::lwt::StingerAvailability;
 use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection, TcpConnection};
+{%- if stinger.uses_protobuf() %}
+use {{stinger.rust.package_name}}::proto;
+{%- endif %}
 use tokio::time::{sleep, Duration};
 use tokio::join;
 #[allow(unused_imports)]
@@ -119,9 +123,7 @@ async fn main() {
             {%for method_name, method in stinger.methods.items()%}
             println!(">>> Calling {{method_name}} with example values...");
             let result = client_for_method_calling.{{method_name | snake_case}}(
-                {%for arg in method.arg_list%}
-                {{arg.get_random_example_value(lang='rust')}},
-                {%endfor%}).await;
+                {{ example_payload(method.request_payload, method.arg_list) }}).await;
             println!("<<< {{method_name}} response: {:?}", result);
             sleep(Duration::from_secs(19)).await;
             {%endfor%}
@@ -140,9 +142,7 @@ async fn main() {
             {%for cmd_name, cmd in stinger.commands.items()%}
             println!("~~> Sending {{cmd_name}} command with example values...");
             client_for_command_sending.send_{{cmd_name | snake_case}}(
-                {%for arg in cmd.arg_list%}
-                {{arg.get_random_example_value(lang='rust')}},
-                {%endfor%}).await;
+                {{ example_payload(cmd.payload, cmd.arg_list) }}).await;
             sleep(Duration::from_secs(13)).await;
             {%endfor%}
             sleep(Duration::from_secs(31)).await;
@@ -169,7 +169,7 @@ async fn main() {
             {%else%}
             sleep(Duration::from_secs(2)).await;
             { // Scoping for '{{prop_name}}' property.  Demonstrates creating a request to set the value.
-                let {{prop_name|snake_case}}_new_value = {%if prop.value.arg_type.name.lower() == "primitive" and prop.value.type.name.lower() == "string"%}format!("new-value-{}", i).into(){%else%}{{prop.value.get_random_example_value(lang="rust")}}{%endif%};
+                let {{prop_name|snake_case}}_new_value = {%if not prop.payload.is_protobuf and prop.value.arg_type.name.lower() == "primitive" and prop.value.type.name.lower() == "string"%}format!("new-value-{}", i).into(){%else%}{{ property_example_external(prop) }}{%endif%};
                 let mut write_lock = {{prop_name|snake_case}}_handle.write().await;
                 *write_lock = {{prop_name|snake_case}}_new_value;
                 println!("<~~ Sending request to update property '{{prop_name}}' to new value: {:?}", *write_lock);

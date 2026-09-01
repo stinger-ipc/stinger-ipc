@@ -110,7 +110,10 @@ def asyncapi(
 
 
 @app.command()
-def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)]):
+def validate(
+    input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)],
+    config: Annotated[Optional[list[Path]], typer.Option("--config", "-c", exists=True, file_okay=True, dir_okay=False, readable=True, help="TOML configuration file; needed to check protobuf message names against your .proto sources")] = None,
+):
     """Validate a Stinger interface YAML file.
 
     INPUT_FILE is the .stinger.yaml file
@@ -137,8 +140,21 @@ def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_o
         error_count += 1
         print(f"Error: {error}")
         print(f"Location: {error.instance_path}")
+    config_obj = StingerConfig()
+    for config_file in config or []:
+        merged = config_obj.model_dump(exclude_unset=True)
+        merged.update(load_config(config_file).model_dump(exclude_unset=True))
+        config_obj = StingerConfig.model_validate(merged)
+
     try:
-        StingerInterface(input_obj, StingerConfig())
+        # from_dict parses the whole interface -- signals, methods, commands and
+        # properties -- where the plain constructor reads only the 'interface' block
+        # and so would not catch a malformed element.
+        interface = StingerInterface.from_dict(input_obj, config_obj)
+        # Only checkable when a [protobuf] path was configured; without one the
+        # interface file is still validated, just not against the .proto sources.
+        if interface.uses_protobuf() and config_obj.protobuf is not None:
+            generic_generator.resolve_protobuf_messages(interface, config_obj, input_file)
     except Exception as e:
         if error_count == 0:
             print(f"❌  [bold red]Validation errors found in {input_file}:[/bold red]")

@@ -123,6 +123,7 @@ TEST_F({{stinger.cpp.server_class_name}}Test, SubscribesToExpectedTopics)
 }
 
 {%for sig_name, sig in stinger.signals.items()%}
+{%- if not sig.payload.is_protobuf %}{#- a protobuf payload has no example field values to round-trip yet #}
 // Emitting `{{sig_name}}` should publish the signal to the broker.
 TEST_F({{stinger.cpp.server_class_name}}Test, {{sig_name | UpperCamelCase}}EmitPublishes)
 {
@@ -138,9 +139,11 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{sig_name | UpperCamelCase}}EmitP
     EXPECT_FALSE(doc.Parse(published[0].payload.c_str()).HasParseError()) << "Published signal payload is not valid JSON";
     EXPECT_TRUE(doc.IsObject());
 }
+{%- endif %}
 {%endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
+{%- if not method.request_payload.is_protobuf %}{#- a protobuf payload has no example field values to round-trip yet #}
 // A simulated `{{method_name}}` request should invoke the registered handler and publish a response.
 TEST_F({{stinger.cpp.server_class_name}}Test, {{method_name | UpperCamelCase}}RequestInvokesHandler)
 {
@@ -156,7 +159,7 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{method_name | UpperCamelCase}}Re
     });
 
     {%if method.arg_list | length > 0 %}
-    {{method_name | UpperCamelCase}}RequestArguments requestArgs{ {%for arg in method.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    {{method.request_payload.cpp.class_name}} requestArgs{ {%for arg in method.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
     const std::string payload = serializeToString(requestArgs);
     {%else%}
     const std::string payload = "{}";
@@ -174,17 +177,19 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{method_name | UpperCamelCase}}Re
     // The server publishes a response (success or error) to the response topic.
     EXPECT_EQ(_conn->GetPublishedMessages(responseTopic).size(), 1u);
 }
+{%- endif %}
 {%endfor%}
 
 {%for prop_name, prop in stinger.properties.items()%}
-{%-if not prop.value.value_schema %}
+{%- if not prop.payload.is_protobuf %}{#- a protobuf property has no example field values to round-trip #}
+{%-if prop.payload.is_protobuf or not prop.value.value_schema %}
 // Setting `{{prop_name}}` on the server should publish its value to the broker.
 TEST_F({{stinger.cpp.server_class_name}}Test, {{prop_name | UpperCamelCase}}SetterPublishesValue)
 {
     const std::string valueTopic = stinger::utils::format("{{prop.value_topic()}}", topicArgs());
     _conn->ClearPublishedMessages();
 
-    _server->update{{prop_name | UpperCamelCase}}Property({%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+    _server->update{{prop.name | UpperCamelCase}}Property({%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
 
     auto published = _conn->GetPublishedMessages(valueTopic);
     ASSERT_EQ(published.size(), 1u);
@@ -200,7 +205,7 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{prop_name | UpperCamelCase}}Upda
     const std::string updateTopic = stinger::utils::format("{{prop.update_topic()}}", topicArgs());
     const std::string valueTopic = stinger::utils::format("{{prop.value_topic()}}", topicArgs());
 
-    {{prop_name | UpperCamelCase}}Property newValue{ {%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    {{prop.payload.cpp.class_name}} newValue{ {%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
     const std::string payload = serializeToString(newValue);
     const std::vector<std::byte> correlationData{ std::byte{0x01} };
     auto msg = stinger::mqtt::Message::PropertyUpdateRequest(updateTopic, payload, 1, correlationData, "test/response");
@@ -211,9 +216,11 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{prop_name | UpperCamelCase}}Upda
     EXPECT_EQ(_conn->GetPublishedMessages(valueTopic).size(), 1u);
 }
 {%endif%}
+{%- endif %}
 {%endfor%}
 
 {%for command_name, command in stinger.commands.items()%}
+{%- if not command.payload.is_protobuf %}{#- a protobuf payload has no example field values to round-trip yet #}
 // A simulated `{{command_name}}` command should be dispatched to the registered handler.
 TEST_F({{stinger.cpp.server_class_name}}Test, {{command_name | UpperCamelCase}}CommandInvokesHandler)
 {
@@ -245,4 +252,5 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{command_name | UpperCamelCase}}C
     // Commands have no response channel, so the server must not publish anything back.
     EXPECT_EQ(_conn->GetPublishedMessages(commandTopic).size(), 0u);
 }
+{%- endif %}
 {%endfor%}

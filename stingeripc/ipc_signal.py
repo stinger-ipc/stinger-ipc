@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from .components import InterfaceComponent, Arg
 from .lang_symb import LanguageSymbolMixin
+from .payload import Payload, PayloadRole, protobuf_ref_from_spec
 from .exceptions import InvalidStingerStructure
 from . import topic_util
 
@@ -22,7 +23,7 @@ class IpcSignal(InterfaceComponent):
     def __init__(self, name: str, root: StingerSpec):
         InterfaceComponent.__init__(self, name, root)
         LanguageSymbolMixin.enhance(self, self._config)
-        self._arg_list: list[Arg] = []
+        self._payload = Payload(owner_name=name, role=PayloadRole.SIGNAL, config=self._config)
         self._version: Optional[str] = None
 
     def add_arg(self, arg: Arg) -> IpcSignal:
@@ -30,9 +31,9 @@ class IpcSignal(InterfaceComponent):
 
         Duplicate argument names are rejected.
         """
-        if arg.name in [a.name for a in self._arg_list]:
+        if arg.name in [a.name for a in self._payload.args]:
             raise InvalidStingerStructure(f"An arg named '{arg.name}' has been added.")
-        self._arg_list.append(arg)
+        self._payload.args.append(arg)
         return self
 
     @property
@@ -41,9 +42,14 @@ class IpcSignal(InterfaceComponent):
         return self._version
 
     @property
+    def payload(self) -> Payload:
+        """The signal's wire body."""
+        return self._payload
+
+    @property
     def arg_list(self) -> list[Arg]:
         """The ordered list of arguments that make up the signal's values."""
-        return self._arg_list
+        return self._payload.arg_list
 
     def topic(self, **kwargs) -> str:
         """Return the topic that signal messages are published on.
@@ -64,8 +70,16 @@ class IpcSignal(InterfaceComponent):
     ) -> IpcSignal:
         """Alternative constructor from a Stinger signal structure."""
         signal = cls(name, stinger_spec)
+
+        signal._payload.protobuf = protobuf_ref_from_spec(name, signal_spec, "values")
+        if signal._payload.is_protobuf:
+            if "version" in signal_spec:
+                signal._version = signal_spec["version"]
+            signal.try_set_documentation_from_spec(signal_spec)
+            return signal
+
         if "values" not in signal_spec:
-            raise InvalidStingerStructure("Signal specification must have 'values'")
+            raise InvalidStingerStructure(f"Signal '{name}' specification must have 'values' or 'protobuf'")
         if not isinstance(signal_spec["values"], list):
             raise InvalidStingerStructure(f"Values must be a list.  It is '{type(signal_spec['values'])}' ")
 

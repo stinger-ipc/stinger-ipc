@@ -36,6 +36,9 @@ jsonpath-rust = { version = "0.7", optional = true }
 {%- if stinger.uses_schemas() %}
 jsonschema = "0.46" # Only needed because this interface declares JSON schema constraints.
 {%- endif %}
+{%- if stinger.uses_protobuf() %}
+prost = "0.13" # Only needed because this interface carries protobuf payloads.
+{%- endif %}
 {%- if stinger.uses_binary() %}
 base64 = "0.22.1" # Only needed because this interface has binary fields.
 {%- endif %}

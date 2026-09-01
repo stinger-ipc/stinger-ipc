@@ -233,6 +233,56 @@ class StingerSpec:
         """True if any argument anywhere in the interface declares a JSON schema constraint."""
         return any(arg.value_schema for arg in self._all_args())
 
+    def all_payloads(self) -> list["Payload"]:
+        """Every wire body in the interface, in a stable order.
+
+        A signal, command or property contributes one payload; a method
+        contributes two, since its request and response are encoded independently.
+        Templates that generate per-payload code (a serializer, a type
+        declaration) iterate this rather than re-deriving the set element by element.
+        """
+        payloads = []
+        for signal in self.signals.values():
+            payloads.append(signal.payload)
+        for method in self.methods.values():
+            payloads.append(method.request_payload)
+            payloads.append(method.response_payload)
+        for command in self.commands.values():
+            payloads.append(command.payload)
+        for prop in self.properties.values():
+            payloads.append(prop.payload)
+        return payloads
+
+    def uses_protobuf(self) -> bool:
+        """True if any payload in the interface is a protobuf message."""
+        return any(payload.is_protobuf for payload in self.all_payloads())
+
+    def uses_json(self) -> bool:
+        """True if any payload in the interface is a JSON argument list."""
+        return any(not payload.is_protobuf for payload in self.all_payloads())
+
+    def all_protobuf_refs(self) -> list["ProtobufMessageRef"]:
+        """Every protobuf reference in the interface, including repeats.
+
+        Two elements naming the same message each hold their own reference object,
+        so resolution has to visit all of them; :meth:`protobuf_messages` collapses
+        them by name and is for imports and compiler invocations instead.
+        """
+        return [payload.protobuf for payload in self.all_payloads() if payload.is_protobuf]
+
+    def protobuf_messages(self) -> list["ProtobufMessageRef"]:
+        """Every distinct protobuf message referenced by the interface, sorted by name.
+
+        De-duplicated because two elements may share one message, and generated
+        imports and compiler invocations must mention it only once.
+        """
+        by_name = {ref.full_name: ref for ref in self.all_protobuf_refs()}
+        return [by_name[name] for name in sorted(by_name)]
+
+    def protobuf_files(self) -> list[str]:
+        """Every distinct .proto file the interface draws messages from, sorted."""
+        return sorted({ref.proto_file for ref in self.protobuf_messages()})
+
     def _all_args(self) -> list["Arg"]:
         """Flat list of every argument that appears anywhere in the interface.
 

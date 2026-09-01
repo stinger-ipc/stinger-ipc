@@ -1,3 +1,4 @@
+{%- import "partials/codec.jinja2" as codec -%}
 import signal
 from time import sleep
 import concurrent.futures as futures
@@ -50,7 +51,7 @@ class SuperAwesomeDoerOfThings:
             sleep(5)
             {%endfor%}{# for each method #}
             {%for prop_name, prop in stinger.properties_rw.items()%}
-            self.client.{{prop_name|snake_case}} = {{prop.value.get_random_example_value()}}
+            self.client.{{prop_name|snake_case}} = {{ codec.property_example(prop) }}
             {%endfor%} {# for each property #}
             sleep(10)
     {%endif%} {# any methods or properties #}

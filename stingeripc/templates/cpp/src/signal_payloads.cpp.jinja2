@@ -13,22 +13,24 @@ namespace {{ns}} {
 namespace {{stinger.name|snake_case}} {
 
 {%for signal_name, signal in stinger.signals.items()%}
+{%- if not signal.payload.is_protobuf %}
 // --- (De-)Serialization for {{signal_name}} signal payload ---
-{{signal_name | UpperCamelCase}}Payload {{signal_name | UpperCamelCase}}Payload::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{{signal.payload.cpp.class_name}} {{signal.payload.cpp.class_name}}::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
-    {{signal_name | UpperCamelCase}}Payload {{signal.name | lowerCamelCase }}Payload;
+    {{signal.payload.cpp.class_name}} {{signal.name | lowerCamelCase }}Payload;
     {{deser.deserialize((signal.name|lowerCamelCase)+"Payload", signal.arg_list, 'jsonObj') | indent(4)}}
 
     return {{signal.name | lowerCamelCase }}Payload;
 };
 
-void {{signal_name | UpperCamelCase}}Payload::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+void {{signal.payload.cpp.class_name}}::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
     {%for arg in signal.arg_list%}
     {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
     {%- endfor %}
 }
 {{ val.validate_schema_body((signal_name | UpperCamelCase) ~ "Payload", signal.arg_list) }}
+{%- endif %}
 {% endfor %}
 
 } // namespace {{stinger.name|snake_case}}

@@ -1,0 +1,175 @@
+{#
+    The wire codec for one payload.
+
+    Every macro here takes a `Payload` and answers one question about how that
+    payload crosses the wire.  Each contains exactly one `is_protobuf` test, so
+    the publish and receive code in client.py/server.py is written once and does
+    not branch on the encoding itself.
+
+    Import into a template with:
+        {% import "partials/codec.jinja2" as codec %}
+
+    Imported macros do not inherit the calling template's context, so anything
+    they need is passed in explicitly.  Arguments named `*_expr` are fragments of
+    generated Python (a variable name or expression), not values.
+#}
+
+{# The MQTT content type messages carrying this payload are published with. #}
+{%- macro content_type(payload) -%}
+{{ payload.content_type }}
+{%- endmacro -%}
+
+{#
+    The protoc-generated modules this interface's protobuf payloads come from.
+
+    Emitted once per module even when several payloads share it, and nothing at
+    all for an interface that uses no protobuf messages.
+#}
+{%- macro imports(stinger) -%}
+{%- for module in stinger.protobuf_messages() | map(attribute='python.module') | unique | sort %}
+from .proto import {{ module }}
+{%- endfor -%}
+{%- endmacro -%}
+
+{# Expression turning a payload object into the bytes that go on the wire. #}
+{%- macro encode(payload, obj_expr) -%}
+{%- if payload.is_protobuf -%}
+{{ obj_expr }}.SerializeToString()
+{%- else -%}
+{{ obj_expr }}.model_dump_json(by_alias=True).encode("utf-8")
+{%- endif -%}
+{%- endmacro -%}
+
+{# Expression turning wire bytes back into a payload object. #}
+{%- macro decode(payload, buf_expr) -%}
+{%- if payload.is_protobuf -%}
+{{ payload.python.class_name }}.FromString({{ buf_expr }})
+{%- else -%}
+{{ payload.python.class_name }}.model_validate_json({{ buf_expr }})
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    How a decoded payload is handed to application code.
+
+    A JSON payload is spread into the handler's individual keyword arguments,
+    which is the API generated clients and servers have always had.  A protobuf
+    payload is passed as the message object itself, since taking it apart is
+    exactly what callers asked not to happen.
+#}
+{%- macro deliver(payload, handler_expr, obj_expr) -%}
+{%- if payload.is_protobuf -%}
+{{ handler_expr }}({{ obj_expr }})
+{%- else -%}
+{{ handler_expr }}(**{{ obj_expr }}.model_dump())
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    Message constructors.
+
+    The JSON forms call the `MessageCreator` helper for their message kind; the
+    protobuf forms call its `binary_*` counterpart with encoded bytes and an
+    explicit content type.  The two are the same underlying constructor -- the
+    JSON helpers delegate to the binary ones -- so the only difference is who
+    does the encoding.
+#}
+{%- macro signal_message(payload, topic_expr, obj_expr) -%}
+{%- if payload.is_protobuf -%}
+MessageCreator.binary_signal_message({{ topic_expr }}, {{ encode(payload, obj_expr) }}, "{{ payload.content_type }}")
+{%- else -%}
+MessageCreator.signal_message({{ topic_expr }}, {{ obj_expr }})
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro command_message(payload, topic_expr, obj_expr, qos) -%}
+{%- if payload.is_protobuf -%}
+MessageCreator.binary_command_message({{ topic_expr }}, {{ encode(payload, obj_expr) }}, "{{ payload.content_type }}", qos={{ qos }})
+{%- else -%}
+MessageCreator.command_message({{ topic_expr }}, {{ obj_expr }}, qos={{ qos }})
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro request_message(payload, topic_expr, obj_expr, response_topic_expr, correlation_expr) -%}
+{%- if payload.is_protobuf -%}
+MessageCreator.binary_request_message({{ topic_expr }}, {{ encode(payload, obj_expr) }}, "{{ payload.content_type }}", {{ response_topic_expr }}, {{ correlation_expr }})
+{%- else -%}
+MessageCreator.request_message({{ topic_expr }}, {{ obj_expr }}, {{ response_topic_expr }}, {{ correlation_expr }})
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro response_message(payload, topic_expr, obj_expr, return_code_expr, correlation_expr) -%}
+{%- if payload.is_protobuf -%}
+MessageCreator.binary_response_message({{ topic_expr }}, {{ encode(payload, obj_expr) }}, "{{ payload.content_type }}", {{ return_code_expr }}, {{ correlation_expr }})
+{%- else -%}
+MessageCreator.response_message({{ topic_expr }}, {{ obj_expr }}, {{ return_code_expr }}, {{ correlation_expr }})
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro property_state_message(payload, topic_expr, obj_expr, version_expr) -%}
+{%- if payload.is_protobuf -%}
+MessageCreator.binary_property_state_message({{ topic_expr }}, {{ encode(payload, obj_expr) }}, "{{ payload.content_type }}", {{ version_expr }})
+{%- else -%}
+MessageCreator.property_state_message({{ topic_expr }}, {{ obj_expr }}, {{ version_expr }})
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro property_response_message(payload, topic_expr, obj_expr, version_expr, return_code_expr, correlation_expr, debug_expr=None) -%}
+{%- if payload.is_protobuf -%}
+MessageCreator.binary_property_response_message({{ topic_expr }}, {{ encode(payload, obj_expr) }}, "{{ payload.content_type }}", {{ version_expr }}, {{ return_code_expr }}, {{ correlation_expr }}{% if debug_expr %}, {{ debug_expr }}{% endif %})
+{%- else -%}
+MessageCreator.property_response_message({{ topic_expr }}, {{ obj_expr }}, {{ version_expr }}, {{ return_code_expr }}, {{ correlation_expr }}{% if debug_expr %}, {{ debug_expr }}{% endif %})
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    The payload argument(s) of a MessageCreator call, for call sites that are
+    written across several lines and want to keep that shape.  A JSON payload is
+    passed as the model object; a protobuf payload becomes encoded bytes plus an
+    explicit content type, matching the `binary_*` signatures.  Pair it with
+    `binary_prefix()` on the method name.
+#}
+{%- macro payload_arg(payload, obj_expr) -%}
+{%- if payload.is_protobuf -%}
+{{ encode(payload, obj_expr) }}, "{{ payload.content_type }}",
+{%- else -%}
+{{ obj_expr }},
+{%- endif -%}
+{%- endmacro -%}
+
+{# Emits "binary_" when the payload needs the bytes-taking MessageCreator entry point. #}
+{%- macro binary_prefix(payload) -%}
+{%- if payload.is_protobuf %}binary_{% endif -%}
+{%- endmacro -%}
+
+{#
+    A property's value and the payload that carries it.
+
+    A JSON property wraps its single value in a generated model with one named
+    field, so the two directions are a construction and a field access.  A
+    protobuf property's value *is* the message, so both are the identity.
+#}
+{%- macro property_wrap(prop, value_expr) -%}
+{%- if prop.payload.is_protobuf -%}
+{{ value_expr }}
+{%- else -%}
+{{ prop.payload.python.class_name }}({{ prop.value.name|snake_case }}={{ value_expr }})
+{%- endif -%}
+{%- endmacro -%}
+
+{%- macro property_unwrap(prop, obj_expr) -%}
+{%- if prop.payload.is_protobuf -%}
+{{ obj_expr }}
+{%- else -%}
+{{ obj_expr }}.{{ prop.value.name|snake_case }}
+{%- endif -%}
+{%- endmacro -%}
+
+{# An example value for a property, for demos and generated tests. #}
+{%- macro property_example(prop) -%}
+{%- if prop.payload.is_protobuf -%}
+{{ prop.payload.python.class_name }}()
+{%- else -%}
+{{ prop.value.get_random_example_value(lang="python") }}
+{%- endif -%}
+{%- endmacro -%}

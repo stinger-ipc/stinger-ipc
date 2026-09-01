@@ -6,7 +6,7 @@ use crate::payloads::{*};
 #[derive(Clone, Builder, Debug)]
 pub struct {{stinger.name | UpperCamelCase}}InitialPropertyValues {
     {%for prop_name, prop in stinger.properties.items()-%}
-    {%if prop.value.optional%}#[builder(default = "None")]{%endif-%}
+    {%if prop.rust.is_optional%}#[builder(default = "None")]{%endif-%}
     pub {{prop_name | snake_case}}: {{prop.rust.type}},
     pub {{prop_name | snake_case}}_version: u32,
     {%endfor%}
@@ -21,7 +21,7 @@ impl {{stinger.name | UpperCamelCase}}InitialPropertyValues {
     /// constrained property's value does not conform.
     pub fn validate_schema(&self) -> Result<(), String> {
         {%-for prop_name, prop in stinger.properties.items()%}
-        {%-if prop.value.value_schema%}
+        {%-if prop.rust.has_value_schema%}
         {
             let schema: serde_json::Value = serde_json::from_str(r##"{{prop.value.value_schema | tojson}}"##)
                 .map_err(|e| format!("embedded schema for property '{{prop_name}}' is invalid: {}", e))?;

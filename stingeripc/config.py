@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 import tomllib
 from .topic_util import get_argument_position
 import re
@@ -120,6 +120,19 @@ class LanguagePluginConfig(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
+class ProtobufConfig(BaseModel):
+    """Configuration for the hand-written protocol buffer definitions an interface draws on."""
+
+    path: str = Field(
+        default="protos",
+        description="Directory holding the .proto files, resolved relative to the .stinger.yaml file",
+    )
+    protoc: Optional[str] = Field(
+        default=None,
+        description="The protoc executable to use; auto-detected when unset",
+    )
+
+
 class DiscoveryConfig(BaseModel):
     """Configuration options for service discovery."""
 
@@ -138,6 +151,7 @@ class StingerConfig(BaseModel):
     client: ClientConfig = Field(default_factory=ClientConfig, description="Client code generation options")
     topics: TopicConfig = Field(default_factory=TopicConfig, description="Topic schema configuration")
     discovery: DiscoveryConfig = Field(default_factory=DiscoveryConfig, description="Service discovery configuration")
+    protobuf: Optional[ProtobufConfig] = Field(default=None, description="Where to find hand-written .proto files; required only when an element declares 'protobuf:'")
     language: dict[str, LanguagePluginConfig] = Field(default_factory=dict, description="Language plugin configurations")
     model_config = ConfigDict(strict=True)
 

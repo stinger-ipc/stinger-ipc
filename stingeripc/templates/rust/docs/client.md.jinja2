@@ -95,7 +95,7 @@ tokio::spawn(async move {
 
 The signals of this interface are:
 {% for sig_name, sig in stinger.signals.items() %}
-- **`{{sig_name}}`** — `get_{{sig_name|snake_case}}_receiver() -> broadcast::Receiver<{% if sig.arg_list|length == 0 %}(){% elif sig.arg_list|length == 1 %}{{sig.arg_list[0].rust.type}}{% else %}{{sig_name|UpperCamelCase}}SignalPayload{% endif %}>`
+- **`{{sig_name}}`** — `get_{{sig_name|snake_case}}_receiver() -> broadcast::Receiver<{{sig.payload.rust.channel_type}}>`
 {%- endfor %}
 
 The payload type follows the number of values: `()` for none, the value's own type for

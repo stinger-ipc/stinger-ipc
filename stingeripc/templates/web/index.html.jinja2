@@ -142,6 +142,15 @@
     <!------------- SIGNALS ------------->
     <div ng-show="activeTab === 'signals'">
     {%for sig_name, sig in stinger.signals.items() %}
+{%- if sig.payload.is_protobuf %}
+    <!-- 'sig_name' carries the protobuf message {{ sig.payload.protobuf.full_name }}.  This
+         page speaks JSON over a websocket and has no protobuf runtime, so the element
+         is listed without controls rather than shown as something that would not work. -->
+    <div class="component protobuf-only">
+      <h3>{{ sig_name }}</h3>
+      <p>Carries the protobuf message <code>{{ sig.payload.protobuf.full_name }}</code>; not decodable in this browser demo.</p>
+    </div>
+{%- else %}
     <div class="component-box signal-box" id="signal-box-{{ sig_name }}">
         <h3 class="component-title signal-title" ng-class="{'flash': signals['{{ sig_name | lowerCamelCase }}'].flash}"><span class="mdi mdi-bell-outline"></span> {{ sig_name }}</h3>
         {%if sig.documentation %}
@@ -157,12 +166,22 @@
         {{ arglist(sig.arg_list, ['signals', sig_name, 'received'], true) | indent(8) }}
         </div>
     </div>
+{%- endif %}
     {%endfor%}{# end signals loop #}
     </div>
 
     <!------------- PROPERTIES ------------->
     <div ng-show="activeTab === 'properties'">
     {%for prop_name, prop in stinger.properties.items() %}
+{%- if prop.payload.is_protobuf %}
+    <!-- 'prop_name' carries the protobuf message {{ prop.payload.protobuf.full_name }}.  This
+         page speaks JSON over a websocket and has no protobuf runtime, so the element
+         is listed without controls rather than shown as something that would not work. -->
+    <div class="component protobuf-only">
+      <h3>{{ prop_name }}</h3>
+      <p>Carries the protobuf message <code>{{ prop.payload.protobuf.full_name }}</code>; not decodable in this browser demo.</p>
+    </div>
+{%- else %}
     <div class="component-box prop-box" id="prop-box-{{ prop_name }}">
         <h3 class="component-title prop-title" ng-class="{'flash': properties['{{ prop_name | lowerCamelCase }}'].flash}"><span class="mdi mdi-tune"></span> {{ prop_name }}</h3>
         {%if prop.documentation %}
@@ -173,7 +192,7 @@
 {%endmarkdown%}
         </details>
         {%endif%}
-        <!--<div class="property-topic topic">Subscribe: {{ prop.value_topic }}</div>-->
+        <!--<div class="property-topic topic">Subscribe: {{ prop.value_topic() }}</div>-->
         <div class="last-received property-value">
           {{ arglist(prop.arg_list, ['properties', prop_name, 'received'], prop.read_only) | indent(8) }}
         </div>
@@ -181,12 +200,22 @@
         <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.{{ prop_name | lowerCamelCase }})" />
         {%endif%}
     </div>
+{%- endif %}
     {%endfor%} {# end properties loop #}
     </div>
 
     <!------------- METHODS ------------->
     <div ng-show="activeTab === 'methods'">
     {%for method_name, method in stinger.methods.items() %}
+{%- if method.request_payload.is_protobuf %}
+    <!-- 'method_name' carries the protobuf message {{ method.request_payload.protobuf.full_name }}.  This
+         page speaks JSON over a websocket and has no protobuf runtime, so the element
+         is listed without controls rather than shown as something that would not work. -->
+    <div class="component protobuf-only">
+      <h3>{{ method_name }}</h3>
+      <p>Carries the protobuf message <code>{{ method.request_payload.protobuf.full_name }}</code>; not decodable in this browser demo.</p>
+    </div>
+{%- else %}
     <div class="component-box method-box" id="method-box-{{ method_name }}">
         <h3 class="component-title method-title"><span class="mdi mdi-function"></span> {{ method_name }}</h3>
         {%if method.documentation %}
@@ -211,12 +240,22 @@
         {%endif%}
         </div>
     </div>
+{%- endif %}
     {%endfor%} {# end methods loop #}
     </div>
 
     <!------------- COMMANDS ------------->
     <div ng-show="activeTab === 'commands'">
     {%for command_name, command in stinger.commands.items() %}
+{%- if command.payload.is_protobuf %}
+    <!-- 'command_name' carries the protobuf message {{ command.payload.protobuf.full_name }}.  This
+         page speaks JSON over a websocket and has no protobuf runtime, so the element
+         is listed without controls rather than shown as something that would not work. -->
+    <div class="component protobuf-only">
+      <h3>{{ command_name }}</h3>
+      <p>Carries the protobuf message <code>{{ command.payload.protobuf.full_name }}</code>; not decodable in this browser demo.</p>
+    </div>
+{%- else %}
     <div class="component-box command-box" id="command-box-{{ command_name }}">
         <h3 class="component-title command-title"><span class="mdi mdi-send"></span> {{ command_name }}</h3>
         {%if command.documentation %}
@@ -238,6 +277,7 @@
             <span class="mdi mdi-send-check-outline"></span> Sent at <span ng-bind="commands['{{ command_name | lowerCamelCase }}'].sent_time | date:'HH:mm:ss'"></span>.  A command is fire-and-forget, so there is no response.
         </div>
     </div>
+{%- endif %}
     {%endfor%} {# end commands loop #}
     </div>
 

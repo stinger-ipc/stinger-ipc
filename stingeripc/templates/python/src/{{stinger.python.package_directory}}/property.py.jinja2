@@ -9,7 +9,7 @@ on the next generation.
 from typing import Callable, Optional
 {%endif%}
 from typing import List
-from pydantic import BaseModel
+from pydantic import BaseModel{% if stinger.uses_protobuf() %}, ConfigDict{% endif %}
 from .interface_types import *
 
 {%if stinger.properties | length > 0 %}
@@ -18,6 +18,10 @@ class {{stinger.name|UpperCamelCase}}InitialPropertyValues(BaseModel):
     """ This class holds all the initial property values for the {{stinger.name}} interface.
     {%if not config.properties.stinger_owned_values%}Since the application owns property values, this is only used for testing.{%endif%}
     """
+    {%- if stinger.uses_protobuf() %}
+    # A protobuf message is not a pydantic-modelled type, so it is held as-is.
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    {%- endif %}
     {%for prop_name, prop in stinger.properties.items()%}
     {{prop_name | snake_case}}: {{prop.python.annotation}}
     {{prop_name | snake_case}}_version: int = 0
@@ -26,6 +30,10 @@ class {{stinger.name|UpperCamelCase}}InitialPropertyValues(BaseModel):
 class {{stinger.name|UpperCamelCase}}PropertyAccess(BaseModel):
     """ This class holds all the ways to get and set the properties for the {{stinger.name}} interface.
     """
+    {%- if stinger.uses_protobuf() %}
+    # A protobuf message is not a pydantic-modelled type, so it is held as-is.
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    {%- endif %}
     {%for prop_name, prop in stinger.properties.items()-%}
     {{prop_name | snake_case}}_getter: Callable[[], {{prop.python.annotation}}]
     {%if not prop.read_only-%}

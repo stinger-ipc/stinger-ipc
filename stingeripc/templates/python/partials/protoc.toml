@@ -1,0 +1,18 @@
+# How to turn this interface's .proto sources into Python bindings.
+#
+# Read by the generator after the templates are rendered.  Paths are relative to
+# the output directory and may use {python_package} and {interface}; protoc flags
+# may also use {out} for the absolute binding output directory.
+
+# The .proto sources are copied here so the generated package is self-contained.
+copy_to = "src/{python_package}/proto"
+
+# protoc writes the _pb2 modules here.
+out_dir = "src/{python_package}/proto"
+
+flags = ["--python_out={out}", "--pyi_out={out}"]
+
+# protoc does not make the output a package, so the import in interface_types works
+# only once this exists.
+[write]
+"src/{python_package}/proto/__init__.py" = "# Generated protobuf bindings for the {interface} interface.\n"

@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
 
     {%for prop_name, prop in stinger.properties.items()%}
     std::cout << "Setting initial value for property '{{prop_name}}'.\n";
-    server->update{{prop_name | UpperCamelCase}}Property({%-for arg in prop.arg_list %}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+    server->update{{prop.name | UpperCamelCase}}Property({%-for arg in prop.arg_list %}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
     {%endfor%}{# property initialization -#}
 
     {%-for sig_name, sig in stinger.signals.items() %}
@@ -83,7 +83,7 @@ int main(int argc, char** argv) {
             if (loopCount % 3 == 0) {
                 {%for prop_name, prop in stinger.properties.items()%}
                 std::cout << "Updating value for property '{{prop_name}}'.\n";
-                server->update{{prop_name | UpperCamelCase}}Property({%-for arg in prop.arg_list %}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+                server->update{{prop.name | UpperCamelCase}}Property({%-for arg in prop.arg_list %}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
                 {%endfor%}
             }
         }

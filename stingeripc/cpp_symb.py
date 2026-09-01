@@ -12,7 +12,11 @@ class CppSymbolsProvider(ISymbolsProvider):
     """
 
     def for_model(self, model_class_name: str, model) -> object | None:
-        if model_class_name == "StingerSpec":
+        if model_class_name == "ProtobufMessageRef":
+            return CppProtobufRefSymbols(model)
+        elif model_class_name == "Payload":
+            return CppPayloadSymbols(model)
+        elif model_class_name == "StingerSpec":
             return CppInterfaceSymbols(model)
         elif model_class_name == "IpcProperty":
             return CppPropertySymbols(model)
@@ -115,9 +119,43 @@ class CppPropertySymbols(CppSymbols):
         self._prop = prop
 
     @property
+    def is_protobuf(self) -> bool:
+        """True when the property holds a protobuf message rather than a JSON value."""
+        return self._prop.payload.is_protobuf
+
+    @property
     def property_struct_name(self) -> str:
         """C++ struct name generated for the property."""
-        return f"{stringmanip.upper_camel_case(self._prop.name)}Property"
+        return self._prop.payload.cpp.struct_name
+
+    @property
+    def is_optional(self) -> bool:
+        """True when the property's value may be absent.
+
+        A protobuf message is never optional in this sense: an unset message is
+        still a message, with its fields at their defaults.
+        """
+        if self.is_protobuf:
+            return False
+        return bool(self._prop.value.optional)
+
+    @property
+    def temp_type(self) -> str:
+        """C++ type used for a local holding the property's value."""
+        if self.is_protobuf:
+            return self._prop.payload.cpp.struct_name
+        return self._prop.value.cpp.temp_type
+
+    @property
+    def value_type(self) -> str:
+        """C++ type of the property's value.
+
+        A protobuf property's value is the message itself: there is no wrapper
+        struct with a single named field to unwrap.
+        """
+        if self.is_protobuf:
+            return self._prop.payload.cpp.struct_name
+        return self._prop.value.cpp.type
 
 
 class CppMethodSymbols(CppSymbols):
@@ -146,7 +184,7 @@ class CppMethodSymbols(CppSymbols):
     @property
     def return_struct_name(self) -> str:
         """C++ struct name of the method's generated response payload."""
-        return stringmanip.upper_camel_case(self._method.return_value_name)
+        return self._method.response_payload.cpp.struct_name
 
 
 class CppCommandSymbols(CppSymbols):
@@ -159,7 +197,7 @@ class CppCommandSymbols(CppSymbols):
     @property
     def payload_struct_name(self) -> str:
         """C++ struct name of the command's generated payload."""
-        return f"{stringmanip.upper_camel_case(self._command.name)}CommandPayload"
+        return self._command.payload.cpp.struct_name
 
 
 class CppEnumSymbols(CppSymbols):
@@ -360,3 +398,54 @@ class CppArgArraySymbols(CppArgSymbols):
     def rapidjson_type(self) -> str:
         """RapidJSON type used when (de)serializing arrays (always ``Array``)."""
         return "Array"
+
+
+# The name of the generated struct for each kind of payload.  These reproduce
+# exactly the names the templates used to spell inline, so that routing them through
+# the payload changes no generated output.
+_CPP_PAYLOAD_NAMES = {
+    "SIGNAL": lambda name: f"{stringmanip.upper_camel_case(name)}Payload",
+    "COMMAND": lambda name: f"{stringmanip.upper_camel_case(name)}CommandPayload",
+    "METHOD_REQUEST": lambda name: f"{stringmanip.upper_camel_case(name)}RequestArguments",
+    "METHOD_RESPONSE": lambda name: stringmanip.upper_camel_case(f"{name} return value"),
+    "PROPERTY": lambda name: f"{stringmanip.upper_camel_case(name)}Property",
+}
+
+
+class CppPayloadSymbols(CppSymbols):
+    """C++ symbols for a :class:`Payload`."""
+
+    def __init__(self, payload):
+        super().__init__()
+        self._payload = payload
+
+    @property
+    def struct_name(self) -> str:
+        """C++ name of the type that carries this payload."""
+        if self._payload.is_protobuf:
+            return self._payload.protobuf.cpp.qualified_name
+        return _CPP_PAYLOAD_NAMES[self._payload.role.name](self._payload.owner_name)
+
+    @property
+    def class_name(self) -> str:
+        """Alias for :attr:`struct_name`, so templates can use one spelling across languages."""
+        return self.struct_name
+
+
+class CppProtobufRefSymbols(CppSymbols):
+    """C++ symbols for a :class:`ProtobufMessageRef`."""
+
+    def __init__(self, ref):
+        super().__init__()
+        self._ref = ref
+
+    @property
+    def namespace(self) -> str:
+        """The C++ namespace protoc puts this message in, from its protobuf package."""
+        return "::".join(p for p in self._ref.package.split(".") if p)
+
+    @property
+    def qualified_name(self) -> str:
+        """How generated C++ code names this message, e.g. ``::weather::v1::CurrentConditions``."""
+        ns = self.namespace
+        return f"::{ns}::{self._ref.message_name}" if ns else f"::{self._ref.message_name}"

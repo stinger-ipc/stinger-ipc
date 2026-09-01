@@ -1,6 +1,7 @@
 {%- import "partials/serialize.jinja2" as ser %}
 {%- import "partials/properties.jinja2" as pr %}
 {%- import "partials/args.jinja2" as ar %}
+{%- import "partials/codec.jinja2" as codec %}
 #include <vector>
 #include <iostream>
 #include <syslog.h>
@@ -15,6 +16,7 @@
 #include "server.hpp"
 #include "method_payloads.hpp"
 #include "signal_payloads.hpp"
+#include "wire.hpp"
 #include "command_payloads.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
 #include <stinger/utils/iconnection.hpp>
@@ -113,22 +115,10 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(const stinger::mqtt::Mes
         {
             _broker->Log(LOG_INFO, "Received DebugInfo on topic %s: %s", msg.topic.c_str(), msg.properties.debugInfo->c_str());
         }
-        rapidjson::Document doc;
         try {
             if (_{{method_name | camelCase}}Handler)
             {
-                rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
-                if (!ok)
-                {
-                    //Log("Could not JSON parse {{sig_name}} signal payload.");
-                    throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
-                }
-
-                if (!doc.IsObject()) {
-                    throw std::runtime_error("Received payload is not an object");
-                }
-
-                _call{{method_name | UpperCamelCase}}Handler(msg.topic, doc, msg.properties.correlationData, msg.properties.responseTopic);
+                _call{{method_name | UpperCamelCase}}Handler(msg.topic, msg.payload, msg.properties.correlationData, msg.properties.responseTopic);
             }
         }
         catch (const std::exception&)
@@ -158,21 +148,22 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(const stinger::mqtt::Mes
 {%for sig_name, sig in stinger.signals.items()%}
 std::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp.func_param_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
 {
-    {{sig_name | UpperCamelCase}}Payload signalPayload{ {%for arg in sig.arg_list%}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    {{sig.payload.cpp.class_name}} signalPayload{ {%for arg in sig.arg_list%}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+{%- if not sig.payload.is_protobuf %}
     if (!signalPayload.ValidateSchema()) {
         _broker->Log(LOG_WARNING, "Payload for '{{sig_name}}' signal failed schema validation; not emitting.");
         std::promise<bool> failedPromise;
         failedPromise.set_value(false);
         return failedPromise.get_future();
     }
+{%- endif %}
 
-    rapidjson::Document doc;
-    doc.SetObject();
-    signalPayload.AddToRapidJsonObject(doc, doc.GetAllocator());
+    return emit{{sig_name | UpperCamelCase}}SignalPayload(signalPayload);
+}
 
-    rapidjson::StringBuffer buf;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-    doc.Accept(writer);
+std::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamelCase}}SignalPayload(const {{sig.payload.cpp.class_name}}& signalPayload)
+{
+    auto payloadStr = Wire<{{sig.payload.cpp.class_name}}>::ToString(signalPayload);
 
     std::map<std::string, std::string> topicArgs;
     topicArgs["service_id"] = _instanceId;
@@ -183,7 +174,7 @@ std::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamel
     topicArgs["{{topic_param}}"] = _{{topic_param|lowerCamelCase}}TopicParam;
     {%-endfor%}
     auto topic = stinger::utils::format("{{sig.topic()}}", topicArgs);
-    auto msg = stinger::mqtt::Message::Signal(topic, buf.GetString());
+    auto msg = stinger::mqtt::Message::Signal(topic, payloadStr);
     {%-if sig.version%}
     msg.properties.version = "{{sig.version}}";
     {%-endif%}
@@ -202,7 +193,7 @@ void {{stinger.cpp.server_class_name}}::register{{method_name | UpperCamelCase}}
 {%for method_name, method in stinger.methods.items()%}
 void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Handler(
         const std::string& topic, 
-        const rapidjson::Document& doc, 
+        const std::string& payload, 
         const std::optional<std::vector<std::byte>>& optCorrelationData,
         const std::optional<std::string>& optResponseTopic) const
 {
@@ -212,7 +203,8 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
         return;
     }
     {%if method.arg_list | length > 0 %}
-    auto requestArgs = {{method_name | UpperCamelCase}}RequestArguments::FromRapidJsonObject(doc);
+    auto requestArgs = Wire<{{method.request_payload.cpp.class_name}}>::FromString(payload);
+{%- if not method.request_payload.is_protobuf %}
     if (!requestArgs.ValidateSchema()) {
         _broker->Log(LOG_WARNING, "Request payload for {{method_name}} failed schema validation.");
         if (optResponseTopic) {
@@ -224,6 +216,7 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
         }
         return;
     }
+{%- endif %}
     {%endif%}
     try
     {
@@ -236,6 +229,7 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
         auto returnValue = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}requestArgs.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
         {{method.cpp.return_struct_name}} returnPayload = {returnValue};
         {%endif%}
+{%- if not method.response_payload.is_protobuf %}
         if (!returnPayload.ValidateSchema()) {
             _broker->Log(LOG_WARNING, "Response payload for {{method_name}} failed schema validation.");
             auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, "{}", optCorrelationData, stinger::error::MethodReturnCode::SERVER_SERIALIZATION_ERROR, "Response payload for {{method_name}} failed schema validation.");
@@ -245,19 +239,13 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
             _broker->Publish(errMsg);
             return;
         }
+{%- endif %}
 
         if (optResponseTopic)
         {
-            rapidjson::Document responseJson;
-            responseJson.SetObject();
-            
-            returnPayload.AddToRapidJsonObject(responseJson, responseJson.GetAllocator());
+            auto payloadStr = Wire<{{method.response_payload.cpp.class_name}}>::ToString(returnPayload);
 
-            rapidjson::StringBuffer buf;
-            rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-            responseJson.Accept(writer);
-
-            auto msg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, buf.GetString(), optCorrelationData, stinger::error::MethodReturnCode::SUCCESS);
+            auto msg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, payloadStr, optCorrelationData, stinger::error::MethodReturnCode::SUCCESS);
             {%-if method.version%}
             msg.properties.version = "{{method.version}}";
             {%-endif%}
@@ -308,6 +296,13 @@ void {{stinger.cpp.server_class_name}}::receive{{command_name | UpperCamelCase}}
     _{{command_name | lowerCamelCase}}CommandHandlers.push_back(handler);
 }
 
+void {{stinger.cpp.server_class_name}}::receive{{command_name | UpperCamelCase}}CommandPayload(const std::function<void(const {{command.payload.cpp.class_name}}&)>& handler)
+{
+    _broker->Log(LOG_DEBUG, "Application registered a payload handler for {{command_name}} commands.");
+    std::lock_guard<std::mutex> lock(_{{command_name | lowerCamelCase}}CommandHandlersMutex);
+    _{{command_name | lowerCamelCase}}CommandPayloadHandlers.push_back(handler);
+}
+
 void {{stinger.cpp.server_class_name}}::_receive{{command_name | UpperCamelCase}}Command(const stinger::mqtt::Message& msg)
 {
     // Commands have no response channel, so every failure below is logged and the
@@ -317,7 +312,7 @@ void {{stinger.cpp.server_class_name}}::_receive{{command_name | UpperCamelCase}
         _broker->Log(LOG_INFO, "Received DebugInfo on topic %s: %s", msg.topic.c_str(), msg.properties.debugInfo->c_str());
     }
 
-    if (!msg.properties.contentType.has_value() || msg.properties.contentType.value() != "application/json")
+    if (!msg.properties.contentType.has_value() || msg.properties.contentType.value() != "{{ codec.content_type(command.payload) }}")
     {
         _broker->Log(LOG_WARNING, "Received '{{command_name}}' command with an unexpected content type; dropping it.");
         return;
@@ -326,37 +321,43 @@ void {{stinger.cpp.server_class_name}}::_receive{{command_name | UpperCamelCase}
     // Copy the handler list so the lock isn't held while the handlers run: a handler is
     // then free to register another one, and the list cannot change mid-iteration.
     std::vector<std::function<void({%for arg in command.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>> handlers;
+    std::vector<std::function<void(const {{command.payload.cpp.class_name}}&)>> payloadHandlers;
     {
         std::lock_guard<std::mutex> lock(_{{command_name | lowerCamelCase}}CommandHandlersMutex);
         handlers = _{{command_name | lowerCamelCase}}CommandHandlers;
+        payloadHandlers = _{{command_name | lowerCamelCase}}CommandPayloadHandlers;
     }
-    if (handlers.empty())
+    if (handlers.empty() && payloadHandlers.empty())
     {
         _broker->Log(LOG_WARNING, "Received '{{command_name}}' command but no handler is registered; dropping it.");
         return;
     }
 
-    rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
-    if (!ok)
-    {
-        _broker->Log(LOG_WARNING, "Could not JSON parse '{{command_name}}' command payload; dropping it.");
-        return;
-    }
-
-    if (!doc.IsObject())
-    {
-        _broker->Log(LOG_WARNING, "Received '{{command_name}}' command payload is not an object; dropping it.");
-        return;
-    }
-
     try
     {
-        auto commandPayload = {{command.cpp.payload_struct_name}}::FromRapidJsonObject(doc);
+        auto commandPayload = Wire<{{command.payload.cpp.class_name}}>::FromString(msg.payload);
+{%- if not command.payload.is_protobuf %}
         if (!commandPayload.ValidateSchema())
+{%- endif %}
         {
             _broker->Log(LOG_WARNING, "Received '{{command_name}}' command payload failed schema validation; dropping it.");
             return;
+        }
+
+        for (const auto& payloadHandler : payloadHandlers)
+        {
+            try
+            {
+                payloadHandler(commandPayload);
+            }
+            catch (const std::exception& e)
+            {
+                _broker->Log(LOG_ERR, "Exception in {{command_name}} command payload handler [%s]: %s", typeid(e).name(), e.what());
+            }
+            catch (...)
+            {
+                _broker->Log(LOG_ERR, "Unknown exception in {{command_name}} command payload handler");
+            }
         }
 
         for (const auto& handler : handlers)
@@ -387,11 +388,11 @@ void {{stinger.cpp.server_class_name}}::_receive{{command_name | UpperCamelCase}
 
 {{pr.callback_registration_definition(stinger.cpp.server_class_name, prop_name, prop)}}
 
-void {{stinger.cpp.server_class_name}}::update{{prop_name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}})
+void {{stinger.cpp.server_class_name}}::update{{prop.name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}})
 {
     { // Scope lock
     std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
-        _{{prop_name | lowerCamelCase}}Property = {{prop_name | UpperCamelCase}}Property{ {%for arg in prop.arg_list %}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+        _{{prop_name | lowerCamelCase}}Property = {{prop.payload.cpp.class_name}}{ {%for arg in prop.arg_list %}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
         _last{{prop_name | UpperCamelCase}}PropertyVersion++;
     }
     { // Scope lock
@@ -412,30 +413,23 @@ void {{stinger.cpp.server_class_name}}::update{{prop_name | UpperCamelCase}}Prop
             }
         }
     }
-    republish{{prop_name | UpperCamelCase}}Property();
+    republish{{prop.name | UpperCamelCase}}Property();
 }
 
-void {{stinger.cpp.server_class_name}}::republish{{prop_name | UpperCamelCase}}Property() const
+void {{stinger.cpp.server_class_name}}::republish{{prop.name | UpperCamelCase}}Property() const
 {
     std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
-    rapidjson::Document doc;
+    std::string payloadStr = "null";
     if (_{{prop_name | lowerCamelCase}}Property)
     {
+{%- if not prop.payload.is_protobuf %}
         if (!_{{prop_name | lowerCamelCase}}Property->ValidateSchema()) {
             _broker->Log(LOG_WARNING, "Value for '{{prop_name}}' property failed schema validation; not publishing.");
             return;
         }
-        doc.SetObject();
-        _{{prop_name | lowerCamelCase}}Property->AddToRapidJsonObject(doc, doc.GetAllocator());
+{%- endif %}
+        payloadStr = Wire<{{prop.payload.cpp.class_name}}>::ToString(*_{{prop_name | lowerCamelCase}}Property);
     }
-    else
-    {
-        doc.SetNull();
-    }
-    
-    rapidjson::StringBuffer buf;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-    doc.Accept(writer);
 
     std::map<std::string, std::string> topicArgs;
     topicArgs["service_id"] = _instanceId;
@@ -447,7 +441,7 @@ void {{stinger.cpp.server_class_name}}::republish{{prop_name | UpperCamelCase}}P
     {%-endfor%}
 
     auto topic = stinger::utils::format("{{prop.value_topic()}}", topicArgs);
-    auto msg = stinger::mqtt::Message::PropertyValue(topic, buf.GetString(), _last{{prop_name | UpperCamelCase}}PropertyVersion);
+    auto msg = stinger::mqtt::Message::PropertyValue(topic, payloadStr, _last{{prop_name | UpperCamelCase}}PropertyVersion);
     {%-if prop.version%}
     msg.properties.version = "{{prop.version}}";
     {%-endif%}
@@ -460,34 +454,24 @@ void {{stinger.cpp.server_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
     {
         _broker->Log(LOG_INFO, "Received DebugInfo on topic %s: %s", msg.topic.c_str(), msg.properties.debugInfo->c_str());
     }
-    rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
-    if (!ok)
-    {
-        //Log("Could not JSON parse {{prop_name}} property update payload.");
-        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
-    }
-
-    if (!doc.IsObject() && !doc.IsNull()) {
-        throw std::runtime_error("Received {{prop_name}} payload is not an object or null");
-    }
-
     // TODO: Check _last{{prop_name | UpperCamelCase}}PropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
 
-    // Deserialize the '{{prop.value.name}}' value into a struct.
-    {{prop_name|UpperCamelCase}}Property tempValue = {{prop_name|UpperCamelCase}}Property::FromRapidJsonObject(doc);
+    // Deserialize the '{{prop_name}}' property value.
+    {{prop.payload.cpp.class_name}} tempValue = Wire<{{prop.payload.cpp.class_name}}>::FromString(msg.payload);
+{%- if not prop.payload.is_protobuf %}
     if (!tempValue.ValidateSchema()) {
         _broker->Log(LOG_WARNING, "Received '{{prop_name}}' property update failed schema validation; ignoring.");
         return;
     }
+{%- endif %}
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
         _{{prop_name | lowerCamelCase}}Property = tempValue;
         _last{{prop_name | UpperCamelCase}}PropertyVersion++;
     }
-    republish{{prop_name | UpperCamelCase}}Property();
+    republish{{prop.name | UpperCamelCase}}Property();
 }
 {%endfor%}
 

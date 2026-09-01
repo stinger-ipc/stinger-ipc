@@ -1,0 +1,11 @@
+
+Ù
+weather.proto
+weather.v1"u
+CurrentConditions 
+temperature (Rtemperature 
+description (	Rdescription
+Wind
+speed (Rspeed"=
+Forecast1
+days (2.weather.v1.CurrentConditionsRdaysbproto3

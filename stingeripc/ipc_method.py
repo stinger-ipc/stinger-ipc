@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from .components import InterfaceComponent, Arg
 from .lang_symb import LanguageSymbolMixin
+from .payload import Payload, PayloadRole, protobuf_ref_from_spec
 from .exceptions import InvalidStingerStructure
 from . import topic_util
 
@@ -23,8 +24,8 @@ class IpcMethod(InterfaceComponent):
     def __init__(self, name: str, root: StingerSpec):
         InterfaceComponent.__init__(self, name, root)
         LanguageSymbolMixin.enhance(self, self._config)
-        self._arg_list: list[Arg] = []
-        self._return_value: Optional[Arg] = None
+        self._request_payload = Payload(owner_name=name, role=PayloadRole.METHOD_REQUEST, config=self._config)
+        self._response_payload = Payload(owner_name=name, role=PayloadRole.METHOD_RESPONSE, config=self._config)
         self._version: Optional[str] = None
 
     def add_arg(self, arg: Arg) -> IpcMethod:
@@ -32,9 +33,9 @@ class IpcMethod(InterfaceComponent):
 
         Duplicate argument names are rejected.
         """
-        if arg.name in [a.name for a in self._arg_list]:
+        if arg.name in [a.name for a in self._request_payload.args]:
             raise InvalidStingerStructure(f"An arg named '{arg.name}' has been added.")
-        self._arg_list.append(arg)
+        self._request_payload.args.append(arg)
         return self
 
     def set_return_value(self, value: Arg) -> IpcMethod:
@@ -43,9 +44,9 @@ class IpcMethod(InterfaceComponent):
         A method returns at most one value, so setting a return value on a
         method that already has one is rejected.
         """
-        if self._return_value is not None:
-            raise InvalidStingerStructure(f"A return value named '{self._return_value.name}' has already been set; a method has at most one return value.")
-        self._return_value = value
+        if self._response_payload.args:
+            raise InvalidStingerStructure(f"A return value named '{self._response_payload.args[0].name}' has already been set; a method has at most one return value.")
+        self._response_payload.args.append(value)
         return self
 
     def request_topic(self, **kwargs) -> str:
@@ -69,9 +70,28 @@ class IpcMethod(InterfaceComponent):
         return template_topic
 
     @property
+    def request_payload(self) -> Payload:
+        """The method's request wire body."""
+        return self._request_payload
+
+    @property
+    def response_payload(self) -> Payload:
+        """The method's response wire body."""
+        return self._response_payload
+
+    @property
+    def has_response(self) -> bool:
+        """True when the method sends anything back beyond a return code.
+
+        Prefer this to testing ``return_value is None``: a method whose response is
+        a protobuf message has no single ``Arg`` to return but still has a response.
+        """
+        return not self._response_payload.is_empty
+
+    @property
     def arg_list(self) -> list[Arg]:
         """The ordered list of arguments that make up the method's request."""
-        return self._arg_list
+        return self._request_payload.arg_list
 
     @property
     def return_arg_list(self) -> list[Arg]:
@@ -80,14 +100,12 @@ class IpcMethod(InterfaceComponent):
         Templates that render the response payload iterate over this so that
         methods with and without a return value can share one code path.
         """
-        if self._return_value is None:
-            return []
-        return [self._return_value]
+        return self._response_payload.arg_list
 
     @property
     def return_value(self) -> Optional[Arg]:
         """The method's return value, or None when the method returns nothing."""
-        return self._return_value
+        return self._response_payload.args[0] if self._response_payload.args else None
 
     @property
     def return_value_name(self) -> str:
@@ -101,8 +119,8 @@ class IpcMethod(InterfaceComponent):
         This is the return value's own name, falling back to the method's name
         when the method has no return value.
         """
-        if self._return_value is not None:
-            return self._return_value.name
+        if self.return_value is not None:
+            return self.return_value.name
         return self.name
 
     @property
@@ -117,9 +135,9 @@ class IpcMethod(InterfaceComponent):
         Returns the lower-cased arg type name (e.g. ``'primitive'``) for the
         return value, or ``False`` when the method has no return value.
         """
-        if self._return_value is None:
+        if self.return_value is None:
             return False
-        return self._return_value.arg_type.name.lower()
+        return self.return_value.arg_type.name.lower()
 
     def get_return_value_random_example_value(self, lang: str = "python", seed: int = 2):
         """Return a randomly generated example value for the method's return value.
@@ -129,14 +147,15 @@ class IpcMethod(InterfaceComponent):
         documentation.  A method with no return value yields ``None`` (or
         ``nullptr`` for C++).
         """
+        return_value = self.return_value
         if lang == "python":
-            if self._return_value is None:
+            if return_value is None:
                 return "None"
-            return self._return_value.get_random_example_value(lang, seed)
+            return return_value.get_random_example_value(lang, seed)
         if lang in ["c++", "cpp", "qt"]:
-            if self._return_value is None:
+            if return_value is None:
                 return "nullptr"
-            return self._return_value.get_random_example_value(lang, seed)
+            return return_value.get_random_example_value(lang, seed)
         raise RuntimeError(f"No random example for return value for {lang}")
 
     @staticmethod
@@ -167,6 +186,22 @@ class IpcMethod(InterfaceComponent):
     ) -> IpcMethod:
         """Alternative constructor from a Stinger method structure."""
         method = cls(name, stinger_spec)
+
+        # The schema pairs these: a protobuf method declares both its request and
+        # its response as messages, so neither side is silently left as JSON.
+        request_ref = protobuf_ref_from_spec(name, method_spec, "arguments", "protobuf")
+        response_ref = protobuf_ref_from_spec(name, method_spec, "returnValue", "returnProtobuf")
+        if (request_ref is None) != (response_ref is None):
+            declared, missing = ("protobuf", "returnProtobuf") if request_ref else ("returnProtobuf", "protobuf")
+            raise InvalidStingerStructure(f"Method '{name}' declares '{declared}' but not '{missing}'; a protobuf method describes both its request and its response as messages.")
+        if request_ref is not None:
+            method._request_payload.protobuf = request_ref
+            method._response_payload.protobuf = response_ref
+            if "version" in method_spec:
+                method._version = method_spec["version"]
+            method.try_set_documentation_from_spec(method_spec)
+            return method
+
         if "arguments" not in method_spec:
             raise InvalidStingerStructure(f"Method '{name}' specification must have 'arguments'")
         if not isinstance(method_spec["arguments"], list):

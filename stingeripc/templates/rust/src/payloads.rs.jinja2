@@ -1,3 +1,4 @@
+{%- from "partials/codec.jinja2" import wire_trait, wire_macros, wire_impls -%}
 //! Payloads module for {{stinger.name}} IPC
 //! 
 //! Contains all the data structures, enums, and return codes used by the {{stinger.name}} IPC system.
@@ -17,6 +18,10 @@ use num_traits::FromPrimitive;
 use std::fmt;
 {%endif%}
 use serde::{Deserialize, Serialize};
+use bytes::Bytes;
+{%- if stinger.uses_protobuf() %}
+use bytes::BytesMut;
+{%- endif %}
 
 // The custom serde (de)serialization helpers live in their own module so this
 // file stays focused on the payload data structures.  Each import is only
@@ -32,10 +37,13 @@ use crate::serde_formats::duration_iso_format;
 {%- endif %}
 
 
+{{ wire_trait() }}
+{{ wire_macros(stinger) }}
+
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum MethodReturnCode { {%-for rc_i, rc_name in stinger.method_return_codes.items()%}
-    {{rc_name | UpperCamelCase}}{%if not loop.first%}(String){%else%}(Option<String>){%endif%},
+    {{rc_name | UpperCamelCase}}{%if not loop.first%}(String){%else%}(Option<Bytes>){%endif%},
     {%-endfor%}
 }
 
@@ -43,7 +51,7 @@ impl MethodReturnCode {
     pub fn from_code(code: u32, message: Option<String>) -> Self {
         match code {
             {%-for rc_i, rc_name in stinger.method_return_codes.items()%}
-            {{rc_i}} => MethodReturnCode::{{rc_name | UpperCamelCase}}({%if loop.first%}message{%else%}message.unwrap_or_default(){%endif%}),
+            {{rc_i}} => MethodReturnCode::{{rc_name | UpperCamelCase}}({%if loop.first%}message.map(Bytes::from){%else%}message.unwrap_or_default(){%endif%}),
             {%-endfor%}
             _ => MethodReturnCode::UnknownError(message.unwrap_or_default()),
         }
@@ -52,7 +60,7 @@ impl MethodReturnCode {
     pub fn to_code(&self) -> (u32, Option<String>) {
         match self {
             {%-for rc_i, rc_name in stinger.method_return_codes.items() %}
-            MethodReturnCode::{{rc_name | UpperCamelCase}}{%if not loop.first%}(msg){%else%}(opt_msg){%endif%} => ({{rc_i}}, {%if not loop.first%}Some(msg.clone()){%else%}opt_msg.clone(){%endif%}),
+            MethodReturnCode::{{rc_name | UpperCamelCase}}{%if not loop.first%}(msg){%else%}(_){%endif%} => ({{rc_i}}, {%if not loop.first%}Some(msg.clone()){%else%}None{%endif%}),
             {%-endfor%}
         }
     }
@@ -101,127 +109,10 @@ impl fmt::Display for {{ie_name | UpperCamelCase }} {
 }
 {%endfor%}
 
-{%macro arg_members(arg_list) -%}
-{%-for arg in arg_list -%}
-    {%-if arg.description%}
-    /// {{arg.description}}
-    {%-endif%}{# end arg description -#}
-    {%-if arg.name != (arg.name | snake_case) %}
-    #[serde(rename = "{{arg.name}}")]
-    {%-endif%} {# end rename if needed #}
-    {%-if arg.arg_type.name.lower() == 'primitive'%}
-    pub {{arg.name|snake_case}}: {{arg.rust.type}},
-    {%-elif arg.arg_type.name.lower() == 'struct'%}
-    pub {{arg.name|snake_case}}: {{arg.rust.type}},
-    {%elif arg.arg_type.name.lower() == 'enum'%}
-    pub {{arg.name|snake_case}}: {{arg.rust.local_type}},
-    {%elif arg.arg_type.name.lower() == 'datetime'%}
-    {%-if arg.optional %}
-    #[serde(
-        serialize_with = "datetime_iso_format::serialize_option",
-        deserialize_with = "datetime_iso_format::deserialize_option"
-    )]
-    pub {{arg.name|snake_case}}: Option<chrono::DateTime<chrono::Utc>>,
-    {%else%}{# not optional datetime #}
-    #[serde(with = "datetime_iso_format")]
-    pub {{arg.name|snake_case}}: chrono::DateTime<chrono::Utc>,
-    {%-endif%} {# datetime optionality #}
-    {%-elif arg.arg_type.name.lower() == 'duration'%}
-    {%-if arg.optional %}
-    #[serde(
-        serialize_with = "duration_iso_format::serialize_option",
-        deserialize_with = "duration_iso_format::deserialize_option"
-    )]
-    pub {{arg.name|snake_case}}: Option<chrono::Duration>,
-    {%else%}{# not optional duration #}
-    #[serde(with = "duration_iso_format")]
-    pub {{arg.name|snake_case}}: chrono::Duration,
-    {%-endif%}{# duration optionality #}
-    {%-elif arg.arg_type.name.lower() == 'binary'%}
-    {%-if arg.optional %}
-    #[serde(
-        serialize_with = "base64_binary_format::serialize_option",
-        deserialize_with = "base64_binary_format::deserialize_option"
-    )]
-    pub {{arg.name|snake_case}}: Option<Vec<u8>>,
-    {%else%}{# not optional binary #}
-    #[serde(with = "base64_binary_format")]
-    pub {{arg.name|snake_case}}: Vec<u8>,
-    {%-endif%}{# binary optionality #}
-    {%-elif arg.arg_type.name.lower() == 'array'%}
-    {%- if arg.element.arg_type.name.lower() == 'datetime' %}
-    {%-if arg.optional %}
-    #[serde(serialize_with = "datetime_iso_format::serialize_option_vec",   
-            deserialize_with = "datetime_iso_format::deserialize_option_vec")]
-    pub {{arg.name|snake_case}}: Option<Vec<chrono::DateTime<chrono::Utc>>>,
-    {%else%}{# not optional array #}
-    #[serde(serialize_with = "datetime_iso_format::serialize_vec", 
-            deserialize_with = "datetime_iso_format::deserialize_vec")]
-    pub {{arg.name|snake_case}}: Vec<chrono::DateTime<chrono::Utc>>,
-    {%endif%}{# array optionality #}
-    {%- elif arg.element.arg_type.name.lower() == 'duration' %}
-    {%-if arg.optional %}
-    #[serde(serialize_with = "duration_iso_format::serialize_option_vec", 
-            deserialize_with = "duration_iso_format::deserialize_option_vec")]
-    pub {{arg.name|snake_case}}: Option<Vec<chrono::Duration>>,
-    {%else%}{# not optional array #}
-    #[serde(serialize_with = "duration_iso_format::serialize_vec", 
-            deserialize_with = "duration_iso_format::deserialize_vec")]
-    pub {{arg.name|snake_case}}: Vec<chrono::Duration>,
-    {%endif%}{# array optionality #}
-    {%- elif arg.element.arg_type.name.lower() == 'binary' %}
-    {%-if arg.optional %}
-    #[serde(serialize_with = "base64_binary_format::serialize_option_vec", 
-            deserialize_with = "base64_binary_format::deserialize_option_vec")]
-    pub {{arg.name|snake_case}}: Option<Vec<Vec<u8>>>,
-    {%else%}{# not optional array #}
-    #[serde(serialize_with = "base64_binary_format::serialize_vec", 
-            deserialize_with = "base64_binary_format::deserialize_vec")]
-    pub {{arg.name|snake_case}}: Vec<Vec<u8>>,
-    {%endif%}{# array optionality #}
-    {%else%}
-    {%-if arg.optional %}
-    pub {{arg.name|snake_case}}: Option<Vec<{{arg.element.rust.type}}>>,
-    {%else%}{# not optional array #}
-    pub {{arg.name|snake_case}}: Vec<{{arg.element.rust.type}}>,
-    {%endif%}{# array optionality #}
-    {%endif%} {# array element cases #}
-    {%-else%} 
-    TEMPLATE ERROR {{arg.arg_type.name}} NOT HANDLED
-    {%-endif-%}
-{%endfor%}
-{%-endmacro %}
+{% from "partials/payloads.jinja2" import arg_members, validate_schema_impl %}
 
-{# Emits an `impl` block with a validate_schema() method for a struct.  The method
-   is always generated; fields that declare a JSON schema constraint are checked
-   against their schema using the `jsonschema` crate, and a struct with no such
-   fields simply returns Ok(()). #}
-{%macro validate_schema_impl(struct_name, arg_list) -%}
-{%-set schema_args = arg_list | selectattr('value_schema') | list -%}
-#[allow(dead_code)]
-impl {{struct_name}} {
-    /// Validate fields that declare a JSON schema constraint.
-    ///
-    /// Returns `Ok(())` if all schema-constrained fields conform to their schema,
-    /// or if no field declares a schema.  Returns `Err` with a description if a
-    /// constrained field's value does not conform.
-    pub fn validate_schema(&self) -> Result<(), String> {
-        {%-for arg in schema_args%}
-        {
-            let schema: serde_json::Value = serde_json::from_str(r##"{{arg.value_schema | tojson}}"##)
-                .map_err(|e| format!("embedded schema for field '{{arg.name}}' is invalid: {}", e))?;
-            let instance = serde_json::to_value(&self.{{arg.name | snake_case}})
-                .map_err(|e| format!("could not serialize field '{{arg.name}}': {}", e))?;
-            let validator = jsonschema::validator_for(&schema)
-                .map_err(|e| format!("could not build validator for field '{{arg.name}}': {}", e))?;
-            validator.validate(&instance)
-                .map_err(|e| format!("field '{{arg.name}}' failed schema validation: {}", e))?;
-        }
-        {%-endfor%}
-        Ok(())
-    }
-}
-{%-endmacro %}
+
+
 
 // --- INTERFACE STRUCTURES ---
 
@@ -240,10 +131,11 @@ pub struct {{struct_name | UpperCamelCase}} {
 
 // Structures for `{{method_name}}` method
 
+{% if not method.request_payload.is_protobuf -%}
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 /// Request Object for `{{method_name}}` method.
-pub struct {{method_name | UpperCamelCase}}RequestObject {
+pub struct {{method.request_payload.rust.class_name}} {
     {{ arg_members(method.arg_list) }}
 }
 {{ validate_schema_impl((method_name | UpperCamelCase) ~ "RequestObject", method.arg_list) }}
@@ -256,40 +148,53 @@ pub struct {{method.rust.return_struct_name}} {
     {{ arg_members(method.return_arg_list) }}
 }
 {{ validate_schema_impl(method.rust.return_struct_name, method.return_arg_list) }}
+{%- endif %}
 {%-endfor%}
 
 // ---- SIGNALS ----
 {%for sig_name, sig in stinger.signals.items()%}
 // Structures for `{{sig_name}}` signal
+{% if not sig.payload.is_protobuf -%}
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct {{sig_name | UpperCamelCase}}SignalPayload {
+pub struct {{sig.payload.rust.class_name}} {
     {{ arg_members(sig.arg_list) }}
 }
 {{ validate_schema_impl((sig_name | UpperCamelCase) ~ "SignalPayload", sig.arg_list) }}
+{%- endif %}
 {%endfor%}
 
 // ---- COMMANDS ----
 {%for cmd_name, cmd in stinger.commands.items()%}
 // Structures for `{{cmd_name}}` command
+{% if not cmd.payload.is_protobuf -%}
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct {{cmd.rust.payload_struct_name}} {
     {{ arg_members(cmd.arg_list) }}
 }
 {{ validate_schema_impl(cmd.rust.payload_struct_name, cmd.arg_list) }}
+{%- endif %}
 {%endfor%}
 
 {%for prop_name, prop in stinger.properties.items()%}
 // `{{prop_name}}` property structure.
+{% if not prop.payload.is_protobuf -%}
 #[allow(dead_code, non_snake_case)]
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct {{prop_name | UpperCamelCase}}Property {
+pub struct {{prop.payload.rust.class_name}} {
     {{ arg_members(prop.arg_list) }}
 }
 {{ validate_schema_impl((prop_name | UpperCamelCase) ~ "Property", prop.arg_list) }}
+{%- endif %}
 {%endfor%}
 
+
+// ---- WIRE ENCODING ----
+//
+// One implementation per payload, so `message.rs` can be generic over how a
+// payload is encoded rather than assuming JSON.
+{{ wire_impls(stinger) }}
 
 #[cfg(test)]
 mod tests {
@@ -298,13 +203,15 @@ mod tests {
     use chrono::{DateTime, Utc};
 
     {%for prop_name, prop in stinger.properties.items()%}
+    {%- if not prop.payload.is_protobuf %}{#- a protobuf property has no JSON form to round-trip #}
     #[test]
     fn test_{{prop_name | snake_case}}_property_json_format() {
         // Test deserializing from a known JSON string of {{prop.value.arg_type.name}}.
         let json_str = r#"{ "{{prop.value.name}}": {{prop.value.get_random_example_value(lang="json")}} }"#;
 
-        let _parsed: {{prop_name | UpperCamelCase}}Property = serde_json::from_str(json_str).unwrap();
+        let _parsed: {{prop.payload.rust.class_name}} = serde_json::from_str(json_str).unwrap();
     }
+    {%- endif %}
     {%endfor%}
 
     {% if stinger.uses_binary() %}

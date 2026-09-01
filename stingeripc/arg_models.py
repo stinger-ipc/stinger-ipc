@@ -162,6 +162,20 @@ class Arg(BaseModel):
             return True
         return bool(_draft4_validator(self.value_schema).is_valid(value))
 
+    def _seeded_choice(self, candidates: Sequence[Any], seed: int) -> Any:
+        """Pick from ``candidates`` deterministically for ``seed``, leaving global RNG state untouched.
+
+        The seeded helper exists because example values end up in generated demos, tests
+        and documentation: an unseeded choice makes the generator emit different output on
+        every run, which hides real changes when generated code is diffed.
+        """
+        random_state = random.getstate()
+        random.seed(seed)
+        try:
+            return random.choice(list(candidates))
+        finally:
+            random.setstate(random_state)
+
     def _pick_example_value(self, candidates: Sequence[Any], derive: Optional[Callable[[dict[str, Any]], Sequence[Any]]] = None) -> Any:
         """Choose a random example value that satisfies this argument's ``schema`` constraint.
 
@@ -530,7 +544,7 @@ class ArgDateTime(Arg):
     def get_random_example_value(self, lang="python", seed: int = 2) -> str | None:
         """Return a random datetime example expressed in the target language."""
         if lang == "python":
-            if self.optional and random.choice([True, False, False, False]):
+            if self.optional and self._seeded_choice([True, False, False, False], seed):
                 return "None"
             return f"datetime.now(UTC)"
         elif lang == "rust":
@@ -614,7 +628,7 @@ class ArgBinary(Arg):
         elif lang in ["c++", "cpp"]:
             return "std::vector<uint8_t>{101, 120, 97, 109, 112, 108, 101}"  # "example" in ASCII bytes
         if lang == "json":
-            if self.optional and random.choice([True, False, False, False]):
+            if self.optional and self._seeded_choice([True, False, False, False], seed):
                 retval = "null"
             else:
                 retval = '"ZXhhbXBsZSBiaW5hcnkgZGF0YQ=="'  # "example binary data" base64-encoded
@@ -671,9 +685,9 @@ class ArgArray(Arg):
             return f"std::vector<{self.element.cpp.temp_type}>{{{self._example_elements(lang, seed, self._example_element_count(3))}}}"  # type: ignore[attr-defined]
         elif lang == "json":
             # An empty array or a null is only offered when the constraint actually permits it.
-            if self.optional and self.schema_allows(None) and random.choice([True, False, False, False, False]):
+            if self.optional and self.schema_allows(None) and self._seeded_choice([True, False, False, False, False], seed):
                 retval = "null"
-            elif self.schema_allows([]) and random.choice([True, False, False, True, False]):
+            elif self.schema_allows([]) and self._seeded_choice([True, False, False, True, False], seed + 1):
                 retval = "[]"
             else:
                 retval = f"[{self._example_elements(lang, seed, self._example_element_count(2))}]"

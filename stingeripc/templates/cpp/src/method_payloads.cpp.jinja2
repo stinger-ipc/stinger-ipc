@@ -13,16 +13,17 @@ namespace {{ns}} {
 namespace {{stinger.name|snake_case}} {
 
 {%for method_name, method in stinger.methods.items()%}
+{%- if not method.request_payload.is_protobuf %}
 // --- (De-)Serialization for {{method_name}} method request arguments ---
-{{method_name | UpperCamelCase}}RequestArguments {{method_name | UpperCamelCase}}RequestArguments::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{{method.request_payload.cpp.class_name}} {{method.request_payload.cpp.class_name}}::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
-    {{method_name | UpperCamelCase}}RequestArguments {{method.name | lowerCamelCase }}Args;
+    {{method.request_payload.cpp.class_name}} {{method.name | lowerCamelCase }}Args;
     {{deser.deserialize((method.name|lowerCamelCase)+"Args", method.arg_list, 'jsonObj') | indent(4)}}
 
     return {{method.name | lowerCamelCase }}Args;
 };
 
-void {{method_name | UpperCamelCase}}RequestArguments::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+void {{method.request_payload.cpp.class_name}}::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
     {%for arg in method.arg_list%}
     {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
@@ -46,6 +47,7 @@ void {{method.cpp.return_struct_name}}::AddToRapidJsonObject(rapidjson::Value& p
     {%- endfor %}
 }
 {{ val.validate_schema_body(method.cpp.return_struct_name, method.return_arg_list) }}
+{%- endif %}
 {% endfor %}
 
 } // namespace {{stinger.name|snake_case}}

@@ -7,6 +7,9 @@
 ///
 /// - [`server_guide`](docs::server_guide) — providing the interface.
 /// - [`client_guide`](docs::client_guide) — consuming the interface.
+{%- if stinger.uses_protobuf() %}
+pub mod proto;
+{%- endif %}
 pub mod docs {
     /// Guide to writing a {{stinger.name}} server.
     #[allow(rustdoc::broken_intra_doc_links)] // Links into the `server` module resolve only when that feature is on.

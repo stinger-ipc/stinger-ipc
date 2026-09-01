@@ -9,6 +9,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 
 {% import "partials/imports.jinja2" as imports %}
 {% import "partials/payloads.jinja2" as payloads %}
+{%- import "partials/codec.jinja2" as codec %}
 
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
 {{ imports.datetime_types(config) }}
@@ -18,6 +19,7 @@ import base64
 import jsonschema
 from pydantic import model_validator
 {%endif%}
+{{- codec.imports(stinger) }}
 {%if stinger.uses_enums()%}from enum import IntEnum{%endif%}
 
 {%- if config.python.python37 %}
@@ -72,17 +74,20 @@ class {{istruct_name | UpperCamelCase }}(BaseModel):
 
 # There are {{stinger.signals|length}} signal definitions
 {%-for signal_name, signal in stinger.signals.items()%}
-class {{signal_name|UpperCamelCase}}SignalPayload(BaseModel):
+{%- if not signal.payload.is_protobuf %}
+class {{signal.payload.python.class_name}}(BaseModel):
     """ Interface signal `{{signal_name}}`. {%if signal.documentation%}
 
     {{signal.documentation | indent(4)}}{%endif%}
     """
     {{payloads.field_list(signal.arg_list)|indent(4)}}
     {{payloads.validate_schema_method(signal.arg_list)|indent(4)}}
+{%- endif %}
 {%endfor%}
 
 # There are {{stinger.properties|length}} property definitions
 {%-for prop_name, prop in stinger.properties.items()%}
+{%- if not prop.payload.is_protobuf %}
 class {{prop.python.model_class_name}}(BaseModel):
     """ Interface property `{{prop_name}}` payload.{%if prop.documentation%}
 
@@ -90,10 +95,12 @@ class {{prop.python.model_class_name}}(BaseModel):
     """
     {{payloads.field_list(prop.arg_list)|indent(4)}}
     {{payloads.validate_schema_method(prop.arg_list)|indent(4)}}
+{%- endif %}
 {%endfor%}
 
 # There are {{stinger.methods|length}} method definitions
 {%- for method_name, method in stinger.methods.items()%}
+{%- if not method.request_payload.is_protobuf %}
 class {{method.python.request_class_name}}(BaseModel):
     """ Interface method `{{method_name}}` request object. {%if method.documentation%}
 
@@ -109,10 +116,12 @@ class {{method.python.response_class_name}}(BaseModel):
     """
     {{payloads.field_list(method.return_arg_list)|indent(4)}}
     {{payloads.validate_schema_method(method.return_arg_list)|indent(4)}}
+{%- endif %}
 {%endfor%}
 
 # There are {{stinger.commands|length}} command definitions
 {%-for command_name, command in stinger.commands.items()%}
+{%- if not command.payload.is_protobuf %}
 class {{command.python.payload_class_name}}(BaseModel):
     """ Interface command `{{command_name}}`. {%if command.documentation%}
 
@@ -120,4 +129,5 @@ class {{command.python.payload_class_name}}(BaseModel):
     """
     {{payloads.field_list(command.arg_list)|indent(4)}}
     {{payloads.validate_schema_method(command.arg_list)|indent(4)}}
+{%- endif %}
 {%endfor%}

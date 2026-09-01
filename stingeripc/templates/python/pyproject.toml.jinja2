@@ -10,7 +10,8 @@ dependencies = [
     "isodate>=0.7.2",
     "jsonschema>=4.0.0", # Not the best json schema library.  TODO: use a faster one.
     "pyqttier>=0.2.5",
-    "stinger-python-utils>=0.1.8",
+    "stinger-python-utils>=0.2.0",{% if stinger.uses_protobuf() %}
+    "protobuf>=5.29", # This interface carries protobuf payloads.{% endif %}
     {%if config.python.python37%}"typing-extensions>=4.0.0",{%endif%}
 ]
 
@@ -34,7 +35,8 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-data]
-packages = ["{{stinger.python.package_directory}}"]
+packages = ["{{stinger.python.package_directory}}"{%if stinger.uses_protobuf()%}, "{{stinger.python.package_directory}}.proto"{%endif%}]{% if stinger.uses_protobuf() %}
+"{{stinger.python.package_directory}}.proto" = ["*.proto", "*.pyi"]{% endif %}
 
 [stinger-ipc]
 generator_version = "{{generator.version}}"

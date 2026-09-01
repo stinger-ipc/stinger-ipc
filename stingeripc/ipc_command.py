@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from .components import InterfaceComponent, Arg
 from .lang_symb import LanguageSymbolMixin
+from .payload import Payload, PayloadRole, protobuf_ref_from_spec
 from .exceptions import InvalidStingerStructure
 from . import topic_util
 
@@ -28,7 +29,7 @@ class IpcCommand(InterfaceComponent):
     def __init__(self, name: str, root: StingerSpec):
         InterfaceComponent.__init__(self, name, root)
         LanguageSymbolMixin.enhance(self, self._config)
-        self._arg_list: list[Arg] = []
+        self._payload = Payload(owner_name=name, role=PayloadRole.COMMAND, config=self._config)
         self._version: Optional[str] = None
 
     def add_arg(self, arg: Arg) -> IpcCommand:
@@ -36,9 +37,9 @@ class IpcCommand(InterfaceComponent):
 
         Duplicate argument names are rejected.
         """
-        if arg.name in [a.name for a in self._arg_list]:
+        if arg.name in [a.name for a in self._payload.args]:
             raise InvalidStingerStructure(f"An arg named '{arg.name}' has been added.")
-        self._arg_list.append(arg)
+        self._payload.args.append(arg)
         return self
 
     @property
@@ -47,9 +48,14 @@ class IpcCommand(InterfaceComponent):
         return self._version
 
     @property
+    def payload(self) -> Payload:
+        """The command's wire body."""
+        return self._payload
+
+    @property
     def arg_list(self) -> list[Arg]:
         """The ordered list of arguments that make up the command's payload."""
-        return self._arg_list
+        return self._payload.arg_list
 
     def topic(self, **kwargs) -> str:
         """Return the topic that command messages are published on.
@@ -70,8 +76,16 @@ class IpcCommand(InterfaceComponent):
     ) -> IpcCommand:
         """Alternative constructor from a Stinger command structure."""
         command = cls(name, stinger_spec)
+
+        command._payload.protobuf = protobuf_ref_from_spec(name, command_spec, "arguments")
+        if command._payload.is_protobuf:
+            if "version" in command_spec:
+                command._version = command_spec["version"]
+            command.try_set_documentation_from_spec(command_spec)
+            return command
+
         if "arguments" not in command_spec:
-            raise InvalidStingerStructure(f"Command '{name}' specification must have 'arguments'")
+            raise InvalidStingerStructure(f"Command '{name}' specification must have 'arguments' or 'protobuf'")
         if not isinstance(command_spec["arguments"], list):
             raise InvalidStingerStructure(f"Arguments for '{name}' command must be a list.  It is '{type(command_spec['arguments'])}' ")
 

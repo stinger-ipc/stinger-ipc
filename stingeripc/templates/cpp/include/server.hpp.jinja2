@@ -30,6 +30,11 @@ It contains enumerations used by the {{stinger.name}} interface.
 {%if stinger.methods | length > 0%}
 #include "method_payloads.hpp"
 {%endif%}
+{%if stinger.signals | length > 0%}
+#include "signal_payloads.hpp"
+{%endif%}
+{%- import "partials/codec.jinja2" as codec %}
+{{- codec.imports(stinger) }}
 {%if stinger.commands | length > 0%}
 #include "command_payloads.hpp"
 {%endif%}
@@ -51,6 +56,10 @@ public:
 
     {%for sig_name, sig in stinger.signals.items()%}
     std::future<bool> emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp.func_param_type}}{%if not loop.last%}, {%endif%}{%endfor%});
+
+    // Publishes an already-built '{{sig_name}}' payload, for callers that hold the
+    // payload object rather than its individual values.
+    std::future<bool> emit{{sig_name | UpperCamelCase}}SignalPayload(const {{sig.payload.cpp.class_name}}& payload);
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
@@ -63,11 +72,15 @@ public:
     // command is received.  Commands are fire-and-forget, so a handler returns nothing and
     // nothing is sent back to the client that sent the command.
     void receive{{command_name | UpperCamelCase}}Command(const std::function<void({%for arg in command.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& handler);
+
+    // Registers a handler that receives the whole '{{command_name}}' payload rather than
+    // its individual arguments.  Any number of handlers of either kind may be registered.
+    void receive{{command_name | UpperCamelCase}}CommandPayload(const std::function<void(const {{command.payload.cpp.class_name}}&)>& handler);
     {%endfor%}
 
     {%for prop_name, prop in stinger.properties.items()%}
     {{ pr.public_declarations(prop_name, prop, false) | indent(4) }}
-    void republish{{prop_name | UpperCamelCase}}Property() const;
+    void republish{{prop.name | UpperCamelCase}}Property() const;
     {%endfor%}
 private: 
     std::shared_ptr<stinger::utils::IConnection> _broker;
@@ -79,7 +92,7 @@ private:
     void _receiveMessage(const stinger::mqtt::Message& msg);
 
     {%for method_name, method in stinger.methods.items()%}
-    void _call{{method_name | UpperCamelCase}}Handler(const std::string& topic, const rapidjson::Document& doc, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
+    void _call{{method_name | UpperCamelCase}}Handler(const std::string& topic, const std::string& payload, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<{{method.cpp.return_value_class}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{method_name | camelCase}}Handler;
     int _{{method_name | camelCase}}MethodSubscriptionId;
     {%endfor%}
@@ -88,6 +101,7 @@ private:
     // ------------------- COMMANDS -------------------
     {%for command_name, command in stinger.commands.items()%}
     // Internal method for handling a received `{{command_name}}` command.
+    std::vector<std::function<void(const {{command.payload.cpp.class_name}}&)>> _{{command_name | lowerCamelCase}}CommandPayloadHandlers;
     void _receive{{command_name | UpperCamelCase}}Command(const stinger::mqtt::Message& msg);
 
     // List of handlers to be called whenever the `{{command_name}}` command is received.

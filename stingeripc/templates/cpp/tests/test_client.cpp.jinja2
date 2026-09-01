@@ -112,6 +112,7 @@ TEST_F({{stinger.cpp.client_class_name}}Test, SubscribesToExpectedTopics)
 }
 
 {%for sig_name, sig in stinger.signals.items()%}
+{%- if not sig.payload.is_protobuf %}{#- a protobuf payload has no example field values to round-trip yet #}
 // A simulated incoming `{{sig_name}}` signal should be dispatched to the registered callback.
 TEST_F({{stinger.cpp.client_class_name}}Test, {{sig_name | UpperCamelCase}}SignalInvokesCallback)
 {
@@ -121,7 +122,7 @@ TEST_F({{stinger.cpp.client_class_name}}Test, {{sig_name | UpperCamelCase}}Signa
         callbackInvoked = true;
     });
 
-    {{sig_name | UpperCamelCase}}Payload payload{ {%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    {{sig.payload.cpp.class_name}} payload{ {%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
     const std::string topic = stinger::utils::format("{{sig.topic()}}", topicParams());
     // The MockConnection routes the message by topic and stamps the matching
     // subscription id, which is how the client dispatches it to the callback.
@@ -131,9 +132,11 @@ TEST_F({{stinger.cpp.client_class_name}}Test, {{sig_name | UpperCamelCase}}Signa
 
     EXPECT_TRUE(callbackInvoked);
 }
+{%- endif %}
 {%endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
+{%- if not method.request_payload.is_protobuf %}{#- a protobuf payload has no example field values to round-trip yet #}
 // Calling `{{method_name}}` should publish a request to the broker.
 TEST_F({{stinger.cpp.client_class_name}}Test, {{method_name | UpperCamelCase}}PublishesRequest)
 {
@@ -149,16 +152,18 @@ TEST_F({{stinger.cpp.client_class_name}}Test, {{method_name | UpperCamelCase}}Pu
     EXPECT_FALSE(doc.Parse(published[0].payload.c_str()).HasParseError()) << "Published request payload is not valid JSON";
     EXPECT_TRUE(doc.IsObject());
 }
+{%- endif %}
 {%endfor%}
 
 {%for prop_name, prop in stinger.properties.items()%}
+{%- if not prop.payload.is_protobuf %}{#- a protobuf property has no example field values to round-trip #}
 {%-if not prop.read_only %}
 // Updating `{{prop_name}}` should publish an update request to the broker.
 TEST_F({{stinger.cpp.client_class_name}}Test, {{prop_name | UpperCamelCase}}UpdatePublishesRequest)
 {
     _conn->ClearPublishedMessages();
 
-    auto pending = _client->update{{prop_name | UpperCamelCase}}Property({%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+    auto pending = _client->update{{prop.name | UpperCamelCase}}Property({%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
 
     auto published = _conn->GetPublishedMessages();
     ASSERT_EQ(published.size(), 1u);
@@ -169,9 +174,11 @@ TEST_F({{stinger.cpp.client_class_name}}Test, {{prop_name | UpperCamelCase}}Upda
     EXPECT_TRUE(doc.IsObject());
 }
 {%endif%}
+{%- endif %}
 {%endfor%}
 
 {%for command_name, command in stinger.commands.items()%}
+{%- if not command.payload.is_protobuf %}{#- a protobuf payload has no example field values to round-trip yet #}
 // Sending `{{command_name}}` should publish the command to the broker.
 TEST_F({{stinger.cpp.client_class_name}}Test, {{command_name | UpperCamelCase}}CommandPublishes)
 {
@@ -193,4 +200,5 @@ TEST_F({{stinger.cpp.client_class_name}}Test, {{command_name | UpperCamelCase}}C
     EXPECT_FALSE(doc.Parse(published[0].payload.c_str()).HasParseError()) << "Published command payload is not valid JSON";
     EXPECT_TRUE(doc.IsObject());
 }
+{%- endif %}
 {%endfor%}

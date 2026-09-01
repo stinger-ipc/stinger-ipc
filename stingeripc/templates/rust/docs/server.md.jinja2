@@ -161,7 +161,7 @@ tokio::spawn(async move {
 
 The commands of this interface are:
 {% for cmd_name, cmd in stinger.commands.items() %}
-- **`{{cmd_name}}`** — `get_{{cmd_name|snake_case}}_receiver() -> broadcast::Receiver<{% if cmd.arg_list|length == 0 %}(){% elif cmd.arg_list|length == 1 %}{{cmd.arg_list[0].rust.type}}{% else %}{{cmd.rust.payload_struct_name}}{% endif %}>`
+- **`{{cmd_name}}`** — `get_{{cmd_name|snake_case}}_receiver() -> broadcast::Receiver<{{cmd.payload.rust.channel_type}}>`
 {%- endfor %}
 
 The payload type follows the number of arguments: `()` for none, the argument's own type

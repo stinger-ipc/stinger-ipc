@@ -1,3 +1,4 @@
+{%- from "partials/codec.jinja2" import decode_or, empty_payload_bytes, payload_params, build_payload, example_payload_local, property_wrap, property_unwrap, property_example -%}
 //! Client module for {{stinger.name}} IPC
 //!
 //! This module is only available when the "client" feature is enabled.
@@ -24,6 +25,7 @@ use strfmt::strfmt;
 use crate::discovery::DiscoveredService;
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
+use bytes::Bytes;
 {%- if stinger.uses_duration() %}
 #[allow(unused_imports)]
 use iso8601_duration::Duration as IsoDuration;
@@ -67,7 +69,7 @@ struct {{stinger.name | UpperCamelCase }}SubscriptionIds {
 #[derive(Clone)]
 struct {{stinger.name | UpperCamelCase }}SignalChannels {
     {%for sig_name, sig in stinger.signals.items()-%}
-    {{sig_name|snake_case}}_sender: broadcast::Sender<{%if sig.arg_list | length == 1 %}{{sig.arg_list[0].rust.type}}{%elif sig.arg_list | length == 0 %}(){% else %}{{sig_name | UpperCamelCase}}SignalPayload{% endif %}>,
+    {{sig_name|snake_case}}_sender: broadcast::Sender<{{sig.payload.rust.channel_type}}>,
     {%endfor%}
 }
 
@@ -226,8 +228,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
 
     {%for sig_name, sig in stinger.signals.items()-%}
     /// Get the RX receiver side of the broadcast channel for the '{{sig_name}}' signal.
-    /// The signal payload, `{{sig_name | UpperCamelCase}}SignalPayload`, will be put onto the channel whenever it is received.
-    pub fn get_{{sig_name|snake_case}}_receiver(&self) -> broadcast::Receiver<{%if sig.arg_list|length == 0%}(){%elif sig.arg_list|length == 1%}{{sig.arg_list[0].rust.type}}{%else%}{{sig_name | UpperCamelCase}}SignalPayload{%endif%}> {
+    /// The signal payload, `{{sig.payload.rust.class_name}}`, will be put onto the channel whenever it is received.
+    pub fn get_{{sig_name|snake_case}}_receiver(&self) -> broadcast::Receiver<{{sig.payload.rust.channel_type}}> {
         self.signal_channels.{{sig_name | snake_case}}_sender.subscribe()
     }
     {%endfor%}
@@ -275,7 +277,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         extract_value: ExtractValue,
     ) where
         T: std::fmt::Debug + Send + 'static,
-        P: serde::Serialize + serde::de::DeserializeOwned + std::fmt::Debug + Send + 'static,
+        P: crate::payloads::WirePayload + std::fmt::Debug + Send + 'static,
         MakePayload: Fn(T) -> P + Send + 'static,
         ExtractValue: Fn(P) -> T + Send + 'static,
     {
@@ -298,7 +300,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                         Ok(MethodReturnCode::Success(opt_response_text)) => {
                             if let Some(responder) = opt_responder {
                                 if let Some(response_text) = opt_response_text {
-                                    let resp_obj = serde_json::from_str::<P>(response_text.as_ref()).unwrap();
+                                    let resp_obj = <P as crate::payloads::WirePayload>::from_bytes(&response_text).unwrap();
                                     let _ = responder.send(Some(extract_value(resp_obj)));
                                 } else {
                                     warn!("No response payload received for property update request for '{}'", property_name);
@@ -331,16 +333,12 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
 
     async fn start_{{method_name|snake_case}}(
             &mut self,
-            {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}, {%endfor%}
+            {{ payload_params(method.request_payload, method.arg_list) }}{% if method.request_payload.is_protobuf or method.arg_list %},{% endif %}
     ) -> oneshot::Receiver<MethodReturnCode> {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
-        let data = {{method_name | UpperCamelCase}}RequestObject {
-            {%-for arg in method.arg_list%}
-            {{arg.name|snake_case}},
-            {%-endfor%}
-        };
+        {{ build_payload(method.request_payload, method.arg_list) }}
         {%-if method.arg_list | length > 0 %}
         if let Err(e) = data.validate_schema() {
             error!("Request payload for {{method_name}} failed schema validation, not sending: {}", e);
@@ -365,25 +363,30 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     }
 
     /// The `{{method_name}}` method.
-    /// Method arguments are packed into a {{method_name | UpperCamelCase}}RequestObject structure
+    /// Method arguments are packed into a {{method.request_payload.rust.class_name}} structure
     /// and published to the `{{method.topic}}` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
-    pub async fn {{method_name|snake_case}}(&mut self{%if method.arg_list | length > 0 %}, {%endif%}{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%})->Result<{{method.rust.return_value_type}}, MethodReturnCode> {
+    pub async fn {{method_name|snake_case}}(&mut self{%if method.request_payload.is_protobuf or method.arg_list %}, {%endif%}{{ payload_params(method.request_payload, method.arg_list) }})->Result<{{method.rust.return_value_type}}, MethodReturnCode> {
 
-        let receiver = self.start_{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
+        let receiver = self.start_{{method_name|snake_case}}({%if method.request_payload.is_protobuf %}payload{%else%}{%for arg in method.arg_list%}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}).await;
 
         let return_code: MethodReturnCode = receiver.await.unwrap();
         info!("Received response for method '{{method_name}}': {:?}", return_code);
         match return_code {
-            MethodReturnCode::Success({%if method.return_value is none %}_{%else%}payload_str{%endif%}) => {
-                {%if method.return_value is none %}
+            MethodReturnCode::Success({%if not method.has_response %}_{%else%}payload_str{%endif%}) => {
+                {%if not method.has_response %}
                 Ok(())
                 {%else%}
-                let return_obj: {{method.rust.return_struct_name}} = serde_json::from_str(payload_str.as_ref().map_or("{}", |v| v))
-                    .map_err(|e| MethodReturnCode::ClientDeserializationError(e.to_string()))?;
+                let return_bytes = payload_str.unwrap_or_else(|| {{ empty_payload_bytes(method.response_payload) }});
+                let return_obj = <{{method.response_payload.rust.struct_name}} as WirePayload>::from_bytes(&return_bytes)
+                    .map_err(MethodReturnCode::ClientDeserializationError)?;
+                {%- if method.response_payload.is_protobuf %}
+                Ok(return_obj)
+                {%- else %}
                 return_obj.validate_schema().map_err(MethodReturnCode::ClientDeserializationError)?;
                 Ok(return_obj.{{method.return_value.name | snake_case}})
+                {%- endif %}
                 {%endif%}
             },
             _ => {
@@ -400,16 +403,14 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     ///
     /// A command is fire-and-forget: the server sends no response, so there is
     /// nothing to await and no way to learn whether the server acted on it.
-    pub async fn send_{{cmd_name|snake_case}}(&mut self{%if cmd.arg_list | length > 0 %}, {%endif%}{%for arg in cmd.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) {
-        let data = {{cmd.rust.payload_struct_name}} {
-            {%-for arg in cmd.arg_list%}
-            {{arg.name|snake_case}},
-            {%-endfor%}
-        };
+    pub async fn send_{{cmd_name|snake_case}}(&mut self{%if cmd.payload.is_protobuf or cmd.arg_list %}, {%endif%}{{ payload_params(cmd.payload, cmd.arg_list) }}) {
+        {{ build_payload(cmd.payload, cmd.arg_list) }}
+        {%- if not cmd.payload.is_protobuf %}
         if let Err(err) = data.validate_schema() {
             error!("Payload for '{{cmd_name}}' command failed schema validation, not sending: {}", err);
             return;
         }
+        {%- endif %}
         let mut topic_param_map = self.base_topic_params();
         topic_param_map.insert("command_name".to_string(), "{{cmd_name}}".to_string());
         let topic: String = strfmt("{{cmd.topic()}}", &topic_param_map).unwrap();
@@ -457,8 +458,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     {%endfor%}
 
     fn get_return_code_from_message(msg: &MqttMessage) -> MethodReturnCode {
-        let payload = String::from_utf8_lossy(&msg.payload).to_string();
-        let mut return_code: MethodReturnCode = MethodReturnCode::Success(Some(payload));
+        let mut return_code: MethodReturnCode = MethodReturnCode::Success(Some(msg.payload.clone()));
         if let Some(retval) = msg.user_properties.get("ReturnCode") {
             let opt_dbg_info = msg.user_properties.get("DebugInfo").cloned();
             if let Ok(return_code_u32) = retval.parse::<u32>() {
@@ -504,8 +504,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                 update_topic,
                 response_topic,
                 props.{{prop_name | snake_case}}_version.clone(),
-                |value| {{prop_name | UpperCamelCase}}Property { {{prop.value.name}}: value },
-                |resp_obj: {{prop_name | UpperCamelCase}}Property| resp_obj.{{prop.value.name|snake_case}},
+                |value| {{ property_wrap(prop, 'value') }},
+                |resp_obj: {{prop.payload.rust.class_name}}| {{ property_unwrap(prop, 'resp_obj') }},
             ));
         }
         {% endfor %}
@@ -589,40 +589,8 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                             debug!("Received {{signal_name}} signal message");
                             // Find broadcast channel.
                             let chan = sig_chans.{{signal_name | snake_case}}_sender.clone();
-                            {%if signal.arg_list | length == 0 %}
-                            // No arguments, send () to channel.
-                            let _send_result = chan.send(());
-                            {%elif signal.arg_list | length == 1 %}
-                            // Single argument, extract it from payload and send to channel.
-                            match serde_json::from_slice::<{{signal_name | UpperCamelCase}}SignalPayload>(&msg.payload) {
-                                Ok(pl) => {
-                                    if let Err(e) = pl.validate_schema() {
-                                        warn!("Received '{{signal_name}}' signal payload failed schema validation: {}", e);
-                                        continue;
-                                    }
-                                    let _send_result = chan.send(pl.{{signal.arg_list[0].name|snake_case}});
-                                },
-                                Err(e) => {
-                                    warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                    continue;
-                                }
-                            }
-                            {%else%}
-                            // {{signal.arg_list|length}} arguments, send the entire struct to the channel.
-                            match serde_json::from_slice::<{{signal_name | UpperCamelCase}}SignalPayload>(&msg.payload) {
-                                Ok(pl) => {
-                                    if let Err(e) = pl.validate_schema() {
-                                        warn!("Received '{{signal_name}}' signal payload failed schema validation: {}", e);
-                                        continue;
-                                    }
-                                    let _send_result = chan.send(pl);
-                                },
-                                Err(e) => {
-                                    warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
-                                    continue;
-                                }
-                            }
-                            {%endif%}
+                            {{ decode_or(signal.payload, "msg", "payload", signal_name, "continue") | indent(24) }}
+                            let _send_result = chan.send(payload);
                         },
                         {%endfor%}
                         {%-for prop_name, prop in stinger.properties.items()%}
@@ -630,17 +598,19 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                             debug!("Received '{{prop_name}}' property value");
                             let props_copy = props.clone();
                             tokio::spawn(async move {
-                                // JSON deserialize into {{prop_name | UpperCamelCase}}Property struct
-                                match serde_json::from_slice::<{{prop_name | UpperCamelCase}}Property>(&msg.payload) {
+                                // JSON deserialize into {{prop.payload.rust.class_name}} struct
+                                match <{{prop.payload.rust.struct_name}} as WirePayload>::from_bytes(&msg.payload) {
                                     Ok(pl) => {
+{%- if not prop.payload.is_protobuf %}
                                         if let Err(e) = pl.validate_schema() {
                                             warn!("Received '{{prop_name}}' property value failed schema validation: {}", e);
                                             return;
                                         }
+{%- endif %}
                                         // Get a write-guard and set the local copy of the property value.
                                         let mut guard = props_copy.{{prop_name | snake_case}}.write().await;
-                                        debug!("{{prop_name | CONST_CASE}} property value updated: {:?}", pl.{{prop.value.name}});
-                                        *guard = pl.{{prop.value.name}}.clone();
+                                        debug!("{{prop_name | CONST_CASE}} property value updated: {:?}", {{ property_unwrap(prop, "pl") }});
+                                        *guard = {{ property_unwrap(prop, 'pl') }}.clone();
                                         // Hold onto the write-guard while we set the local copy of the property version.
                                         if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                                             if let Ok(version_num) = version_str.parse::<u32>() {
@@ -649,7 +619,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                                         }
                                     },
                                     Err(e) => {
-                                        warn!("Failed to deserialize '{}' into {{signal_name | UpperCamelCase}}SignalPayload: {}", String::from_utf8_lossy(&msg.payload), e);
+                                        warn!("Failed to deserialize '{}' into {{prop.payload.rust.class_name}}: {}", String::from_utf8_lossy(&msg.payload), e);
                                     }
                                 }
                             });
@@ -697,7 +667,7 @@ mod tests {
         {%if stinger.properties|length > 0%}
         let initial_property_values = {{stinger.name | UpperCamelCase}}InitialPropertyValues {
             {%for prop_name, prop in stinger.properties.items()%}
-            {{prop_name | snake_case}}: {{prop.value.get_random_example_value(lang="rust")}},
+            {{prop_name | snake_case}}: {{ property_example(prop) }},
             {{prop_name | snake_case}}_version: 1,
             {%endfor%}
         };
@@ -732,9 +702,7 @@ mod tests {
         { // Test calling the {{method_name}} method.
             mock_mqtt.clear_published_messages();
             let _rx = client.start_{{method_name | snake_case}}(
-                {%for arg in method.arg_list%}
-                {{arg.get_random_example_value(lang='rust')}},
-                {%endfor%}).await;
+                {{ example_payload_local(method.request_payload, method.arg_list) }}).await;
             let sent_message = mock_mqtt.last_published_message().expect("Expected a method request message to be published");
 
             assert!(sent_message.response_topic.is_some(), "Expected response_topic to be set on method request message");
@@ -751,9 +719,7 @@ mod tests {
             // Example values always satisfy any schema constraint declared on the argument,
             // so the client publishes rather than dropping the command.
             client.send_{{cmd_name | snake_case}}(
-                {%for arg in cmd.arg_list%}
-                {{arg.get_random_example_value(lang='rust')}},
-                {%endfor%}).await;
+                {{ example_payload_local(cmd.payload, cmd.arg_list) }}).await;
 
             match mock_mqtt.last_published_message() {
                 Some(sent_message) => {
@@ -761,7 +727,7 @@ mod tests {
                     assert!(!sent_message.retain, "Commands are not retained");
                     assert!(sent_message.response_topic.is_none(), "A command has no response, so it must not carry a response topic");
                     assert!(sent_message.correlation_data.is_none(), "A command has no response, so it must not carry correlation data");
-                    assert_eq!(sent_message.content_type.as_deref(), Some("application/json"));
+                    assert_eq!(sent_message.content_type.as_deref(), Some(<{{cmd.payload.rust.struct_name}} as WirePayload>::content_type()));
                     {%for topic_param in config.topics.params%}
                     {%if '{' + topic_param + '}' in cmd.topic() %}
                     assert!(sent_message.topic.contains(server_topic_param_map.get("{{topic_param}}").unwrap()), "Expected the '{{cmd_name}}' command topic to contain the topic parameter '{{topic_param}}'");
@@ -777,7 +743,7 @@ mod tests {
         {%if not prop.read_only %}
         { // Test setting the {{prop_name}} property if it is not read-only.
             // Create an example value to set the property to.
-            let {{prop_name|snake_case}}_new_value = {{prop.value.get_random_example_value(lang="rust")}};
+            let {{prop_name|snake_case}}_new_value = {{ property_example(prop) }};
 
             mock_mqtt.clear_published_messages();
             let {{prop_name|snake_case}}_handle = client.get_{{prop_name | snake_case}}_handle();

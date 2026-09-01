@@ -1,0 +1,68 @@
+stingeripc:
+  version: 0.3.0
+
+interface:
+  name: ProtoWeather
+  version: 0.0.1
+  title: Protobuf Weather Example
+  summary: A weather interface whose payloads are a mix of JSON and protobuf messages.
+  documentation: |
+    Demonstrates protobuf payloads alongside JSON ones in a single interface.
+
+    An element declares either a JSON payload (`values` / `arguments` / `value` /
+    `returnValue`) or a protobuf message by fully-qualified name, never both.
+    The `.proto` files live under the directory named by `[protobuf] path` in the
+    generation config, relative to this file.
+
+signals:
+
+  currentConditions:
+    documentation: The current weather, as a protobuf message.
+    protobuf: protoweather.v1.CurrentConditions
+
+  stationName:
+    documentation: The station's name, as an ordinary JSON payload.
+    values:
+      - name: name
+        type: string
+        description: The human-readable name of the weather station.
+
+methods:
+
+  getForecast:
+    documentation: Ask for a forecast.  Both the request and the response are protobuf messages.
+    protobuf: protoweather.v1.ForecastRequest
+    returnProtobuf: protoweather.v1.Forecast
+
+  convertToFahrenheit:
+    documentation: An ordinary JSON method, for contrast.
+    arguments:
+      - name: celsius
+        type: float
+    returnValue:
+      name: fahrenheit
+      type: float
+
+commands:
+
+  refresh:
+    documentation: Tell the station to re-read its sensors.  Fire and forget.
+    protobuf: protoweather.v1.RefreshCommand
+
+  resetCounters:
+    documentation: An ordinary JSON command, for contrast.
+    arguments:
+      - name: confirm
+        type: boolean
+
+properties:
+
+  currentConditions:
+    documentation: The current weather, as a protobuf message.
+    protobuf: protoweather.v1.CurrentConditions
+
+  stationId:
+    documentation: An ordinary JSON property, for contrast.
+    value:
+      name: identifier
+      type: string

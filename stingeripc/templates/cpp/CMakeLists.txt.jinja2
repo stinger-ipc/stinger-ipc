@@ -18,6 +18,17 @@ set (CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package(Threads REQUIRED)
 find_package(RapidJSON REQUIRED)
+{%- if stinger.uses_protobuf() %}
+# CONFIG mode, not CMake's bundled FindProtobuf module: protobuf v22 and later
+# depend on Abseil, and only protobuf's own config package declares that
+# dependency.  The module would find the library but link would fail on
+# undefined Abseil symbols.
+find_package(Protobuf CONFIG REQUIRED)
+
+# protoc writes these beside the generated sources; they are globbed rather than
+# listed because the set follows the .proto files, not the templates.
+file(GLOB PROTO_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/proto/*.pb.cc)
+{%- endif %}
 
 # Fetch stinger-cpp-utils dependency
 include(FetchContent)
@@ -34,13 +45,15 @@ FetchContent_MakeAvailable(stinger-cpp-utils)
 set(CLIENT_SOURCE_FILES
 	{%for src_file in output_files|match_regex("^src/.*\.cpp$")|exclude_regex("server.cpp$")|sort-%}
 		{{src_file}}
-	{%endfor%}
+	{%endfor%}{% if stinger.uses_protobuf() %}
+	${PROTO_SOURCE_FILES}{% endif %}
 )
 
 set(SERVER_SOURCE_FILES
 	{%for src_file in output_files|match_regex("^src/.*\.cpp$")|exclude_regex("client.cpp$")|sort-%}
 		{{src_file}}
-	{%endfor%}
+	{%endfor%}{% if stinger.uses_protobuf() %}
+	${PROTO_SOURCE_FILES}{% endif %}
 )
 
 # server lib
@@ -51,10 +64,16 @@ target_include_directories({{project_name}}-server
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 		${rapidJSON_INCLUDE_DIRS}
+{%- if stinger.uses_protobuf() %}
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+{%- endif %}
 )
 target_link_libraries({{project_name}}-server
 	PUBLIC
 		Stinger::Utils
+{%- if stinger.uses_protobuf() %}
+		protobuf::libprotobuf
+{%- endif %}
 )
 
 # client lib
@@ -65,10 +84,16 @@ target_include_directories({{project_name}}-client
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 		$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 		${rapidJSON_INCLUDE_DIRS}
+{%- if stinger.uses_protobuf() %}
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+{%- endif %}
 )
 target_link_libraries({{project_name}}-client
 	PUBLIC
 		Stinger::Utils
+{%- if stinger.uses_protobuf() %}
+		protobuf::libprotobuf
+{%- endif %}
 )
 
 # example client

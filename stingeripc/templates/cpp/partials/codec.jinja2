@@ -1,0 +1,31 @@
+{#
+    The wire codec for one payload, for the places a template needs to talk about
+    the encoding directly.
+
+    Most encoding lives in the generated `wire.hpp`: `Wire<T>::ToString` and
+    `Wire<T>::FromString` are specialized per payload type, so client.cpp and
+    server.cpp serialize and deserialize through one call and never branch on the
+    encoding.  What is left here is what `Wire<T>` cannot express, because it
+    appears in the message properties rather than the body.
+
+    Import into a template with:
+        {% import "partials/codec.jinja2" as codec %}
+
+    Imported macros do not inherit the calling template's context, so anything
+    they need is passed in explicitly.
+#}
+
+{# The MQTT content type messages carrying this payload are published with. #}
+{%- macro content_type(payload) -%}
+{{ payload.content_type }}
+{%- endmacro -%}
+
+{#
+    The protoc-generated headers this interface's protobuf payloads come from.
+    Emitted once per .proto file, and nothing at all when no payload is protobuf.
+#}
+{%- macro imports(stinger) -%}
+{%- for proto_file in stinger.protobuf_files() %}
+#include "proto/{{ proto_file | replace(".proto", ".pb.h") }}"
+{%- endfor -%}
+{%- endmacro -%}

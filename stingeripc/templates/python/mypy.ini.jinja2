@@ -20,3 +20,9 @@ ignore_missing_imports = True
 
 [mypy-stinger_python_utils.*]
 ignore_missing_imports = True
+{%- if stinger.uses_protobuf() %}
+
+# protoc writes these; they are not type-checked because they are not hand-maintained.
+[mypy-{{stinger.python.package_directory}}.proto.*]
+ignore_errors = True
+{%- endif %}

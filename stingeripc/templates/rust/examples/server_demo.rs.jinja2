@@ -1,3 +1,4 @@
+{%- from "partials/codec.jinja2" import example_payload, property_example_external -%}
 /*
 DO NOT MODIFY THIS FILE {# unless you see this comment #}.  It is automatically generated and changes will be over-written
 on the next generation.
@@ -10,6 +11,9 @@ use std::any::Any;
 use std::sync::Arc;
 
 use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection, TcpConnection};
+{%- if stinger.uses_protobuf() %}
+use {{stinger.rust.package_name}}::proto;
+{%- endif %}
 use {{stinger.rust.package_name}}::server::{ {{stinger.rust.server_struct_name}}{%if stinger.methods|length>0%}, {{stinger.name | UpperCamelCase }}MethodHandlers{%endif%} };
 #[cfg(feature = "lwt")]
 use {{stinger.rust.package_name}}::lwt::StingerAvailability;
@@ -49,9 +53,11 @@ impl {{stinger.name | UpperCamelCase }}MethodHandlers<MqttierClient> for {{sting
     }
 
     {%for method_name, method in stinger.methods.items()%}
-    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.rust.return_value_type}}, MethodReturnCode> {
+    async fn handle_{{method_name|snake_case}}(&self, {%if method.request_payload.is_protobuf%}_payload: {{method.request_payload.protobuf.rust.external_name}}{%else%}{%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}) -> Result<{%if method.response_payload.is_protobuf%}{{method.response_payload.protobuf.rust.external_name}}{%else%}{{method.rust.return_value_type}}{%endif%}, MethodReturnCode> {
         println!("Handling {{method_name}}");
-        {%-if method.return_value_type == 'struct'%}
+        {%- if method.response_payload.is_protobuf %}
+        Ok({{method.response_payload.protobuf.rust.external_name}}::default())
+        {%- elif method.return_value_type == 'struct'%}
         let rv = {{method.return_value.rust.temp_type}} {
             {%for arg in method.return_value.values-%}
             {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
@@ -107,7 +113,7 @@ async fn main() {
     {%if stinger.properties|length > 0%}
     let initial_property_values = {{stinger.name | UpperCamelCase}}InitialPropertyValues {
         {%for prop_name, prop in stinger.properties.items()%}
-        {{prop_name | snake_case}}: {{prop.value.get_random_example_value(lang="rust")}},
+        {{prop_name | snake_case}}: {{ property_example_external(prop) }},
         {{prop_name | snake_case}}_version: 1,
         {%endfor%}
     };
@@ -160,7 +166,7 @@ async fn main() {
             {%for sig_name, sig in stinger.signals.items()%}
             sleep(Duration::from_secs(1)).await;
             println!("Emitting signal '{{sig_name}}'");
-            let signal_result_future = server_clone1.emit_{{sig_name|snake_case}}({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
+            let signal_result_future = server_clone1.emit_{{sig_name|snake_case}}({{ example_payload(sig.payload, sig.arg_list) }}).await;
             let signal_result = signal_result_future.await;
             println!("Signal '{{sig_name}}' was sent: {:?}", signal_result);
             {%endfor%}
@@ -188,7 +194,7 @@ async fn main() {
             {
                 println!("Demo code periodic change of property '{{prop_name}}'");
                 let mut {{prop_name|snake_case}}_guard = {{prop_name | snake_case}}_property.write().await;
-                *{{prop_name|snake_case}}_guard = {{prop.value.get_random_example_value(lang="rust", seed=3)}};
+                *{{prop_name|snake_case}}_guard = {{ property_example_external(prop) }};
                 // Value is changed and published when {{prop_name|snake_case}}_guard goes out of scope and is dropped.
             }
             {%endfor%}{# property updates -#}

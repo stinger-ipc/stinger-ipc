@@ -15,7 +15,11 @@ class RustSymbolsProvider(ISymbolsProvider):
     """
 
     def for_model(self, model_class_name: str, model) -> object | None:
-        if model_class_name == "StingerSpec":
+        if model_class_name == "ProtobufMessageRef":
+            return RustProtobufRefSymbols(model)
+        elif model_class_name == "Payload":
+            return RustPayloadSymbols(model)
+        elif model_class_name == "StingerSpec":
             return RustInterfaceSymbols(model, self.config)
         elif model_class_name == "InterfaceEnum":
             return RustEnumSymbols(model)
@@ -127,6 +131,8 @@ class RustMethodSymbols(RustSymbols):
     @property
     def return_value_type(self) -> str:
         """Rust return type for the method's return value."""
+        if self._method.response_payload.is_protobuf:
+            return self._method.response_payload.rust.struct_name
         if self._method.return_value is None:
             return "()"
         return self._method.return_value.rust.type
@@ -134,7 +140,7 @@ class RustMethodSymbols(RustSymbols):
     @property
     def return_struct_name(self) -> str:
         """Rust struct name of the method's generated response payload."""
-        return stringmanip.upper_camel_case(self._method.return_value_name)
+        return self._method.response_payload.rust.struct_name
 
 
 class RustCommandSymbols(RustSymbols):
@@ -147,7 +153,7 @@ class RustCommandSymbols(RustSymbols):
     @property
     def payload_struct_name(self) -> str:
         """Rust struct name of the command's generated payload."""
-        return f"{stringmanip.upper_camel_case(self._command.name)}CommandPayload"
+        return self._command.payload.rust.struct_name
 
 
 class RustArgSymbols(RustSymbols):
@@ -294,11 +300,122 @@ class RustPropertySymbols(RustSymbols):
         self._prop = prop
 
     @property
+    def is_protobuf(self) -> bool:
+        """True when the property holds a protobuf message rather than a JSON value."""
+        return self._prop.payload.is_protobuf
+
+    @property
+    def is_optional(self) -> bool:
+        """True when the property's value may be absent.
+
+        A protobuf message is never optional in this sense: an unset message is
+        still a message, with its fields at their defaults.
+        """
+        if self.is_protobuf:
+            return False
+        return bool(self._prop.value.optional)
+
+    @property
+    def has_value_schema(self) -> bool:
+        """True when the property's value declares a JSON schema constraint.
+
+        Never for a protobuf message, which carries no JSON schema.
+        """
+        if self.is_protobuf:
+            return False
+        return bool(self._prop.value.value_schema)
+
+    @property
     def local_type(self) -> str:
         """Unqualified Rust type name for the property's value."""
+        if self.is_protobuf:
+            return self._prop.payload.protobuf.message_name
         return self._prop.value.rust.local_type
 
     @property
     def type(self) -> str:
-        """Rust type name for the property's value."""
+        """Rust type name for the property's value.
+
+        A protobuf property's value is the message itself: there is no wrapper
+        struct with a single named field, so the value type and the payload type
+        are the same thing.
+        """
+        if self.is_protobuf:
+            return self._prop.payload.rust.struct_name
         return self._prop.value.rust.type
+
+
+# The name of the generated struct for each kind of payload.  These reproduce
+# exactly the names the templates used to spell inline, so that routing them through
+# the payload changes no generated output.
+_RUST_PAYLOAD_NAMES = {
+    "SIGNAL": lambda name: f"{stringmanip.upper_camel_case(name)}SignalPayload",
+    "COMMAND": lambda name: f"{stringmanip.upper_camel_case(name)}CommandPayload",
+    "METHOD_REQUEST": lambda name: f"{stringmanip.upper_camel_case(name)}RequestObject",
+    "METHOD_RESPONSE": lambda name: stringmanip.upper_camel_case(f"{name} return value"),
+    "PROPERTY": lambda name: f"{stringmanip.upper_camel_case(name)}Property",
+}
+
+
+class RustPayloadSymbols(RustSymbols):
+    """Rust symbols for a :class:`Payload`."""
+
+    def __init__(self, payload):
+        super().__init__()
+        self._payload = payload
+
+    @property
+    def struct_name(self) -> str:
+        """Rust name of the type that carries this payload."""
+        if self._payload.is_protobuf:
+            return self._payload.protobuf.rust.qualified_name
+        return _RUST_PAYLOAD_NAMES[self._payload.role.name](self._payload.owner_name)
+
+    @property
+    def class_name(self) -> str:
+        """Alias for :attr:`struct_name`, so templates can use one spelling across languages."""
+        return self.struct_name
+
+    @property
+    def channel_type(self) -> str:
+        """The type a broadcast channel carrying this payload hands to receivers.
+
+        Always the payload struct, including for a payload with no arguments or
+        exactly one.  A channel has a single item type, so unlike Python and C++
+        there is no way to offer the unpacked form alongside the object; making it
+        uniform is what lets the client and server dispatch code drop the
+        zero/one/many special cases it used to repeat at every channel site.
+        """
+        return self.struct_name
+
+
+class RustProtobufRefSymbols(RustSymbols):
+    """Rust symbols for a :class:`ProtobufMessageRef`."""
+
+    def __init__(self, ref):
+        super().__init__()
+        self._ref = ref
+
+    @property
+    def module_path(self) -> str:
+        """Path of the generated module holding this message.
+
+        prost writes one file per protobuf package with the messages at its top
+        level, and those files are included into a single ``proto`` module, so the
+        package does not reappear in the Rust path.
+        """
+        return "crate::proto"
+
+    @property
+    def qualified_name(self) -> str:
+        """How generated Rust code names this message, fully qualified from the crate root."""
+        return f"{self.module_path}::{self._ref.message_name}"
+
+    @property
+    def external_name(self) -> str:
+        """How code outside the library names this message.
+
+        Examples and integration tests are separate crates, so they import the
+        library's ``proto`` module rather than reaching through ``crate::``.
+        """
+        return f"proto::{self._ref.message_name}"

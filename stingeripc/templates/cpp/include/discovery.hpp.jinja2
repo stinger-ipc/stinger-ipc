@@ -12,6 +12,8 @@ Discovery service for finding available service instances.
 #include <stinger/utils/iconnection.hpp>
 #include <stinger/mqtt/properties.hpp>
 #include "structs.hpp"
+{%- import "partials/codec.jinja2" as codec %}
+{{- codec.imports(stinger) }}
 #include "enums.hpp"
 #include "property_structs.hpp"
 

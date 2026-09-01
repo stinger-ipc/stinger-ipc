@@ -25,6 +25,8 @@ It contains enumerations used by the {{stinger.name}} interface.
 #include "method_payloads.hpp"
 #include "signal_payloads.hpp"
 #include "command_payloads.hpp"
+{%- import "partials/codec.jinja2" as codec %}
+{{- codec.imports(stinger) }}
 #include "discovery.hpp"
 
 {%if stinger.properties | length > 0 %}#include "{{stinger.cpp.property_struct_header_file}}"{%endif%}
@@ -69,6 +71,10 @@ public:
     // Commands are fire-and-forget: there is no response, so nothing is returned and
     // the client never learns whether the server acted on it.
     void send{{command_name | UpperCamelCase}}Command({%for arg in command.arg_list%}{{arg.cpp.func_param_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+
+    // Sends an already-built '{{command_name}}' payload, for callers that hold the
+    // payload object rather than its individual values.
+    void send{{command_name | UpperCamelCase}}CommandPayload(const {{command.payload.cpp.class_name}}& payload);
     {%endfor%}
     {%endif%}
     {%if stinger.properties|length > 0 -%}

@@ -2,6 +2,7 @@
 {% import "partials/serialize.jinja2" as ser %}
 {% import "partials/args.jinja2" as ar %}
 {% import "partials/properties.jinja2" as pr %}
+{%- import "partials/codec.jinja2" as codec %}
 
 #include <vector>
 #include <iostream>
@@ -21,6 +22,7 @@
 #include <rapidjson/document.h>
 #include "structs.hpp"
 #include "client.hpp"
+#include "wire.hpp"
 #include "{{stinger.cpp.enum_header_file}}"
 #include "discovery.hpp"
 
@@ -139,11 +141,13 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Mes
                     }
                 }
                 {%endfor%}{# for signal args #}
-                {{sig_name | UpperCamelCase}}Payload signalPayload{ {%for arg in sig.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+                {{sig.payload.cpp.class_name}} signalPayload{ {%for arg in sig.arg_list%}temp{{arg.name|UpperCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+{%- if not sig.payload.is_protobuf %}
                 if (!signalPayload.ValidateSchema()) {
                     _broker->Log(LOG_WARNING, "Received '{{sig_name}}' signal payload failed schema validation; ignoring.");
                     return;
                 }
+{%- endif %}
                 std::lock_guard<std::mutex> lock(_{{sig_name | lowerCamelCase}}SignalCallbacksMutex);
                 for (const auto& cb : _{{sig_name | lowerCamelCase}}SignalCallbacks)
                 {
@@ -206,21 +210,16 @@ std::future<{{method.cpp.return_value_class}}> {{stinger.cpp.client_class_name}}
     std::vector<std::byte> correlationData = stinger::utils::generate_uuid_bytes();
     _pending{{method_name|UpperCamelCase}}MethodCalls[correlationData] = std::promise<{{method.cpp.return_value_class}}>();
 
-    rapidjson::Document doc;
-    doc.SetObject();
-    {%if method.arg_list | length > 0 %}
-    {{method_name | UpperCamelCase}}RequestArguments requestArgs{ {%for arg in method.arg_list%}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    {{method.request_payload.cpp.class_name}} requestArgs{ {%for arg in method.arg_list%}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+{%- if not method.request_payload.is_protobuf %}
     if (!requestArgs.ValidateSchema()) {
         _broker->Log(LOG_WARNING, "Request payload for '{{method_name}}' failed schema validation; not sending.");
         _pending{{method_name|UpperCamelCase}}MethodCalls[correlationData].set_exception(
             std::make_exception_ptr(std::runtime_error("Request payload for '{{method_name}}' failed schema validation")));
         return _pending{{method_name|UpperCamelCase}}MethodCalls[correlationData].get_future();
     }
-    requestArgs.AddToRapidJsonObject(doc, doc.GetAllocator());
-    {%endif%}
-    rapidjson::StringBuffer buf;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-    doc.Accept(writer);
+{%- endif %}
+    auto payloadStr = Wire<{{method.request_payload.cpp.class_name}}>::ToString(requestArgs);
 
     std::map<std::string, std::string> topicParams;
     topicParams["client_id"] = _broker->GetClientId();
@@ -232,7 +231,7 @@ std::future<{{method.cpp.return_value_class}}> {{stinger.cpp.client_class_name}}
 
     auto responseTopic = stinger::utils::format("{{method.response_topic()}}", topicParams);
     auto requestTopic = stinger::utils::format("{{method.request_topic()}}", topicParams);
-    auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, buf.GetString(), correlationData, responseTopic);
+    auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, payloadStr, correlationData, responseTopic);
 
     _broker->Publish(msg);
 
@@ -248,18 +247,6 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
         _broker->Log(LOG_INFO, "{{method_name}} response debug from server: %s", msg.topic.c_str(), msg.properties.debugInfo->c_str());
     }
     
-    {%if method.return_value_type is not false%}
-    rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
-    if (!ok)
-    {
-        //Log("Could not JSON parse {{method_name}} signal payload.");
-        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
-    }
-    if (!doc.IsObject()) {
-        throw std::runtime_error("Received payload for '{{method_name}}' response is not an object");
-    }
-    {%endif%}
     auto correlationData = msg.properties.correlationData.value_or(std::vector<std::byte>{});
     auto promiseItr = _pending{{method_name|UpperCamelCase}}MethodCalls.find(correlationData);
     if (promiseItr != _pending{{method_name|UpperCamelCase}}MethodCalls.end())
@@ -277,13 +264,15 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
         promiseItr->second.set_value();
         {%else%}
         // Method returns a single value.
-        auto returnPayload = {{method.cpp.return_struct_name}}::FromRapidJsonObject(doc);
+        auto returnPayload = Wire<{{method.response_payload.cpp.class_name}}>::FromString(msg.payload);
+{%- if not method.response_payload.is_protobuf %}
         if (!returnPayload.ValidateSchema()) {
             _broker->Log(LOG_WARNING, "Response payload for '{{method_name}}' failed schema validation.");
             promiseItr->second.set_exception(
                 std::make_exception_ptr(std::runtime_error("Response payload for '{{method_name}}' failed schema validation")));
             return;
         }
+{%- endif %}
         promiseItr->second.set_value(returnPayload.{{method.return_value.name|lowerCamelCase}});
         {%endif%}
     }
@@ -295,18 +284,19 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
 void {{stinger.cpp.client_class_name}}::send{{command_name | UpperCamelCase}}Command({%for arg in command.arg_list%}{{arg.cpp.func_param_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
 {
     {{command.cpp.payload_struct_name}} commandPayload{ {%for arg in command.arg_list%}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+{%- if not command.payload.is_protobuf %}
     if (!commandPayload.ValidateSchema()) {
         _broker->Log(LOG_WARNING, "Payload for '{{command_name}}' command failed schema validation; not sending.");
         return;
     }
+{%- endif %}
 
-    rapidjson::Document doc;
-    doc.SetObject();
-    commandPayload.AddToRapidJsonObject(doc, doc.GetAllocator());
+    send{{command_name | UpperCamelCase}}CommandPayload(commandPayload);
+}
 
-    rapidjson::StringBuffer buf;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-    doc.Accept(writer);
+void {{stinger.cpp.client_class_name}}::send{{command_name | UpperCamelCase}}CommandPayload(const {{command.payload.cpp.class_name}}& commandPayload)
+{
+    auto payloadStr = Wire<{{command.payload.cpp.class_name}}>::ToString(commandPayload);
 
     std::map<std::string, std::string> topicParams;
     topicParams["client_id"] = _broker->GetClientId();
@@ -321,11 +311,11 @@ void {{stinger.cpp.client_class_name}}::send{{command_name | UpperCamelCase}}Com
     // Commands are fire-and-forget, so the message carries no response topic and no
     // correlation data; nothing comes back from the server.
     stinger::mqtt::Properties commandProperties;
-    commandProperties.contentType = "application/json";
+    commandProperties.contentType = "{{ codec.content_type(command.payload) }}";
     {%-if command.version%}
     commandProperties.version = "{{command.version}}";
     {%-endif%}
-    auto msg = stinger::mqtt::Message(topic, buf.GetString(), {{stinger.command_qos}}, false, commandProperties);
+    auto msg = stinger::mqtt::Message(topic, payloadStr, {{stinger.command_qos}}, false, commandProperties);
 
     _broker->Publish(msg);
 }
@@ -337,24 +327,13 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
     {
         _broker->Log(LOG_INFO, "{{prop_name}} property update debug from server: %s",  msg.properties.debugInfo->c_str());
     }
-    rapidjson::Document doc;
-    rapidjson::ParseResult ok = doc.Parse(msg.payload.c_str());
-    if (!ok)
-    {
-        //Log("Could not JSON parse {{prop_name}} property update payload.");
-        throw std::runtime_error(rapidjson::GetParseError_En(ok.Code()));
-    }
-
-    if (!doc.IsObject()) {
-        throw std::runtime_error("Received '{{prop_name}}' property update payload is not an object");
-    }
-    {{prop.name | UpperCamelCase}}Property tempValue;
-    {{deser.deserialize('tempValue', prop.arg_list, 'doc') | indent(4)}}
-
+    auto tempValue = Wire<{{prop.payload.cpp.class_name}}>::FromString(msg.payload);
+{%- if not prop.payload.is_protobuf %}
     if (!tempValue.ValidateSchema()) {
         _broker->Log(LOG_WARNING, "Received '{{prop_name}}' property update failed schema validation; ignoring.");
         return;
     }
+{%- endif %}
 
     { // Scope lock
         std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
@@ -389,16 +368,10 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
 {{pr.callback_registration_definition(stinger.cpp.client_class_name, prop_name, prop)}}
 
 {% if not prop.read_only %}
-std::future<bool> {{stinger.cpp.client_class_name}}::update{{prop_name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}}) const
+std::future<bool> {{stinger.cpp.client_class_name}}::update{{prop.name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}}) const
 {
-    rapidjson::Document doc;
-    doc.SetObject();
-    {%for item in prop.arg_list %}
-    {{ser.addToValue('doc', item, 'doc.GetAllocator()') | indent(4)}}
-    {%endfor %}
-    rapidjson::StringBuffer buf;
-    rapidjson::Writer<rapidjson::StringBuffer> writer(buf);
-    doc.Accept(writer);
+    {{prop.payload.cpp.class_name}} propertyPayload{ {%for arg in prop.arg_list%}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    auto payloadStr = Wire<{{prop.payload.cpp.class_name}}>::ToString(propertyPayload);
 
     std::map<std::string, std::string> topicParams;
     topicParams["client_id"] = _broker->GetClientId();
@@ -411,7 +384,7 @@ std::future<bool> {{stinger.cpp.client_class_name}}::update{{prop_name | UpperCa
     std::string update_topic = stinger::utils::format("{{prop.update_topic()}}", topicParams);
     std::string response_topic = stinger::utils::format("{{prop.response_topic()}}", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
-    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, buf.GetString(), _last{{prop_name | UpperCamelCase}}PropertyVersion, correlationData, response_topic);
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, payloadStr, _last{{prop_name | UpperCamelCase}}PropertyVersion, correlationData, response_topic);
     return _broker->Publish(msg);
 
 }

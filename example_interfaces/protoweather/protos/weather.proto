@@ -1,0 +1,32 @@
+// Hand-written protobuf definitions for the protoweather example interface.
+//
+// Stinger does not generate this file: an interface element that declares
+// `protobuf:` names a message from here, and stinger resolves that name against
+// these sources at generation time.
+syntax = "proto3";
+
+package protoweather.v1;
+
+// The weather right now.
+message CurrentConditions {
+  float temperature_celsius = 1;
+  string description = 2;
+  uint32 humidity_percent = 3;
+}
+
+// A request for the forecast at a place.
+message ForecastRequest {
+  string location = 1;
+  uint32 days = 2;
+}
+
+// Several days of predicted conditions.
+message Forecast {
+  string location = 1;
+  repeated CurrentConditions days = 2;
+}
+
+// An instruction to the station to re-read its sensors.
+message RefreshCommand {
+  bool include_humidity = 1;
+}

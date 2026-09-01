@@ -21,10 +21,11 @@ namespace {{ns}} {
 namespace {{stinger.name|snake_case}} {
 
 {%for method_name, method in stinger.methods.items()%}
+{%- if not method.request_payload.is_protobuf %}
 
-struct {{method_name | UpperCamelCase}}RequestArguments {
+struct {{method.request_payload.cpp.class_name}} {
     void AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const;
-    static {{method_name | UpperCamelCase}}RequestArguments FromRapidJsonObject(const rapidjson::Value& jsonObj);
+    static {{method.request_payload.cpp.class_name}} FromRapidJsonObject(const rapidjson::Value& jsonObj);
     // Validates fields that declare a JSON schema constraint.  Returns true if all such fields conform to their schema (or if none declare one).
     bool ValidateSchema() const;
     {%-if method.arg_list | length > 0 %}
@@ -47,6 +48,7 @@ struct {{method.cpp.return_struct_name}} {
     {%-endfor%}
     {%endif%}
 };
+{%- endif %}
 {%-endfor%}
 
 } // namespace {{stinger.name|snake_case}}
