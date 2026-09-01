@@ -406,8 +406,6 @@ tasks:
     deps:
       - for: { var: INTERFACES }
         task: asyncapi:generate:{{ .ITEM }}
-      - for: { var: PROTO_INTERFACES }
-        task: asyncapi:generate:{{ .ITEM }}
 
   markdown:generate:*:
     desc: Generate markdown documentation for an interface
@@ -503,8 +501,6 @@ tasks:
     desc: Check Protobuf code for all interfaces
     deps:
       - for: { var: INTERFACES }
-        task: protobuf:check:{{ .ITEM }}
-      - for: { var: PROTO_INTERFACES }
         task: protobuf:check:{{ .ITEM }}
 
   generate:
