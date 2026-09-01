@@ -159,14 +159,14 @@ wheels = [
 
 [[package]]
 name = "jacobs-json-doc"
-version = "0.17.0a1"
+version = "0.17.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "ruamel-yaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/44/d0/c07be5d5385d69282649816ef005b6d3345546f65f2fbf7e0b052d48bcf5/jacobs_json_doc-0.17.0a1.tar.gz", hash = "sha256:fc8ee82e1e69c1986894460e4dd07f2fa3f69a3602a40eb146efccd042151f4b", size = 46338, upload-time = "2026-07-15T20:47:39.994Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/51/b3/502ecf0a5e33a92d2999922f14afe02a6c31400f133a48dd74b11c523330/jacobs_json_doc-0.17.1.tar.gz", hash = "sha256:39621d54f6f06b17ea12dbb3f88fda6a37b1411cdfce1744f56645400b8bd0d4", size = 47802, upload-time = "2026-07-20T22:28:17.895Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2d/5e/195135c625f249ac3ba329bb34d3c111ce7d17ca0437dda75515d8f3dac2/jacobs_json_doc-0.17.0a1-py3-none-any.whl", hash = "sha256:74a0b001c61602e8af13b6e6f00040be13ca019ab543afc4f86a23209edcf72d", size = 15335, upload-time = "2026-07-15T20:47:38.382Z" },
+    { url = "https://files.pythonhosted.org/packages/14/b1/59bef3271d81e52b7f1785add39f1a7993898ed3d66983eba5f631f91adb/jacobs_json_doc-0.17.1-py3-none-any.whl", hash = "sha256:7c5a7061274a3ae277b1c8d13edffc769b8b58fd707ef36b41f23fa8003f17eb", size = 16302, upload-time = "2026-07-20T22:28:16.638Z" },
 ]
 
 [[package]]
@@ -752,7 +752,7 @@ wheels = [
 
 [[package]]
 name = "stinger-ipc"
-version = "0.9.7a3"
+version = "0.9.7.post1"
 source = { editable = "." }
 dependencies = [
     { name = "go-task-bin" },
@@ -780,8 +780,8 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "go-task-bin", specifier = ">=3.46.2" },
-    { name = "jacobs-jinja-too", specifier = ">=0.2.12" },
-    { name = "jacobs-json-doc", specifier = "==0.17.0a1" },
+    { name = "jacobs-jinja-too", specifier = "~=0.2.14" },
+    { name = "jacobs-json-doc", specifier = "~=0.17.0" },
     { name = "jsonschema-rs", specifier = ">=0.34.0" },
     { name = "packaging", specifier = ">=25.0" },
     { name = "pydantic", specifier = ">=2.11.7" },

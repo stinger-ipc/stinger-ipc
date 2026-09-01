@@ -10,7 +10,8 @@ dependencies = [
     "isodate>=0.7.2",
     "pyqttier>=0.2.5",
     "stinger-python-utils>=0.1.8",
-    {%if config.python.python37%}"typing-extensions>=4.0.0",{%endif%}
+    {%if config.python.python37%}"typing-extensions>=4.0.0",
+    "importlib-metadata>=4.0.0; python_version < '3.8'",{%endif%}
 ]
 
 {%if not config.python.python37%}

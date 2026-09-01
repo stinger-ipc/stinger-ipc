@@ -20,7 +20,7 @@ class {{stinger.name|UpperCamelCase}}InitialPropertyValues(BaseModel):
     {%if not config.properties.stinger_owned_values%}Since the application owns property values, this is only used for testing.{%endif%}
     """
     {%for prop_name, prop in stinger.properties.items()%}
-    {{prop_name | snake_case}}: {{prop.python_annotation}}
+    {{prop_name | snake_case}}: {{prop.python_annotation}}{%if prop.arg_list|length == 1 and prop.arg_list[0].optional%} = None{%endif%}
     {{prop_name | snake_case}}_version: int = 0
     {%endfor%}
 {%if not config.properties.stinger_owned_values%}

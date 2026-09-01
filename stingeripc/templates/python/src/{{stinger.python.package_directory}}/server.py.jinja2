@@ -288,7 +288,7 @@ class {{stinger.python.server_class_name}}:
         self._logger.warning("Received unexpected message: %s", message)
 
     {%for sig_name, sig in stinger.signals.items()-%}
-    def emit_{{sig_name|snake_case}}(self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def emit_{{sig_name|snake_case}}(self, {% set ns = namespace(starred=False) %}{%for arg in sig.arg_list%}{%if arg.optional and not ns.starred and (sig.arg_list[loop.index0+1:] | rejectattr('optional') | list | length > 0)%}*, {%set ns.starred = True%}{%endif%}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if arg.optional%} = None{%endif%}{%if not loop.last%}, {%endif%}{%endfor%}):
         """ Server application code should call this method to emit the '{{sig_name}}' signal.
 
         {{sig_name|UpperCamelCase}}SignalPayload is a pydantic BaseModel which will validate the arguments.
@@ -464,7 +464,7 @@ class {{stinger.python.server_class_name}}:
     {%endif%}{# property with multiple arguments #}
 
     {%if config.properties.stinger_owned_values or not prop.read_only %} {# if the property is read-only, we have no way of setting app-owned values. #}
-    def set_{{prop_name | snake_case}}(self, {%for arg in prop.arg_list %}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def set_{{prop_name | snake_case}}(self, {% set ns = namespace(starred=False) %}{%for arg in prop.arg_list %}{%if arg.optional and not ns.starred and (prop.arg_list[loop.index0+1:] | rejectattr('optional') | list | length > 0)%}*, {%set ns.starred = True%}{%endif%}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if arg.optional%} = None{%endif%}{%if not loop.last%}, {%endif%}{%endfor%}):
         """ This method sets (publishes) a new value for the '{{prop_name}}' property.
         """
         {%-for arg in prop.arg_list%}

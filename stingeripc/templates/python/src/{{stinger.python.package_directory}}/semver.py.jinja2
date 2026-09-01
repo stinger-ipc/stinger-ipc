@@ -1,3 +1,6 @@
+{%if config.python.python37 %}
+from typing import Tuple
+{%endif%}
 
 VERSION="{{stinger.version}}"
 
@@ -15,7 +18,7 @@ def is_compatible(version: str) -> bool:
     Returns:
         True if the provided version is compatible, False otherwise.
     """
-    def parse_version(v: str) -> tuple[int, int, int]:
+    def parse_version(v: str) -> {%if config.python.python37 %}Tuple{%else%}tuple{%endif%}[int, int, int]:
         """Parse a version string into (major, minor, patch) tuple."""
         parts = v.split('.')
         if len(parts) != 3:

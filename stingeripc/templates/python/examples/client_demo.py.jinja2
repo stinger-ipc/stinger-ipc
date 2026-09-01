@@ -56,7 +56,7 @@ if __name__ == '__main__':
     client_builder = {{stinger.python.client_class_name}}Builder()
     {%for sig_name, sig in stinger.signals.items()%}
     @client_builder.receive_{{sig_name | snake_case }}
-    def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def print_{{sig_name}}_receipt({% set ns = namespace(starred=False) %}{%for arg in sig.arg_list%}{%if arg.optional and not ns.starred and (sig.arg_list[loop.index0+1:] | rejectattr('optional') | list | length > 0)%}*, {%set ns.starred = True%}{%endif%}{{arg.name}}: {{arg.python_annotation}}{%if arg.optional%} = None{%endif%}{%if not loop.last%}, {%endif%}{%endfor%}):
         """{{sig.description}}
         {%for arg in sig.arg_list-%}
         @param {{arg.name}} {{arg.python_annotation}} {{arg.description or ''}}

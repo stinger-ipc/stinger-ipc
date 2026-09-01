@@ -1,5 +1,14 @@
 
+{%if config.python.python37 %}
+import sys
+
+if sys.version_info >= (3, 8):
+    from importlib.metadata import metadata, PackageNotFoundError  # novermin
+else:
+    from importlib_metadata import metadata, PackageNotFoundError
+{%else%}
 from importlib.metadata import metadata, PackageNotFoundError
+{%endif%}
 from typing import Tuple
 
 def get_package_version() -> Tuple[str, str]:

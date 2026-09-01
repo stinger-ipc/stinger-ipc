@@ -8,6 +8,9 @@ from stinger_python_utils.mcp import (
     SignalDefinition,
     StingerMCPPlugin,
 )
+{%if config.python.python37 %}
+from typing import List
+{%endif%}
 
 from {{stinger.python.package_directory}}.client import {{stinger.python.client_class_name}}, {{stinger.python.client_class_name}}Discoverer
 from {{stinger.python.package_directory}}.interface_types import *
@@ -24,7 +27,7 @@ class {{stinger.name|UpperCamelCase}}MCPPlugin(StingerMCPPlugin):
     def get_client_class(self) -> type:
         return {{stinger.python.client_class_name}}
     
-    def get_signals(self) -> list[SignalDefinition]:
+    def get_signals(self) -> {%if config.python.python37 %}List{%else%}list{%endif%}[SignalDefinition]:
         return [
             {%for sig_name, sig in stinger.signals.items()%}
             SignalDefinition(
@@ -34,7 +37,7 @@ class {{stinger.name|UpperCamelCase}}MCPPlugin(StingerMCPPlugin):
             {%endfor%}
         ]
 
-    def get_methods(self) -> list[MethodDefinition]:
+    def get_methods(self) -> {%if config.python.python37 %}List{%else%}list{%endif%}[MethodDefinition]:
         return [
             {%for method_name, method in stinger.methods.items()%}
             MethodDefinition(
@@ -45,7 +48,7 @@ class {{stinger.name|UpperCamelCase}}MCPPlugin(StingerMCPPlugin):
             {%endfor%}
         ]
 
-    def get_properties(self) -> list[PropertyDefinition]:
+    def get_properties(self) -> {%if config.python.python37 %}List{%else%}list{%endif%}[PropertyDefinition]:
         return [
             {%for prop_name, prop in stinger.properties.items()%}
             PropertyDefinition(

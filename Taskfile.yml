@@ -72,6 +72,44 @@ tasks:
     vars:
       IFACE: '{{index .MATCH 0}}'
 
+  python37:vermin:*:
+    desc: Statically check that an interface's generated Python 3.7 code has no syntax/features requiring a newer Python
+    dir: generated/{{.IFACE}}/python37/
+    deps:
+      - task: python37:generate:{{index .MATCH 0}}
+    sources:
+      - ./src/**/*.py
+      - ./tests/**/*.py
+    cmds:
+      - uvx vermin --eval-annotations --target=3.7- --no-tips ./src ./tests
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  python37:vermin:
+    desc: Statically check Python 3.7 compatibility for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: python37:vermin:{{ .ITEM }}
+
+  python37:unittest:*:
+    desc: Run an interface's generated Python 3.7 code's unit tests under a real Python 3.7 interpreter
+    dir: generated/{{.IFACE}}/python37/
+    deps:
+      - task: python37:vermin:{{index .MATCH 0}}
+    sources:
+      - ./src/**/*.py
+      - ./tests/**/*.py
+    cmds:
+      - docker run --rm -v "$(pwd):/app" -w /app python:3.7-slim bash -c "pip install --quiet -e . pytest && python -m pytest -q"
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  python37:unittest:
+    desc: Run Python 3.7 unit tests for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: python37:unittest:{{ .ITEM }}
+
   python-alt1:generate:*:
     desc: Generate Python code for an interface with alternative settings
     deps:
@@ -134,6 +172,8 @@ tasks:
         task: python:unittest:{{ .ITEM }}
       - for: { var: INTERFACES }
         task: python-alt1:unittest:{{ .ITEM }}
+      - for: { var: INTERFACES }
+        task: python37:unittest:{{ .ITEM }}
 
   python:mypy:*:
     desc: Run mypy type checking for an interface

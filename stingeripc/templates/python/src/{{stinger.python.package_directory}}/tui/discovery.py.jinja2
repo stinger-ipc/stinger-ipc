@@ -1,6 +1,6 @@
 """Discovery screen for finding {{stinger.name|UpperCamelCase}}IPC servers."""
 
-from typing import Set
+from typing import Set{%if config.python.python37 %}, Dict{%endif%}
 from textual.app import ComposeResult # typing: ignore
 from textual.screen import Screen # typing: ignore
 from textual.widgets import Header, Footer, Static, Button # typing: ignore
@@ -81,7 +81,7 @@ class DiscoveryScreen(Screen):
         """Initialize the discovery screen."""
         super().__init__()
         self.discoverer = None
-        self.instance_extra_params: dict[str, dict] = {}  # Store extra_params for each instance
+        self.instance_extra_params: {%if config.python.python37 %}Dict[str, Dict]{%else%}dict[str, dict]{%endif%} = {}  # Store extra_params for each instance
     
     def compose(self) -> ComposeResult:
         """Compose the discovery screen widgets."""

@@ -242,7 +242,7 @@ class {{stinger.python.client_class_name}}:
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
-    def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
+    def {{method_name | snake_case}}(self, {% set ns = namespace(starred=False) %}{%for arg in method.arg_list%}{%if arg.optional and not ns.starred and (method.arg_list[loop.index0+1:] | rejectattr('optional') | list | length > 0)%}*, {%set ns.starred = True%}{%endif%}{{arg.name|snake_case}}: {{arg.python_annotation}}{%if arg.optional%} = None{%endif%}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
         """ Calling this method with individual arguments initiates a `{{method_name}}` IPC method call.
         """
         payload = {{method_name|UpperCamelCase}}MethodRequest( {%-for arg in method.arg_list%}

@@ -11,7 +11,7 @@ TODO: Get license text from stinger file
 {%macro field_list(arg_list)%}
 model_config = ConfigDict(populate_by_name=True, strict=True, extra='forbid')
 {%for arg in arg_list-%}
-{%set field_desc %}Field({%if arg.description%}description="{{arg.description}}", {%endif%}{%if (arg.name|snake_case) != arg.name %}alias="{{arg.name}}"{%endif%}){%endset%}
+{%set field_desc %}Field({%if arg.optional%}default=None, {%endif%}{%if arg.description%}description="{{arg.description}}", {%endif%}{%if (arg.name|snake_case) != arg.name %}alias="{{arg.name}}"{%endif%}){%endset%}
 {%-if arg.arg_type.name.lower() == 'primitive' -%}
 {{arg.name|snake_case}}: Annotated[{%if arg.optional%}Optional[{{arg.python_local_type}}]{%else%}{{arg.python_local_type}}{%endif%}, {{field_desc}}]
 {%elif arg.arg_type.name.lower() == 'enum'-%}
@@ -51,7 +51,7 @@ import sys
 
 # Use typing_extensions for Python < 3.9 compatibility
 if sys.version_info >= (3, 9):
-    from typing import Annotated
+    from typing import Annotated  # novermin
 else:
     from typing_extensions import Annotated
 {%-else%}{# not python 3.7#}
