@@ -21,11 +21,12 @@
 {%- endmacro -%}
 
 {#
-    The protoc-generated headers this interface's protobuf payloads come from.
-    Emitted once per .proto file, and nothing at all when no payload is protobuf.
+    The headers this interface's protobuf payloads come from -- protoc-generated
+    for the interface's own messages, shipped with libprotobuf for the well-known
+    types.  Emitted once per header, and nothing at all when no payload is protobuf.
 #}
 {%- macro imports(stinger) -%}
-{%- for proto_file in stinger.protobuf_files() %}
-#include "proto/{{ proto_file | replace(".proto", ".pb.h") }}"
+{%- for include in stinger.protobuf_messages() | map(attribute='cpp.include') | unique | sort %}
+#include {{ include }}
 {%- endfor -%}
 {%- endmacro -%}

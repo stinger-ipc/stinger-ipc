@@ -26,8 +26,8 @@
     all for an interface that uses no protobuf messages.
 #}
 {%- macro imports(stinger) -%}
-{%- for module in stinger.protobuf_messages() | map(attribute='python.module') | unique | sort %}
-from .proto import {{ module }}
+{%- for import_statement in stinger.protobuf_messages() | map(attribute='python.import_statement') | unique | sort %}
+{{ import_statement }}
 {%- endfor -%}
 {%- endmacro -%}
 

@@ -14,7 +14,7 @@ from stingeripc.loading import parse_yaml_file
 from stevedore import ExtensionManager
 from stingeripc import StingerInterface, __version__, topic_util
 from stingeripc.filtering import filter_by_consumer
-from stingeripc.config import load_config, StingerConfig
+from stingeripc.config import load_config, ProtobufConfig, StingerConfig
 from stingeripc.exceptions import ProtobufError
 from stingeripc.protobuf_compiler import ProtobufSources
 
@@ -68,8 +68,13 @@ def emit_protobuf_bindings(template_dir: Path, outdir: Path, stinger, config_obj
     }
     recipe = tomllib.loads(recipe_path.read_text())
 
-    proto_src = (inname.parent / config_obj.protobuf.path).resolve()
-    sources = ProtobufSources(proto_src, config_obj.protobuf.protoc, python37=config_obj.python.python37)
+    sources = protobuf_sources(config_obj, inname)
+    # An interface whose protobuf payloads are all well-known types has no .proto
+    # files of its own; those messages come from the language's protobuf runtime,
+    # so there is nothing to copy and nothing to compile.
+    if not sources.has_sources:
+        print("🧬    PROTO: no .proto sources to compile (well-known types only)")
+        return
 
     # The .proto files travel with the generated code, so the output is
     # self-contained and can be regenerated for another language later.
@@ -109,6 +114,20 @@ def emit_protobuf_bindings(template_dir: Path, outdir: Path, stinger, config_obj
         target.write_text(content.format(**placeholders))
 
 
+def protobuf_sources(config_obj, inname: Path) -> ProtobufSources:
+    """The .proto sources for an interface, relative to the interface file.
+
+    Resolved relative to the .stinger.yaml so a definition and its .proto files
+    travel together regardless of where the generator is invoked from.  The
+    protobuf configuration is optional: an interface that names only well-known
+    types needs no .proto directory, and the default one simply turns out to be
+    empty.
+    """
+    protobuf_config = config_obj.protobuf or ProtobufConfig()
+    proto_dir = (inname.parent / protobuf_config.path).resolve()
+    return ProtobufSources(proto_dir, protobuf_config.protoc, python37=config_obj.python.python37)
+
+
 def resolve_protobuf_messages(stinger, config_obj, inname: Path) -> None:
     """Match every protobuf message the interface names against the .proto sources.
 
@@ -121,11 +140,8 @@ def resolve_protobuf_messages(stinger, config_obj, inname: Path) -> None:
     if not refs:
         return
 
-    # Relative to the interface file, so a .stinger.yaml and its .proto files
-    # travel together regardless of where the generator is invoked from.
-    proto_dir = (inname.parent / config_obj.protobuf.path).resolve()
-    print(f"🧬 [bold cyan]PROTOS:[/bold cyan] {proto_dir}")
-    sources = ProtobufSources(proto_dir, config_obj.protobuf.protoc, python37=config_obj.python.python37)
+    sources = protobuf_sources(config_obj, inname)
+    print(f"🧬 [bold cyan]PROTOS:[/bold cyan] {sources.proto_dir}")
     sources.resolve_all(refs)
     for ref in stinger.protobuf_messages():
         print(f"🧬    MSG: {ref.full_name} ({ref.proto_file})")

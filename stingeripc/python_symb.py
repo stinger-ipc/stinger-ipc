@@ -500,6 +500,16 @@ class PythonProtobufRefSymbols(PythonSymbols):
         return f"{stem}_pb2"
 
     @property
+    def import_statement(self) -> str:
+        """The import that brings this message's module into a generated module.
+
+        A well-known type comes from the installed protobuf runtime; everything
+        else from the bindings protoc wrote beside the generated package.
+        """
+        package = "google.protobuf" if self._ref.is_well_known else ".proto"
+        return f"from {package} import {self.module}"
+
+    @property
     def qualified_name(self) -> str:
         """How generated Python code names this message, e.g. ``weather_pb2.CurrentConditions``."""
         return f"{self.module}.{self._ref.message_name}"

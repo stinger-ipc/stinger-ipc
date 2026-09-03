@@ -906,7 +906,7 @@ mod tests {
             Ok(rv)
             {%endif%}
             {%elif method.response_payload.is_protobuf %}
-            Ok({{method.response_payload.rust.struct_name}}::default())
+            Ok(<{{method.response_payload.rust.struct_name}} as Default>::default())
             {%elif method.return_value_type is not false %}
             Ok({{method.return_value.get_random_example_value(lang="rust")}})
             {%else%}
@@ -986,7 +986,7 @@ mod tests {
 
             // Just to get this test working faster, we're copy-pasting test code from payloads.rs to generate example property payloads. 
             {%- if prop.payload.is_protobuf %}
-            let payload = {{prop.payload.rust.struct_name}}::default();
+            let payload = <{{prop.payload.rust.struct_name}} as Default>::default();
             {%- else %}
             let json_str = r#"{ "{{prop.value.name}}": {{prop.value.get_random_example_value(lang="json")}} }"#;
             let payload: {{prop.payload.rust.class_name}} = serde_json::from_str(json_str).unwrap();
@@ -1021,7 +1021,7 @@ mod tests {
 
             // Example values always satisfy any schema constraint declared on the argument,
             // so this payload reaches the channel.
-            let payload = {%if cmd.payload.is_protobuf%}{{cmd.payload.rust.struct_name}}::default(){%else%}{{cmd.rust.payload_struct_name}} {
+            let payload = {%if cmd.payload.is_protobuf%}<{{cmd.payload.rust.struct_name}} as Default>::default(){%else%}{{cmd.rust.payload_struct_name}} {
                 {%-for arg in cmd.arg_list%}
                 {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
                 {%-endfor%}

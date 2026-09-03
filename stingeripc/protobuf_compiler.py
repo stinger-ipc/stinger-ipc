@@ -9,11 +9,16 @@ is what the generated code needs in order to import it.
 Matching is done from a descriptor set produced by ``protoc`` rather than by
 parsing ``.proto`` text, so imports, packages and nested messages resolve exactly
 the way the protobuf compiler resolves them.
+
+Protobuf's own well-known types -- ``google.protobuf.Empty`` and its siblings --
+are resolvable without appearing in the interface's sources at all, since they
+are declared by the protobuf project and shipped with every language's runtime.
 """
 
 from __future__ import annotations
 
 import difflib
+import importlib
 import shutil
 import subprocess
 import tempfile
@@ -87,6 +92,49 @@ def _message_names(proto_file: FileDescriptorProto) -> list[tuple[str, Descripto
     return found
 
 
+# The .proto files the protobuf project ships as its "well-known types".  Every
+# protobuf runtime carries them, so a message from one of these resolves without
+# the interface declaring anything, and nothing here is ever copied or compiled
+# into the generated output.  Listed by module rather than discovered, because the
+# set is fixed by the protobuf specification and reading it from the runtime's
+# descriptor pool would only report whichever modules happened to be imported.
+_WELL_KNOWN_MODULES = (
+    "any_pb2",
+    "api_pb2",
+    "duration_pb2",
+    "empty_pb2",
+    "field_mask_pb2",
+    "source_context_pb2",
+    "struct_pb2",
+    "timestamp_pb2",
+    "type_pb2",
+    "wrappers_pb2",
+)
+
+_well_known_index: Optional[dict[str, tuple[str, DescriptorProto]]] = None
+
+
+def well_known_message_index() -> dict[str, tuple[str, DescriptorProto]]:
+    """Fully-qualified name -> (declaring file, descriptor) for the well-known types.
+
+    Read out of the protobuf runtime that stinger itself imports, so the messages
+    match the ones the generated code will use, and no protoc invocation is needed
+    to know they exist.
+    """
+    global _well_known_index
+    if _well_known_index is None:
+        index: dict[str, tuple[str, DescriptorProto]] = {}
+        for module_name in _WELL_KNOWN_MODULES:
+            module = importlib.import_module(f"google.protobuf.{module_name}")
+            file_descriptor = module.DESCRIPTOR
+            file_proto = FileDescriptorProto()
+            file_descriptor.CopyToProto(file_proto)
+            for full_name, descriptor in _message_names(file_proto):
+                index[full_name] = (file_descriptor.name, descriptor)
+        _well_known_index = index
+    return _well_known_index
+
+
 class ProtobufSources:
     """The ``.proto`` files an interface draws its messages from."""
 
@@ -101,6 +149,16 @@ class ProtobufSources:
         if not self.proto_dir.is_dir():
             raise ProtobufError(f"Protobuf source directory not found: {self.proto_dir}")
         return sorted(self.proto_dir.rglob("*.proto"))
+
+    @property
+    def has_sources(self) -> bool:
+        """True when the directory exists and holds at least one .proto file.
+
+        An interface whose only protobuf payloads are well-known types declares no
+        .proto files of its own, so the absence of sources is not an error until
+        something actually needs to be compiled.
+        """
+        return self.proto_dir.is_dir() and any(self.proto_dir.rglob("*.proto"))
 
     def run(self, *flags: str) -> None:
         """Run protoc over every source file with the given flags."""
@@ -125,9 +183,10 @@ class ProtobufSources:
         """Fully-qualified message name -> (declaring file, descriptor), compiled once."""
         if self._index is None:
             index: dict[str, tuple[str, DescriptorProto]] = {}
-            for proto_file in self.descriptor_set().file:
-                for full_name, descriptor in _message_names(proto_file):
-                    index[full_name] = (proto_file.name, descriptor)
+            if self.has_sources:
+                for proto_file in self.descriptor_set().file:
+                    for full_name, descriptor in _message_names(proto_file):
+                        index[full_name] = (proto_file.name, descriptor)
             self._index = index
         return self._index
 
@@ -139,16 +198,19 @@ class ProtobufSources:
     def resolve(self, ref: ProtobufMessageRef) -> None:
         """Match a reference to a message in the sources, filling in its descriptor.
 
-        Raises with the closest matching names when the message is not found, since
-        a typo in a fully-qualified name is otherwise tedious to spot.
+        A well-known type is matched against the protobuf runtime instead of the
+        sources, since it is not the interface's to declare.  Otherwise this raises
+        with the closest matching names, since a typo in a fully-qualified name is
+        tedious to spot.
         """
-        index = self._message_index()
+        index = well_known_message_index() if ref.is_well_known else self._message_index()
         found = index.get(ref.full_name)
         if found is None:
-            known = self.message_names
+            known = sorted(index)
             suggestions = difflib.get_close_matches(ref.full_name, known, n=3)
             hint = f"  Did you mean: {', '.join(suggestions)}?" if suggestions else f"  Available messages: {', '.join(known) or '(none)'}"
-            raise ProtobufError(f"Protobuf message '{ref.full_name}' was not found in {self.proto_dir}.{hint}")
+            where = "protobuf's well-known types" if ref.is_well_known else str(self.proto_dir)
+            raise ProtobufError(f"Protobuf message '{ref.full_name}' was not found in {where}.{hint}")
         proto_file, descriptor = found
         ref._proto_file = proto_file
         ref._descriptor = descriptor

@@ -257,6 +257,14 @@ class StingerSpec:
         """True if any payload in the interface is a protobuf message."""
         return any(payload.is_protobuf for payload in self.all_payloads())
 
+    def uses_well_known_protobuf(self) -> bool:
+        """True if any payload is one of protobuf's well-known types.
+
+        Those come from the protobuf runtime rather than from this interface's own
+        .proto files, and some languages need an extra dependency to reach them.
+        """
+        return any(ref.is_well_known for ref in self.all_protobuf_refs())
+
     def uses_json(self) -> bool:
         """True if any payload in the interface is a JSON argument list."""
         return any(not payload.is_protobuf for payload in self.all_payloads())

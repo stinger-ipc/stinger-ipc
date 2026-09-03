@@ -68,6 +68,17 @@ class ProtobufMessageRef(BaseModel):
         return self._descriptor is not None
 
     @property
+    def is_well_known(self) -> bool:
+        """True for one of protobuf's own well-known types, e.g. ``google.protobuf.Empty``.
+
+        These are declared by the protobuf project rather than by this interface,
+        so they are neither found in the interface's .proto directory nor compiled
+        alongside it: every language's protobuf runtime already ships them, and
+        generated code reaches for that copy instead.
+        """
+        return self.package == "google.protobuf"
+
+    @property
     def proto_file(self) -> str:
         """The .proto file that declares this message, relative to the source directory."""
         if self._proto_file is None:

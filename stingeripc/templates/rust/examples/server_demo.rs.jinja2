@@ -56,7 +56,7 @@ impl {{stinger.name | UpperCamelCase }}MethodHandlers<MqttierClient> for {{sting
     async fn handle_{{method_name|snake_case}}(&self, {%if method.request_payload.is_protobuf%}_payload: {{method.request_payload.protobuf.rust.external_name}}{%else%}{%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}) -> Result<{%if method.response_payload.is_protobuf%}{{method.response_payload.protobuf.rust.external_name}}{%else%}{{method.rust.return_value_type}}{%endif%}, MethodReturnCode> {
         println!("Handling {{method_name}}");
         {%- if method.response_payload.is_protobuf %}
-        Ok({{method.response_payload.protobuf.rust.external_name}}::default())
+        Ok(<{{method.response_payload.protobuf.rust.external_name}} as Default>::default())
         {%- elif method.return_value_type == 'struct'%}
         let rv = {{method.return_value.rust.temp_type}} {
             {%for arg in method.return_value.values-%}

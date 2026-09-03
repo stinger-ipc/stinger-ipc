@@ -389,6 +389,26 @@ class RustPayloadSymbols(RustSymbols):
         return self.struct_name
 
 
+# How prost names protobuf's well-known types.  prost never generates code for
+# them: it substitutes a ready-made type, which for most is the `prost-types`
+# struct of the same name, but for `Empty` and the wrapper messages is a plain
+# Rust type instead.  Mirrored here because generated code has to spell the
+# message the same way prost does, and these exceptions are not derivable from
+# the name.  Kept in step with prost-build's `ExternPaths::new`.
+_RUST_WELL_KNOWN_EXCEPTIONS = {
+    "Empty": "()",
+    "BoolValue": "bool",
+    "BytesValue": "::prost::alloc::vec::Vec<u8>",
+    "DoubleValue": "f64",
+    "FloatValue": "f32",
+    "Int32Value": "i32",
+    "Int64Value": "i64",
+    "StringValue": "::prost::alloc::string::String",
+    "UInt32Value": "u32",
+    "UInt64Value": "u64",
+}
+
+
 class RustProtobufRefSymbols(RustSymbols):
     """Rust symbols for a :class:`ProtobufMessageRef`."""
 
@@ -403,12 +423,21 @@ class RustProtobufRefSymbols(RustSymbols):
         prost writes one file per protobuf package with the messages at its top
         level, and those files are included into a single ``proto`` module, so the
         package does not reappear in the Rust path.
+
+        A well-known type is the exception: prost generates nothing for one,
+        substituting the ready-made definition in ``prost-types``.
         """
+        if self._ref.is_well_known:
+            return "::prost_types"
         return "crate::proto"
 
     @property
     def qualified_name(self) -> str:
         """How generated Rust code names this message, fully qualified from the crate root."""
+        if self._ref.is_well_known:
+            substitute = _RUST_WELL_KNOWN_EXCEPTIONS.get(self._ref.message_name)
+            if substitute is not None:
+                return substitute
         return f"{self.module_path}::{self._ref.message_name}"
 
     @property
@@ -416,6 +445,10 @@ class RustProtobufRefSymbols(RustSymbols):
         """How code outside the library names this message.
 
         Examples and integration tests are separate crates, so they import the
-        library's ``proto`` module rather than reaching through ``crate::``.
+        library's ``proto`` module rather than reaching through ``crate::``.  A
+        well-known type is spelled the same way everywhere, since it comes from
+        neither.
         """
+        if self._ref.is_well_known:
+            return self.qualified_name
         return f"proto::{self._ref.message_name}"

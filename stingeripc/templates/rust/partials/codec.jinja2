@@ -217,7 +217,7 @@ let data = {{ payload.rust.struct_name }} {
 #}
 {%- macro example_payload(payload, arg_list) -%}
 {%- if payload.is_protobuf -%}
-{{ payload.protobuf.rust.external_name }}::default()
+<{{ payload.protobuf.rust.external_name }} as Default>::default()
 {%- else -%}
 {%- for arg in arg_list %}{{ arg.get_random_example_value(lang="rust") }}{% if not loop.last %}, {% endif %}{% endfor -%}
 {%- endif -%}
@@ -229,7 +229,7 @@ let data = {{ payload.rust.struct_name }} {
 #}
 {%- macro example_payload_local(payload, arg_list) -%}
 {%- if payload.is_protobuf -%}
-{{ payload.rust.struct_name }}::default()
+<{{ payload.rust.struct_name }} as Default>::default()
 {%- else -%}
 {%- for arg in arg_list %}{{ arg.get_random_example_value(lang="rust") }}{% if not loop.last %}, {% endif %}{% endfor -%}
 {%- endif -%}
@@ -267,7 +267,7 @@ let data = {{ payload.rust.struct_name }} {
 {# An example value for a property, for demos and generated tests. #}
 {%- macro property_example(prop) -%}
 {%- if prop.payload.is_protobuf -%}
-{{ prop.payload.rust.struct_name }}::default()
+<{{ prop.payload.rust.struct_name }} as Default>::default()
 {%- else -%}
 {{ prop.value.get_random_example_value(lang="rust") }}
 {%- endif -%}
@@ -276,7 +276,7 @@ let data = {{ payload.rust.struct_name }} {
 {# Like `property_example`, but for code outside the library (demos, integration tests). #}
 {%- macro property_example_external(prop) -%}
 {%- if prop.payload.is_protobuf -%}
-{{ prop.payload.protobuf.rust.external_name }}::default()
+<{{ prop.payload.protobuf.rust.external_name }} as Default>::default()
 {%- else -%}
 {{ prop.value.get_random_example_value(lang="rust") }}
 {%- endif -%}

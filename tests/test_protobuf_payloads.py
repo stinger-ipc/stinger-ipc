@@ -15,8 +15,11 @@ from google.protobuf.descriptor_pb2 import FileDescriptorSet
 from stingeripc.components import StingerSpec
 from stingeripc.config import ProtobufConfig, StingerConfig
 from stingeripc.exceptions import InvalidStingerStructure, ProtobufError
+from stingeripc.cpp_symb import CppProtobufRefSymbols
 from stingeripc.payload import PayloadRole, ProtobufMessageRef
-from stingeripc.protobuf_compiler import ProtobufSources, find_protoc
+from stingeripc.protobuf_compiler import ProtobufSources, find_protoc, well_known_message_index
+from stingeripc.python_symb import PythonProtobufRefSymbols
+from stingeripc.rust_symb import RustProtobufRefSymbols
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -88,6 +91,93 @@ class TestResolution(unittest.TestCase):
             _sources().message_names,
             ["weather.v1.CurrentConditions", "weather.v1.CurrentConditions.Wind", "weather.v1.Forecast"],
         )
+
+
+
+class TestWellKnownTypes(unittest.TestCase):
+    """Protobuf's own types resolve without the interface declaring them."""
+
+    def _resolved(self, full_name: str) -> ProtobufMessageRef:
+        ref = ProtobufMessageRef(full_name=full_name)
+        _sources().resolve(ref)
+        return ref
+
+    def test_recognises_the_google_protobuf_package(self):
+        self.assertTrue(ProtobufMessageRef(full_name="google.protobuf.Empty").is_well_known)
+        self.assertFalse(ProtobufMessageRef(full_name="weather.v1.Forecast").is_well_known)
+        self.assertFalse(
+            ProtobufMessageRef(full_name="google.protobuf.nested.Thing").is_well_known,
+            "only the well-known package itself, not anything beneath it",
+        )
+
+    def test_resolves_without_any_local_sources(self):
+        ref = self._resolved("google.protobuf.Empty")
+        self.assertTrue(ref.is_resolved)
+        self.assertEqual(ref.proto_file, "google/protobuf/empty.proto")
+
+    def test_resolves_with_no_proto_directory_at_all(self):
+        """An interface using only well-known types needs no .proto sources."""
+        sources = ProtobufSources(FIXTURES / "no_such_directory")
+        self.assertFalse(sources.has_sources)
+        ref = ProtobufMessageRef(full_name="google.protobuf.Empty")
+        sources.resolve(ref)
+        self.assertTrue(ref.is_resolved)
+
+    def test_index_covers_the_whole_well_known_set(self):
+        index = well_known_message_index()
+        for name in ("Empty", "Timestamp", "Duration", "Any", "Struct", "FieldMask", "StringValue"):
+            self.assertIn(f"google.protobuf.{name}", index)
+
+    def test_unknown_well_known_type_is_reported_against_the_right_place(self):
+        ref = ProtobufMessageRef(full_name="google.protobuf.Emty")
+        with self.assertRaises(ProtobufError) as caught:
+            _sources().resolve(ref)
+        message = str(caught.exception)
+        self.assertIn("well-known types", message)
+        self.assertIn("google.protobuf.Empty", message, "a near miss is suggested")
+
+    def test_interface_reports_that_it_uses_them(self):
+        spec = _spec({"commands": {"c": {"protobuf": "google.protobuf.Empty"}}})
+        self.assertTrue(spec.uses_protobuf())
+        self.assertTrue(spec.uses_well_known_protobuf())
+
+    def test_interface_of_its_own_messages_only_does_not(self):
+        spec = _spec({"commands": {"c": {"protobuf": "weather.v1.Forecast"}}})
+        self.assertTrue(spec.uses_protobuf())
+        self.assertFalse(spec.uses_well_known_protobuf())
+
+    def test_python_imports_from_the_installed_runtime(self):
+        symbols = PythonProtobufRefSymbols(self._resolved("google.protobuf.Empty"))
+        self.assertEqual(symbols.import_statement, "from google.protobuf import empty_pb2")
+        self.assertEqual(symbols.qualified_name, "empty_pb2.Empty")
+
+    def test_python_imports_the_interfaces_own_messages_from_its_package(self):
+        symbols = PythonProtobufRefSymbols(self._resolved("weather.v1.Forecast"))
+        self.assertEqual(symbols.import_statement, "from .proto import weather_pb2")
+
+    def test_cpp_includes_the_libprotobuf_header(self):
+        symbols = CppProtobufRefSymbols(self._resolved("google.protobuf.Empty"))
+        self.assertEqual(symbols.include, "<google/protobuf/empty.pb.h>")
+        self.assertEqual(symbols.qualified_name, "::google::protobuf::Empty")
+
+    def test_cpp_includes_the_interfaces_own_headers_relatively(self):
+        symbols = CppProtobufRefSymbols(self._resolved("weather.v1.Forecast"))
+        self.assertEqual(symbols.include, '"proto/weather.pb.h"')
+
+    def test_rust_uses_the_substitute_prost_gives_empty(self):
+        symbols = RustProtobufRefSymbols(self._resolved("google.protobuf.Empty"))
+        self.assertEqual(symbols.qualified_name, "()", "prost maps Empty onto the unit type")
+        self.assertEqual(symbols.external_name, "()")
+
+    def test_rust_uses_prost_types_for_the_rest(self):
+        symbols = RustProtobufRefSymbols(self._resolved("google.protobuf.Timestamp"))
+        self.assertEqual(symbols.qualified_name, "::prost_types::Timestamp")
+        self.assertEqual(symbols.external_name, "::prost_types::Timestamp")
+
+    def test_rust_still_reaches_the_interfaces_own_messages_through_the_crate(self):
+        symbols = RustProtobufRefSymbols(self._resolved("weather.v1.Forecast"))
+        self.assertEqual(symbols.qualified_name, "crate::proto::Forecast")
+        self.assertEqual(symbols.external_name, "proto::Forecast")
 
 
 class TestFindProtoc(unittest.TestCase):

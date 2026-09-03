@@ -259,6 +259,11 @@ $defs:
 
   protobufPayload:
     type: string
+    description: >-
+      The fully-qualified name of a protobuf message carrying this payload, e.g.
+      'weather.v1.Forecast'.  Resolved against the .proto sources configured for
+      the interface, or, for a name in the 'google.protobuf' package, against
+      protobuf's own well-known types, which every protobuf runtime ships.
 
   enumValueDescription:
     type: string

@@ -445,6 +445,17 @@ class CppProtobufRefSymbols(CppSymbols):
         return "::".join(p for p in self._ref.package.split(".") if p)
 
     @property
+    def include(self) -> str:
+        """The ``#include`` argument, brackets and all, for this message's header.
+
+        A well-known type's header ships with libprotobuf and is found on the
+        include path; the interface's own headers protoc wrote into the generated
+        library are quoted and relative to it.
+        """
+        header = self._ref.proto_file.replace(".proto", ".pb.h")
+        return f"<{header}>" if self._ref.is_well_known else f'"proto/{header}"'
+
+    @property
     def qualified_name(self) -> str:
         """How generated C++ code names this message, e.g. ``::weather::v1::CurrentConditions``."""
         ns = self.namespace
