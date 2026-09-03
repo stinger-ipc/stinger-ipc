@@ -24,7 +24,9 @@ class {{stinger.name|UpperCamelCase}}InitialPropertyValues(BaseModel):
     {%- endif %}
     {%for prop_name, prop in stinger.properties.items()%}
     {{prop_name | snake_case}}: {{prop.python.annotation}}
+    {%if config.properties.version_tracking-%}
     {{prop_name | snake_case}}_version: int = 0
+    {%endif-%}
     {%endfor%}
 {%if not config.properties.stinger_owned_values%}
 class {{stinger.name|UpperCamelCase}}PropertyAccess(BaseModel):

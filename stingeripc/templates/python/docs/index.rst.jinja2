@@ -27,6 +27,11 @@ Signals
 -------
 
 Signals are messages from a server to clients.
+
+A client subscribes to a signal only when the application first registers a handler with
+``receive_<signal>`` or ``receive_<signal>_payload``, so a signal nothing is listening for
+is never received. Signals are not retained, so one emitted before a handler is registered
+is missed.
 {%for sig_name, signal in stinger.signals.items()%}
 {{ sig_name }}
 {{ "~" * sig_name|length }}
@@ -139,6 +144,18 @@ Properties
 
 Properties are values held by the server. They are re-published when the value
 changes.
+
+A client does not subscribe to a property until the application first asks for it.
+Registering a ``<property>_changed`` handler subscribes, so the handler is called with
+the server's current value shortly afterwards. Reading the ``<property>`` attribute also
+subscribes, then blocks for up to ``PROPERTY_VALUE_TIMEOUT_SECONDS`` waiting for the
+value and raises ``PropertyValueUnavailableError`` if none arrives. Writing a property
+{%if config.properties.version_tracking-%}
+does the same, because the update request has to carry the version of the value the
+client last saw.
+{%else-%}
+does the same, waiting for the server's current value before the update request is sent.
+{%endif-%}
 {%for prop_name, prop in stinger.properties.items()%}
 {{ prop_name }}
 {{ "~" * prop_name|length }}

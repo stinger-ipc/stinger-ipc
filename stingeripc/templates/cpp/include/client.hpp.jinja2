@@ -16,6 +16,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 #include <memory>
 #include <exception>
 #include <mutex>
+#include <condition_variable>
 #include <chrono>
 #include <rapidjson/document.h>
 #include <stinger/mqtt/properties.hpp>
@@ -43,6 +44,11 @@ public:
     static constexpr const char NAME[] = "{{stinger.name}}";
     // This is the version of the API contract.
     static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
+    {%- if stinger.properties|length > 0 %}
+    // How long a property getter or update request waits for the server's current value
+    // after subscribing to that property's value topic.
+    static constexpr std::chrono::seconds PROPERTY_VALUE_TIMEOUT{5};
+    {%- endif %}
 
     // Constructor taking a connection object.
     {{stinger.cpp.client_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const InstanceInfo& instanceInfo);
@@ -53,6 +59,7 @@ public:
     {%for sig_name, sig in stinger.signals.items()%}
     // Register a callback for the `{{sig_name}}` signal.  {%if sig.arg_list|length > 0 and sig.arg_list[0].optional %}The argument is optional.{%endif%}
     // The provided method will be called whenever a `{{sig_name}}` is received.
+    // Registering a callback is what subscribes to the `{{sig_name}}` signal.
     void register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb);
     {%endfor%}
     {%endif%}
@@ -80,7 +87,7 @@ public:
     {%if stinger.properties|length > 0 -%}
     // ---------------- PROPERTIES ------------------
     {%for prop_name, prop in stinger.properties.items()%}
-    {{ pr.public_declarations(prop_name, prop, true) | indent(4) }}
+    {{ pr.public_declarations(prop_name, prop, true, config) | indent(4) }}
     {%endfor%}
     {%endif%}
 private:
@@ -104,6 +111,14 @@ private:
 
     // MQTT Subscription ID for `{{sig_name}}` signal receptions.
     int _{{sig_name | lowerCamelCase}}SignalSubscriptionId = -1;
+
+    // Mutex for protecting the subscription bookkeeping above.  Kept separate from
+    // `_{{sig_name | lowerCamelCase}}SignalCallbacksMutex` so that a message delivered during Subscribe()
+    // cannot deadlock against the thread doing the subscribing.
+    std::mutex _{{sig_name | lowerCamelCase}}SignalSubscriptionMutex;
+
+    // Subscribes to the `{{sig_name}}` signal's topic, at most once.
+    void _subscribeTo{{sig_name | UpperCamelCase}}Signal();
     {%endfor%}
     {%endif%}
     {%if stinger.methods|length > 0 -%}
@@ -121,7 +136,7 @@ private:
     // ---------------- PROPERTIES ------------------
     int _anyPropertyUpdateResponseSubscriptionId = -1;
     {%for prop_name, prop in stinger.properties.items()%}
-    {{pr.private_declarations(prop_name, prop, true) | indent(4)}}
+    {{pr.private_declarations(prop_name, prop, true, config) | indent(4)}}
     {%endfor%}
     {%endif%}
 };

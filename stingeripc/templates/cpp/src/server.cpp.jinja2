@@ -393,7 +393,9 @@ void {{stinger.cpp.server_class_name}}::update{{prop.name | UpperCamelCase}}Prop
     { // Scope lock
     std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
         _{{prop_name | lowerCamelCase}}Property = {{prop.payload.cpp.class_name}}{ {%for arg in prop.arg_list %}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+{%- if config.properties.version_tracking %}
         _last{{prop_name | UpperCamelCase}}PropertyVersion++;
+{%- endif %}
     }
     { // Scope lock
         std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyCallbacksMutex);
@@ -441,7 +443,7 @@ void {{stinger.cpp.server_class_name}}::republish{{prop.name | UpperCamelCase}}P
     {%-endfor%}
 
     auto topic = stinger::utils::format("{{prop.value_topic()}}", topicArgs);
-    auto msg = stinger::mqtt::Message::PropertyValue(topic, payloadStr, _last{{prop_name | UpperCamelCase}}PropertyVersion);
+    auto msg = stinger::mqtt::Message::PropertyValue(topic, payloadStr, {%if config.properties.version_tracking%}_last{{prop_name | UpperCamelCase}}PropertyVersion{%else%}std::nullopt{%endif%});
     {%-if prop.version%}
     msg.properties.version = "{{prop.version}}";
     {%-endif%}
@@ -454,8 +456,10 @@ void {{stinger.cpp.server_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
     {
         _broker->Log(LOG_INFO, "Received DebugInfo on topic %s: %s", msg.topic.c_str(), msg.properties.debugInfo->c_str());
     }
+{%- if config.properties.version_tracking %}
     // TODO: Check _last{{prop_name | UpperCamelCase}}PropertyVersion against optPropertyVersion and
     // reject the update if it's older than what we have.
+{%- endif %}
 
     // Deserialize the '{{prop_name}}' property value.
     {{prop.payload.cpp.class_name}} tempValue = Wire<{{prop.payload.cpp.class_name}}>::FromString(msg.payload);
@@ -469,7 +473,9 @@ void {{stinger.cpp.server_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
     { // Scope lock
         std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
         _{{prop_name | lowerCamelCase}}Property = tempValue;
+{%- if config.properties.version_tracking %}
         _last{{prop_name | UpperCamelCase}}PropertyVersion++;
+{%- endif %}
     }
     republish{{prop.name | UpperCamelCase}}Property();
 }

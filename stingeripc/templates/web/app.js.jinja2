@@ -88,8 +88,8 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
             "mqtt_topic": `{{ utils.topic_template_to_js(prop.value_topic(), config.topics.params) }}`,{% if not prop.read_only %}
             "update_topic": `{{ utils.topic_template_to_js(prop.update_topic(), config.topics.params) }}`,
             "response_topic": `{{ utils.topic_template_to_js(prop.response_topic(), config.topics.params) }}`,{%endif%}
-            "flash": false,
-            "property_version": -1
+            "flash": false{%if config.properties.version_tracking%},
+            "property_version": -1{%endif%}
         }{%if not loop.last%},{%endif%}
     {%endfor-%} };
 
@@ -165,10 +165,10 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
         console.log("PROPERTY UPDATE", prop_obj, payload);
         const correlationData = Math.random().toString(16).substr(2, 8);
         let props = {
-            "contentType": "application/json",
+            "contentType": "application/json",{%if config.properties.version_tracking%}
             "userProperties": {
                 "PropertyVersion": prop_obj.property_version
-            },
+            },{%endif%}
             "correlationData": correlationData,
             "responseTopic": prop_obj.response_topic
         };
@@ -219,8 +219,8 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
             if (prop.subscription_id == subid) {
                 prop.received = obj;
                 console.log("Set property '" + prop.name + "' received object to ", prop.received);
-                prop.property_version = packet.properties.userProperties.PropertyVersion;
-                triggerFlash(prop);
+                {%if config.properties.version_tracking%}prop.property_version = packet.properties.userProperties.PropertyVersion;
+                {%endif%}triggerFlash(prop);
             }
         }
         for (const key in $scope.methods) {

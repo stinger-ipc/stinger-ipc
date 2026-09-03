@@ -165,6 +165,38 @@ MessageCreator.property_response_message({{ topic_expr }}, {{ obj_expr }}, {{ ve
 {%- endif -%}
 {%- endmacro -%}
 
+{#
+    The argument list of an example call, for demos and generated tests.
+
+    A JSON payload spreads into the individual arguments the generated API takes,
+    with example values.  A protobuf payload has no `arg_list` to spread -- the
+    generated API takes the message itself -- so the example is a default-
+    constructed message, matching what `property_example` does for a property and
+    what the Rust templates do with `::default()`.
+
+    `named` picks between `name=value` and bare positional values, since the demo
+    templates call the generated API both ways.
+#}
+{%- macro example_payload(payload, arg_list, named=True) -%}
+{%- if payload.is_protobuf -%}
+{{ payload.python.class_name }}()
+{%- else -%}
+{%- for arg in arg_list %}{% if named %}{{ arg.name|snake_case }}={% endif %}{{ arg.get_random_example_value() }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    The `_payload` suffix on a generated emit/send method name.
+
+    A JSON element gets both `emit_x(args...)` and `emit_x_payload(payload)`; a
+    protobuf element gets only the payload-taking form, under the *unsuffixed*
+    name for a client `send_`/method call but the suffixed one for a server
+    `emit_`.  Call sites that pass a whole payload use this to name the right one.
+#}
+{%- macro payload_suffix(payload) -%}
+{%- if payload.is_protobuf %}_payload{% endif -%}
+{%- endmacro -%}
+
 {# An example value for a property, for demos and generated tests. #}
 {%- macro property_example(prop) -%}
 {%- if prop.payload.is_protobuf -%}

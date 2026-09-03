@@ -1,3 +1,4 @@
+{% import 'partials/args.jinja2' as ar %}
 /*
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
@@ -6,6 +7,7 @@ Unit tests for the {{stinger.name}} client.  These use the MockConnection from
 stinger-cpp-utils to drive the client without a real MQTT broker:
   - construction registers the expected topic subscriptions,
   - calling a method publishes a request to the broker,
+  - registering a signal or property callback subscribes to it,
   - updating a (writable) property publishes an update request,
   - a simulated incoming signal message invokes the registered callback,
   - sending a command publishes it to the broker.
@@ -93,25 +95,42 @@ protected:
 
 } // anonymous namespace
 
-// The client should subscribe to one topic per signal, method response,
-// and property value{% if stinger.properties | length > 0 %}, plus the aggregate property-update response topic{% endif %}.
+// The client should subscribe to one topic per method response{% if stinger.properties | length > 0 %}, plus the aggregate
+// property-update response topic{% endif %}.  Signal{% if stinger.properties | length > 0 %} and property value{% endif %} topics are not among them:
+// those are subscribed to on first use.
 TEST_F({{stinger.cpp.client_class_name}}Test, SubscribesToExpectedTopics)
 {
-    const std::size_t expected = {{ stinger.signals|length + stinger.methods|length + stinger.properties|length + (1 if stinger.properties|length > 0 else 0) }};
+    const std::size_t expected = {{ stinger.methods|length + (1 if stinger.properties|length > 0 else 0) }};
     EXPECT_EQ(_conn->GetSubscriptions().size(), expected);
 
     {%-for sig_name, sig in stinger.signals.items() %}
-    EXPECT_TRUE(_conn->IsSubscribed(stinger::utils::format("{{sig.topic()}}", topicParams()))) << "Not subscribed to {{sig_name}} signal topic";
+    EXPECT_FALSE(_conn->IsSubscribed(stinger::utils::format("{{sig.topic()}}", topicParams()))) << "Subscribed to the {{sig_name}} signal topic before a callback was registered";
     {%-endfor%}
     {%-for method_name, method in stinger.methods.items() %}
     EXPECT_TRUE(_conn->IsSubscribed(stinger::utils::format("{{method.response_topic()}}", topicParams()))) << "Not subscribed to {{method_name}} response topic";
     {%-endfor%}
     {%-for prop_name, prop in stinger.properties.items() %}
-    EXPECT_TRUE(_conn->IsSubscribed(stinger::utils::format("{{prop.value_topic()}}", topicParams()))) << "Not subscribed to {{prop_name}} property value topic";
+    EXPECT_FALSE(_conn->IsSubscribed(stinger::utils::format("{{prop.value_topic()}}", topicParams()))) << "Subscribed to the {{prop_name}} property value topic before the application asked for it";
     {%-endfor%}
 }
 
 {%for sig_name, sig in stinger.signals.items()%}
+// Registering a `{{sig_name}}` callback is what subscribes the client to the signal.
+TEST_F({{stinger.cpp.client_class_name}}Test, {{sig_name | UpperCamelCase}}CallbackSubscribesToSignal)
+{
+    const std::string signalTopic = stinger::utils::format("{{sig.topic()}}", topicParams());
+    ASSERT_FALSE(_conn->IsSubscribed(signalTopic));
+
+    _client->register{{sig_name | UpperCamelCase}}Callback([]({{ar.declarationParams(sig.arg_list)}}) {});
+
+    EXPECT_TRUE(_conn->IsSubscribed(signalTopic)) << "Registering a {{sig_name}} callback did not subscribe to the signal";
+
+    // A second callback reuses the one subscription.
+    const std::size_t subscriptionCount = _conn->GetSubscriptions().size();
+    _client->register{{sig_name | UpperCamelCase}}Callback([]({{ar.declarationParams(sig.arg_list)}}) {});
+    EXPECT_EQ(_conn->GetSubscriptions().size(), subscriptionCount) << "Registering a second {{sig_name}} callback subscribed again";
+}
+
 {%- if not sig.payload.is_protobuf %}{#- a protobuf payload has no example field values to round-trip yet #}
 // A simulated incoming `{{sig_name}}` signal should be dispatched to the registered callback.
 TEST_F({{stinger.cpp.client_class_name}}Test, {{sig_name | UpperCamelCase}}SignalInvokesCallback)
@@ -156,11 +175,53 @@ TEST_F({{stinger.cpp.client_class_name}}Test, {{method_name | UpperCamelCase}}Pu
 {%endfor%}
 
 {%for prop_name, prop in stinger.properties.items()%}
+// Registering a `{{prop_name}}` callback is what subscribes the client to the property.
+TEST_F({{stinger.cpp.client_class_name}}Test, {{prop_name | UpperCamelCase}}CallbackSubscribesToProperty)
+{
+    const std::string valueTopic = stinger::utils::format("{{prop.value_topic()}}", topicParams());
+    ASSERT_FALSE(_conn->IsSubscribed(valueTopic));
+
+    _client->register{{prop_name | UpperCamelCase}}PropertyCallback([]({{ar.declarationParams(prop.arg_list)}}) {});
+
+    EXPECT_TRUE(_conn->IsSubscribed(valueTopic)) << "Registering a {{prop_name}} callback did not subscribe to the property";
+
+    // A second callback reuses the one subscription.
+    const std::size_t subscriptionCount = _conn->GetSubscriptions().size();
+    _client->register{{prop_name | UpperCamelCase}}PropertyCallback([]({{ar.declarationParams(prop.arg_list)}}) {});
+    EXPECT_EQ(_conn->GetSubscriptions().size(), subscriptionCount) << "Registering a second {{prop_name}} callback subscribed again";
+}
+
 {%- if not prop.payload.is_protobuf %}{#- a protobuf property has no example field values to round-trip #}
+// The `{{prop_name}}` getter returns the value the server published.
+TEST_F({{stinger.cpp.client_class_name}}Test, {{prop_name | UpperCamelCase}}GetterReturnsReceivedValue)
+{
+    // The getter blocks until a value arrives, so subscribe first (by registering a
+    // callback), deliver the value, and only then read it.
+    _client->register{{prop_name | UpperCamelCase}}PropertyCallback([]({{ar.declarationParams(prop.arg_list)}}) {});
+
+    {{prop.payload.cpp.class_name}} currentValue{ {%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    const std::string valueTopic = stinger::utils::format("{{prop.value_topic()}}", topicParams());
+    _conn->SimulateIncomingMessage(stinger::mqtt::Message::PropertyValue(valueTopic, serializeToString(currentValue), {%if config.properties.version_tracking%}3{%else%}std::nullopt{%endif%}));
+
+    EXPECT_NO_THROW(_client->get{{prop_name | UpperCamelCase}}Property());
+}
 {%-if not prop.read_only %}
+
 // Updating `{{prop_name}}` should publish an update request to the broker.
 TEST_F({{stinger.cpp.client_class_name}}Test, {{prop_name | UpperCamelCase}}UpdatePublishesRequest)
 {
+{%- if config.properties.version_tracking %}
+    // An update request carries the version of the value this client last saw, so the
+    // property has to have been received before it can be updated.
+{%- else %}
+    // An update request is only sent once the property's current value is known, so the
+    // property has to have been received before it can be updated.
+{%- endif %}
+    _client->register{{prop_name | UpperCamelCase}}PropertyCallback([]({{ar.declarationParams(prop.arg_list)}}) {});
+    {{prop.payload.cpp.class_name}} currentValue{ {%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    const std::string valueTopic = stinger::utils::format("{{prop.value_topic()}}", topicParams());
+    _conn->SimulateIncomingMessage(stinger::mqtt::Message::PropertyValue(valueTopic, serializeToString(currentValue), {%if config.properties.version_tracking%}3{%else%}std::nullopt{%endif%}));
+
     _conn->ClearPublishedMessages();
 
     auto pending = _client->update{{prop.name | UpperCamelCase}}Property({%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});

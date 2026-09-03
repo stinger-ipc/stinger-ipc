@@ -32,7 +32,9 @@ from stinger_python_utils.return_codes import (
     StingerMethodException,
     ServerSerializationErrorStingerMethodException,
     ServerDeserializationErrorStingerMethodException,
+    {%if config.properties.version_tracking-%}
     OutOfSyncStingerMethodException,
+    {%endif-%}
     stinger_exception_factory,
 )
 from .interface_types import *
@@ -58,7 +60,9 @@ class PropertyControls(Generic[T]):
     {%-if config.properties.stinger_owned_values%}
     value: T
     mutex = threading.RLock()
+    {%if config.properties.version_tracking-%}
     version: int = -1
+    {%endif-%}
     callbacks: List[Callable[[T], Union[None, Coroutine[Any, Any, None]]]] = field(default_factory=list)
 
     def get_value(self) -> T:
@@ -73,8 +77,10 @@ class PropertyControls(Generic[T]):
     mutex = threading.RLock()
     getter: Callable[[], T]
     setter: Optional[Callable[[T], Union[None, Coroutine[Any, Any, None]]]] = None
+    {%if config.properties.version_tracking-%}
     version: int = -1
 
+    {%endif-%}
     def get_value(self) -> T:
         return self.getter()
 
@@ -108,9 +114,9 @@ class {{stinger.python.server_class_name}}:
         self._force_property_publish = False # can be set to true for unit tests
         {%for prop_name, prop in stinger.properties.items()%}
         {%-if config.properties.stinger_owned_values%}
-        self._property_{{prop_name|snake_case}}: PropertyControls[{{prop.python.annotation}}] = PropertyControls(value=initial_property_values.{{prop_name|snake_case}}, version=initial_property_values.{{prop_name|snake_case}}_version)
+        self._property_{{prop_name|snake_case}}: PropertyControls[{{prop.python.annotation}}] = PropertyControls(value=initial_property_values.{{prop_name|snake_case}}{%if config.properties.version_tracking%}, version=initial_property_values.{{prop_name|snake_case}}_version{%endif%})
         {%else-%}
-        self._property_{{prop_name|snake_case}}: PropertyControls[{{prop.python.annotation}}] = PropertyControls(getter=property_access.{{prop_name|snake_case}}_getter, {%if not prop.read_only%}setter=property_access.{{prop_name|snake_case}}_setter, {%endif%}version=1)
+        self._property_{{prop_name|snake_case}}: PropertyControls[{{prop.python.annotation}}] = PropertyControls(getter=property_access.{{prop_name|snake_case}}_getter, {%if not prop.read_only%}setter=property_access.{{prop_name|snake_case}}_setter, {%endif%}{%if config.properties.version_tracking%}version=1{%endif%})
         {%endif-%}
         {%if not prop.read_only-%}
         self._conn.subscribe("{{prop.update_topic()}}".format(**self._topic_template_kwargs), self._receive_{{prop_name|snake_case}}_update_request_message) # type: ignore[str-format]
@@ -218,9 +224,11 @@ class {{stinger.python.server_class_name}}:
         {%endif%}
         """
         with self._property_{{prop_name|snake_case}}.mutex:
+            {%if config.properties.version_tracking-%}
             self._property_{{prop_name|snake_case}}.version += 1
+            {%endif-%}
             {{prop_name|snake_case}}_prop_obj = {{ codec.property_wrap(prop, 'self._property_' ~ (prop_name|snake_case) ~ '.get_value()') }}
-            state_msg = {{ codec.property_state_message(prop.payload, '"' ~ prop.value_topic() ~ '".format(**self._topic_template_kwargs)', prop_name|snake_case ~ "_prop_obj", "self._property_" ~ (prop_name|snake_case) ~ ".version") }}
+            state_msg = {{ codec.property_state_message(prop.payload, '"' ~ prop.value_topic() ~ '".format(**self._topic_template_kwargs)', prop_name|snake_case ~ "_prop_obj", ("self._property_" ~ (prop_name|snake_case) ~ ".version") if config.properties.version_tracking else "None") }}
             self._conn.publish(state_msg)
     {%-endfor%}
 
@@ -249,17 +257,21 @@ class {{stinger.python.server_class_name}}:
         in order to update the `{{prop_name}}` property, this method is called to process that message
         and update the value of the property.
         """
+        {%if config.properties.version_tracking-%}
         user_properties = message.user_properties or dict() # type: Dict[str, str]
         prop_version_str = user_properties.get('PropertyVersion', "-1") # type: str
         prop_version = int(prop_version_str)
+        {%endif-%}
         correlation_id = message.correlation_data # type: Optional[bytes]
         response_topic = message.response_topic # type: Optional[str]
         content_type = message.content_type # type: Optional[str]
 
         try:
+            {%if config.properties.version_tracking-%}
             if int(prop_version) != int(self._property_{{prop_name|snake_case}}.version):
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_{{prop_name|snake_case}}.version}' of the '{{prop_name}}' property")
 
+            {%endif-%}
             if content_type is None:
                 self._logger.error("No content type provided in property update for %s.  Assuming {{ codec.content_type(prop.payload) }}.  content-type will be enforced in the future.", message.topic)
                 content_type = "{{ codec.content_type(prop.payload) }}"
@@ -271,16 +283,18 @@ class {{stinger.python.server_class_name}}:
 
             prop_value = {{ codec.property_unwrap(prop, 'recv_prop_obj') }}
             with self._property_{{prop_name|snake_case}}.mutex:
+                {%if config.properties.version_tracking-%}
                 self._property_{{prop_name|snake_case}}.version += 1
+                {%endif-%}
                 self._property_{{prop_name|snake_case}}.set_value(prop_value)
                 current_prop_obj = {{ codec.property_wrap(prop, 'self._property_' ~ (prop_name|snake_case) ~ '.get_value()') }}
                 prop_value_topic = "{{prop.value_topic()}}".format(**self._topic_template_kwargs)
-                state_msg = {{ codec.property_state_message(prop.payload, "prop_value_topic", "current_prop_obj", "self._property_" ~ (prop_name|snake_case) ~ ".version") }}
+                state_msg = {{ codec.property_state_message(prop.payload, "prop_value_topic", "current_prop_obj", ("self._property_" ~ (prop_name|snake_case) ~ ".version") if config.properties.version_tracking else "None") }}
                 self._conn.publish(state_msg)
             
                 if response_topic is not None:
                     self._logger.debug("Sending property update response for to %s", response_topic)
-                    prop_resp_msg = {{ codec.property_response_message(prop.payload, "response_topic", "current_prop_obj", "str(self._property_" ~ (prop_name|snake_case) ~ ".version)", "MethodReturnCode.SUCCESS.value", "correlation_id") }}
+                    prop_resp_msg = {{ codec.property_response_message(prop.payload, "response_topic", "current_prop_obj", ("self._property_" ~ (prop_name|snake_case) ~ ".version") if config.properties.version_tracking else "None", "MethodReturnCode.SUCCESS.value", "correlation_id") }}
                     self._conn.publish(prop_resp_msg)
                 else:
                     self._logger.debug("No response topic provided for property update of %s", message.topic)
@@ -303,7 +317,7 @@ class {{stinger.python.server_class_name}}:
                     return_code = e.return_code
                 else:
                     return_code = MethodReturnCode.SERVER_ERROR
-                prop_resp_msg = {{ codec.property_response_message(prop.payload, "response_topic", "prop_obj", "str(self._property_" ~ (prop_name|snake_case) ~ ".version)", "return_code.value", "correlation_id", "str(e)") }}
+                prop_resp_msg = {{ codec.property_response_message(prop.payload, "response_topic", "prop_obj", ("self._property_" ~ (prop_name|snake_case) ~ ".version") if config.properties.version_tracking else "None", "return_code.value", "correlation_id", "str(e)") }}
                 self._conn.publish(prop_resp_msg)
     {%endif%}{# not read only#}
     {%endfor%}{# end property loop #}
@@ -475,10 +489,12 @@ class {{stinger.python.server_class_name}}:
             if ({{prop.python.value_param_name}} != self._property_{{prop_name|snake_case}}.get_value()) or self._force_property_publish:
                 value_updated = True
                 self._property_{{prop_name|snake_case}}.set_value({{prop.python.value_param_name}})
+                {%if config.properties.version_tracking-%}
                 self._property_{{prop_name|snake_case}}.version += 1
+                {%endif-%}
                 prop_obj = {{ codec.property_wrap(prop, 'self._property_' ~ (prop_name|snake_case) ~ '.get_value()') }}
                 prop_value_topic = "{{prop.value_topic()}}".format(**self._topic_template_kwargs)
-                state_msg = {{ codec.property_state_message(prop.payload, "prop_value_topic", "prop_obj", "self._property_" ~ (prop_name|snake_case) ~ ".version") }}
+                state_msg = {{ codec.property_state_message(prop.payload, "prop_value_topic", "prop_obj", ("self._property_" ~ (prop_name|snake_case) ~ ".version") if config.properties.version_tracking else "None") }}
                 self._conn.publish(state_msg)
         {%if config.properties.stinger_owned_values%}{# only call callbacks if it is a stinger-owned value#}
         if value_updated:

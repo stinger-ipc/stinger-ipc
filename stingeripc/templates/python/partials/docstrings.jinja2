@@ -14,8 +14,9 @@
 
 {#
     Renders a docstring body: an optional summary, an optional ``extra`` prose block,
-    an ``Args:`` section built from a raw list of ``Arg`` objects, and an optional
-    ``Returns:`` section from a caller-supplied ``(type_str, description)`` tuple.
+    an ``Args:`` section built from a raw list of ``Arg`` objects, an optional
+    ``Returns:`` section from a caller-supplied ``(type_str, description)`` tuple, and
+    an optional ``Raises:`` section from a list of such tuples.
 
     The whole body is assembled at a zero-indentation baseline and indented exactly
     once at the end. Black's docstring auto-formatter re-indents docstring bodies to
@@ -25,7 +26,7 @@
     match the indentation of the ``def``/``class`` this docstring belongs to (4 for a
     top-level function, 8 for a method on a class, ...).
 #}
-{%- macro google_docstring(summary, indent_width, args=[], returns=none, extra=none) -%}
+{%- macro google_docstring(summary, indent_width, args=[], returns=none, extra=none, raises=[]) -%}
 {%- set body %}
 {%- if summary %}{{ summary }}
 {% endif -%}
@@ -40,6 +41,11 @@ Args:
 {%- if returns %}
 Returns:
     {{ returns[0] }}: {{ returns[1] or "No description provided." }}
+{% endif -%}
+{%- if raises | length > 0 %}
+Raises:
+{% for exc in raises %}    {{ exc[0] }}: {{ exc[1] or "No description provided." }}
+{% endfor -%}
 {% endif -%}
 {%- endset %}
 {{- body | indent(indent_width) }}

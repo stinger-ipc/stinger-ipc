@@ -462,43 +462,68 @@ class AsyncApiPropertyHelper:
         return Schema(**{"$ref": f"#/components/schemas/{self.prop.name}_property"})
 
     def get_value_message(self) -> models.Message:
+        debug_info_header = {
+            "type": "string",
+            "description": "A optional (not likely to be provided) string that the client should log or print for debugging purposes.",
+        }
+        if self.config.properties.version_tracking:
+            description = f"""The payload represents the current value of the property.  It is encoded as a JSON object.
+
+            The `PropertyValue` user property value (an integer provided as an MQTT string) is a version number that increments with each new value of the property.
+            A client typically stores this value in order to provide it in update requests.
+            """
+            headers = Schema(
+                type="object",
+                properties={
+                    "PropertyValue": {"type": "integer", "description": "An integer that increments with each new value of the property."},
+                    "DebugInfo": debug_info_header,
+                },
+                required=["PropertyValue"],
+            )
+        else:
+            description = """The payload represents the current value of the property.  It is encoded as a JSON object."""
+            headers = Schema(type="object", properties={"DebugInfo": debug_info_header})
         return models.Message(
             name=f"{upper_camel_case(self.prop.name)}PropertyValue",
             title=f"{self.prop.name} value",
             summary=f"The current value of the '{self.prop.name}' property.",
-            description=f"""The payload represents the current value of the property.  It is encoded as a JSON object.
-
-            The `PropertyValue` user property value (an integer provided as an MQTT string) is a version number that increments with each new value of the property.
-            A client typically stores this value in order to provide it in update requests.
-            """,
+            description=description,
             payload=self._payload_ref(),
             contentType="application/json",
             bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
-            headers=Schema(
-                type="object",
-                properties={
-                    "PropertyValue": {"type": "integer", "description": "An integer that increments with each new value of the property."},
-                    "DebugInfo": {
-                        "type": "string",
-                        "description": "A optional (not likely to be provided) string that the client should log or print for debugging purposes.",
-                    },
-                },
-                required=["PropertyValue"],
-            ),
+            headers=headers,
             tags=[models.base.Tag(name="property"), models.base.Tag(name="value")],
         )
 
     def get_request_message(self) -> models.Message:
-        return models.Message(
-            name=f"{upper_camel_case(self.prop.name)}UpdateRequest",
-            summary=f"A request to update the '{self.prop.name}' property.",
-            description="""The payload represents the new property value that the client wants to set.
+        if self.config.properties.version_tracking:
+            description = """The payload represents the new property value that the client wants to set.
             
                 The entirety of the JSON object must be provided, and will completely replace the
                 current value of the property if the update is accepted.
                 
                 The `PropertyVersion` user property value (a number provided as an MQTT string)
-                should be the same `PropertyVersion` value that was most recently received.""",
+                should be the same `PropertyVersion` value that was most recently received."""
+            headers = Schema(
+                type="object",
+                properties={
+                    "PropertyValue": {
+                        "type": "integer",
+                        "description": "This is the current version of the property.  The version in the request must match the version of the property value for the update to be accepted.  This prevents lost updates when multiple clients are updating the same property.",
+                    },
+                },
+                required=["PropertyValue"],
+            )
+        else:
+            description = """The payload represents the new property value that the client wants to set.
+            
+                The entirety of the JSON object must be provided, and will completely replace the
+                current value of the property if the update is accepted."""
+            headers = Schema(type="object", properties={})
+        return models.Message(
+            name=f"{upper_camel_case(self.prop.name)}UpdateRequest",
+            summary=f"A request to update the '{self.prop.name}' property.",
+            description=description,
             payload=self._payload_ref(),
             contentType="application/json",
             bindings=MessageBindingsObject(
@@ -508,24 +533,22 @@ class AsyncApiPropertyHelper:
                     responseTopic={"type": "string", "pattern": _topic_template_to_regex(self.prop.response_topic())},
                 )
             ),
-            headers=Schema(
-                type="object",
-                properties={
-                    "PropertyValue": {
-                        "type": "integer",
-                        "description": "This is the current version of the property.  The version in the request must match the version of the property value for the update to be accepted.  This prevents lost updates when multiple clients are updating the same property.",
-                    },
-                },
-                required=["PropertyValue"],
-            ),
+            headers=headers,
             tags=[models.base.Tag(name="property"), models.base.Tag(name="update"), models.base.Tag(name="request")],
         )
 
     def get_response_message(self) -> models.Message:
-        return models.Message(
-            name=f"{upper_camel_case(self.prop.name)}UpdateResponse",
-            summary=f"The response after updating the '{self.prop.name}' property.",
-            description="""The payload represents the latest value of the property after the update attempt.
+        return_code_header = {
+            "type": "integer",
+            "description": " | ".join([f"{code.name}: {code.value}" for code in MethodReturnCode]),
+            "enum": [code.value for code in MethodReturnCode],
+        }
+        debug_info_header = {
+            "type": "string",
+            "description": "A string describing why the update was unsuccessful, if applicable.",
+        }
+        if self.config.properties.version_tracking:
+            description = """The payload represents the latest value of the property after the update attempt.
             
             If the property update was successful, then there should be a `ReturnCode` user property with value `0`, and the payload should match the value that was sent in the update request.
             The `PropertyValue` user property will be the newest version of the property value after the update.
@@ -535,7 +558,42 @@ class AsyncApiPropertyHelper:
             If the property update was unsuccessful, then there should be a `ReturnCode` user property with a non-zero value, and the payload will contain the server's current value for the property.
             The `PropertyValue` user property will be the version of the current property value (which may or may not be what it was before).
             The `DebugInfo` user property should contain a string describing why the update was unsuccessful, and the client should log or print it for debugging purposes, but the client is not to specifically parse the `DebugInfo` for programatic meaning.
-            """,
+            """
+            headers = Schema(
+                type="object",
+                properties={
+                    "PropertyValue": {
+                        "type": "integer",
+                        "description": "This is the current version of the property.  The version in the request must match the version of the property value for the update to be accepted.  This prevents lost updates when multiple clients are updating the same property.",
+                        "minimum": -1,
+                    },
+                    "ReturnCode": return_code_header,
+                    "DebugInfo": debug_info_header,
+                },
+                required=["PropertyValue", "ReturnCode", "DebugInfo"],
+            )
+        else:
+            description = """The payload represents the latest value of the property after the update attempt.
+            
+            If the property update was successful, then there should be a `ReturnCode` user property with value `0`, and the payload should match the value that was sent in the update request.
+            The `DebugInfo` user property is usually empty or unset on success, but is not required to be empty.  If provided, the
+            client should log or print the provided `DebugInfo` string for debugging purposes.
+
+            If the property update was unsuccessful, then there should be a `ReturnCode` user property with a non-zero value, and the payload will contain the server's current value for the property.
+            The `DebugInfo` user property should contain a string describing why the update was unsuccessful, and the client should log or print it for debugging purposes, but the client is not to specifically parse the `DebugInfo` for programatic meaning.
+            """
+            headers = Schema(
+                type="object",
+                properties={
+                    "ReturnCode": return_code_header,
+                    "DebugInfo": debug_info_header,
+                },
+                required=["ReturnCode", "DebugInfo"],
+            )
+        return models.Message(
+            name=f"{upper_camel_case(self.prop.name)}UpdateResponse",
+            summary=f"The response after updating the '{self.prop.name}' property.",
+            description=description,
             payload=self._payload_ref(),
             contentType="application/json",
             bindings=MessageBindingsObject(
@@ -544,26 +602,7 @@ class AsyncApiPropertyHelper:
                     correlationData={"type": "string", "format": "uuid"},
                 )
             ),
-            headers=Schema(
-                type="object",
-                properties={
-                    "PropertyValue": {
-                        "type": "integer",
-                        "description": "This is the current version of the property.  The version in the request must match the version of the property value for the update to be accepted.  This prevents lost updates when multiple clients are updating the same property.",
-                        "minimum": -1,
-                    },
-                    "ReturnCode": {
-                        "type": "integer",
-                        "description": " | ".join([f"{code.name}: {code.value}" for code in MethodReturnCode]),
-                        "enum": [code.value for code in MethodReturnCode],
-                    },
-                    "DebugInfo": {
-                        "type": "string",
-                        "description": "A string describing why the update was unsuccessful, if applicable.",
-                    },
-                },
-                required=["PropertyValue", "ReturnCode", "DebugInfo"],
-            ),
+            headers=headers,
             tags=[models.base.Tag(name="property"), models.base.Tag(name="update"), models.base.Tag(name="response")],
         )
 

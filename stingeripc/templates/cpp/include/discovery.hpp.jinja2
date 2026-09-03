@@ -12,31 +12,17 @@ Discovery service for finding available service instances.
 #include <stinger/utils/iconnection.hpp>
 #include <stinger/mqtt/properties.hpp>
 #include "structs.hpp"
-{%- import "partials/codec.jinja2" as codec %}
-{{- codec.imports(stinger) }}
 #include "enums.hpp"
-#include "property_structs.hpp"
 
 {%for ns in config.cpp.namespace%}
 namespace {{ns}} {
 {%endfor-%}
 namespace {{stinger.name|snake_case}} {
 
-{%if stinger.properties | length > 0 %}
-struct InitialPropertyValues {
-public:
-    {%for prop_name, prop in stinger.properties.items()%}
-    std::optional<{{prop.cpp.property_struct_name}}> {{prop_name | lowerCamelCase}};
-    int {{prop_name | lowerCamelCase}}Version = 0;
-    {%endfor%}
-
-    bool isComplete() const;
-};
-{%endif%}
-
 /**
- * Information about a discovered service instance, including its service ID, topic parameters, and initial property values.
+ * Information about a discovered service instance: its service ID and topic parameters.
  * This is updated as information is received over MQTT about the interface.
+ *cl
  */
 struct InstanceInfo {
 public:
@@ -46,7 +32,6 @@ public:
     {%-endfor%}
     std::map<std::string, std::string> methods; // Maps method names to their version string, for methods that declare a version.
     std::map<std::string, std::string> commands; // Maps command names to their version string, for commands that declare a version.
-    {%if stinger.properties | length > 0 %}InitialPropertyValues initial_property_values; // Not included in (de-)serialization.{%endif%}
 
     /**
      * This is the deserialization method for the InstanceInfo struct. 
@@ -86,7 +71,6 @@ public:
 private:
     void _onMessage(const stinger::mqtt::Message& msg);
     int _discoverySubscriptionId = -1;
-    int _allPropertySubscriptionId = -1;
     stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
     std::shared_ptr<stinger::utils::IConnection> _broker;
     std::map<uint64_t, InstanceInfo> _discoveredInstances; // Keyed by a hash of service_id, {%for topic_param in config.topics.params %}{%if loop.last%}and {%endif%}{{topic_param}}{%if not loop.last%}, {%endif%}{% endfor%}

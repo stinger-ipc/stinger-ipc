@@ -47,9 +47,10 @@ to list what is currently known, or
 told as instances come and go, and pick one yourself.
 {%- if stinger.properties|length > 0 %}
 
-The discovery message carries the current value of every property, so a freshly built
-client starts out with correct property values rather than having to wait for the next
-update.
+Discovery reports the interface announcement and nothing else — it does not collect
+property values, because that would mean receiving every property of every instance
+whether or not you ever read one. A freshly built client therefore knows no property
+values yet; it subscribes to each property the first time you ask for it.
 {%- endif %}
 {%- if stinger.methods|length > 0 %}
 
@@ -78,13 +79,15 @@ Signals arrive server → client with no reply. Each one is handed out as a
 [`tokio::sync::broadcast`] receiver, so any number of places in your program may listen to
 the same signal, and listening is entirely optional.
 
-A broadcast channel does not replay, so **get the receiver before the signal is sent** —
-in practice, right after constructing the client. A receiver that falls too far behind
-also drops the oldest messages rather than blocking the client.
+**Asking for the receiver is what subscribes the client to that signal** — nothing is
+subscribed to when the client is constructed, so a signal no part of your program listens
+for never reaches you. A broadcast channel does not replay either, so **get the receiver
+before the signal is sent**, in practice right after constructing the client. A receiver
+that falls too far behind drops the oldest messages rather than blocking the client.
 
 ```ignore
 {%- for sig_name, sig in stinger.signals.items() %}
-let mut {{sig_name|snake_case}}_rx = client.get_{{sig_name|snake_case}}_receiver();
+let mut {{sig_name|snake_case}}_rx = client.get_{{sig_name|snake_case}}_receiver().await;
 tokio::spawn(async move {
     while let Ok(payload) = {{sig_name|snake_case}}_rx.recv().await {
         // handle {{sig_name}}
@@ -126,26 +129,36 @@ The commands of this interface are:
 ## Properties
 
 The server owns every property; the client holds a cached copy that `run_loop` keeps
-current. Reading is therefore local and cannot fail.
+current. That cache starts out empty: **a client subscribes to a property the first time
+you ask for it**, not when it is constructed, so a property no part of your program reads
+costs nothing on the wire.
 
-- `watch_<property>()` — a `tokio::sync::watch` receiver. It yields the current value
-  immediately and again on every change, which makes it the normal way to both read and
-  observe a property.
+- `watch_<property>()` — subscribes and returns a `tokio::sync::watch` receiver of
+  `Option<T>`. It holds `None` until the server publishes a value and `Some(value)` from
+  then on, and wakes on every change. This is the normal way to observe a property.
+- `get_<property>()` — subscribes and waits up to five seconds for a value, returning
+  `Result<T, MethodReturnCode>`. `Err(Timeout)` means the server never published one.
 - `set_<property>(value)` — *requests* a change and returns a `MethodReturnCode`. The
   server may refuse, and the value that actually takes effect arrives through the watch
   channel, not as a return value.
 - `get_<property>_handle()` — the underlying lock, for read-modify-write under a single
   commit rather than clobbering a concurrent change.
 
+{%if config.properties.version_tracking%}Everything but `watch_*` waits for the property's current value, because an update request
+has to carry the version the client last saw; each can therefore fail with
+`MethodReturnCode::Timeout`.{%else%}Everything but `watch_*` waits for the property's current value, so a read or an update
+starts from what the server last published; each can therefore fail with
+`MethodReturnCode::Timeout`.{%endif%}
+
 Read-only properties have no setter: the server changes them and clients follow along.
 
 {% set example_prop_name, example_prop = (stinger.properties.items()|list)[0] -%}
 ```ignore
-// Reading is local: the watch channel always holds the latest value the server published.
-let mut {{example_prop_name|snake_case}}_rx = client.watch_{{example_prop_name|snake_case}}();
-let current = {{example_prop_name|snake_case}}_rx.borrow().clone();
+// Reading once. This subscribes to the property and waits for the server's value.
+let current = client.get_{{example_prop_name|snake_case}}().await?;
 
-// And it wakes up on every change.
+// Observing it. The channel holds `None` until the first value arrives.
+let mut {{example_prop_name|snake_case}}_rx = client.watch_{{example_prop_name|snake_case}}().await;
 while {{example_prop_name|snake_case}}_rx.changed().await.is_ok() {
     let updated = {{example_prop_name|snake_case}}_rx.borrow().clone();
 }
@@ -166,9 +179,9 @@ The properties of this interface are:
 ## Errors
 
 [`MethodReturnCode`](crate::payloads::MethodReturnCode) is the one error type you will see
-from method calls and property updates. `Timeout` means no response arrived — usually a
-server that went away; `OutOfSync` means the client's cached property version disagreed
-with the server's. Logging goes through `tracing`, so install a subscriber to see what the
+from method calls and property reads and updates. `Timeout` means no response arrived —
+usually a server that went away, or a property whose value was never published{%if config.properties.version_tracking%};
+`OutOfSync` means the client's cached property version disagreed with the server's.{%else%}.{%endif%} Logging goes through `tracing`, so install a subscriber to see what the
 client is doing. With the `metrics` feature, the client and discovery objects expose
 counters for messages received and errors seen.
 

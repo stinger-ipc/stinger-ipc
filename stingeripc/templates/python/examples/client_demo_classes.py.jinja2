@@ -43,7 +43,7 @@ class SuperAwesomeDoerOfThings:
         while True:
             {%-for method_name, method in stinger.methods.items()%}
             print("Making call to '{{method_name|snake_case}}'")
-            future_resp = self.client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name|snake_case}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+            future_resp = self.client.{{method_name|snake_case}}({{ codec.example_payload(method.request_payload, method.arg_list) }})
             try:
                 print(f"RESULT:  {future_resp.result(5)}")
             except futures.TimeoutError:

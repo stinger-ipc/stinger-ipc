@@ -79,7 +79,7 @@ public:
     {%endfor%}
 
     {%for prop_name, prop in stinger.properties.items()%}
-    {{ pr.public_declarations(prop_name, prop, false) | indent(4) }}
+    {{ pr.public_declarations(prop_name, prop, false, config) | indent(4) }}
     void republish{{prop.name | UpperCamelCase}}Property() const;
     {%endfor%}
 private: 
@@ -117,7 +117,7 @@ private:
     {%if stinger.properties|length > 0 -%}
     // ---------------- PROPERTIES ------------------
     {%for prop_name, prop in stinger.properties.items()%}
-    {{pr.private_declarations(prop_name, prop, false) | indent(4)}}
+    {{pr.private_declarations(prop_name, prop, false, config) | indent(4)}}
     {%endfor%}
     {%endif%}
 

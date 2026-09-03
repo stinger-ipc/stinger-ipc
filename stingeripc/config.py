@@ -24,6 +24,10 @@ class PropertyConfig(BaseModel):
     """Configuration options for properties."""
 
     stinger_owned_values: bool = Field(default=True, description="Whether the stinger-server owns property values")
+    version_tracking: bool = Field(
+        default=True,
+        description="Whether properties carry a monotonic version counter (the 'PropertyVersion' user property) used to reject out-of-sync updates",
+    )
 
 
 class PythonConfig(BaseModel):

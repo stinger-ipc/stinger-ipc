@@ -173,7 +173,7 @@ for exactly one, and a generated `<Name>CommandPayload` struct for several.
 
 The server owns every property value. Clients hold a cached copy and may *request* a
 change; the server decides whether to apply it and publishes the value that actually
-took effect, along with a monotonically increasing version number.
+took effect{%if config.properties.version_tracking%}, along with a monotonically increasing version number{%endif%}.
 
 Three accessors per property:
 
@@ -183,9 +183,10 @@ Three accessors per property:
 - `get_<property>_handle()` — the underlying lock, when you need to read-modify-write
   under one commit rather than clobbering a concurrent change.
 
-Because the discovery message carries current property values, a client that connects
-later still starts out with the right ones — properties, unlike signals, do not lose
-their state.
+Property values are published retained, so a client that subscribes later still gets the
+current value — properties, unlike signals, do not lose their state.  Clients subscribe to
+a property only when their application asks for it, so a property nobody reads costs
+nothing on the wire beyond that one retained message.
 
 The properties of this interface are:
 {% for prop_name, prop in stinger.properties.items() %}

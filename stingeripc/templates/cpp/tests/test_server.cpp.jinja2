@@ -208,7 +208,7 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{prop_name | UpperCamelCase}}Upda
     {{prop.payload.cpp.class_name}} newValue{ {%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
     const std::string payload = serializeToString(newValue);
     const std::vector<std::byte> correlationData{ std::byte{0x01} };
-    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(updateTopic, payload, 1, correlationData, "test/response");
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(updateTopic, payload, {%if config.properties.version_tracking%}1{%else%}std::nullopt{%endif%}, correlationData, "test/response");
 
     _conn->ClearPublishedMessages();
     _conn->SimulateIncomingMessage(msg);

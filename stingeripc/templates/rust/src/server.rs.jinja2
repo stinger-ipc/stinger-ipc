@@ -30,7 +30,9 @@ use serde_json;
 use tokio::sync::{broadcast{%if stinger.properties|length > 0 %}, watch{%endif%}};
 {%endif%}
 {%if stinger.properties | length > 0%}
+{%- if config.properties.version_tracking %}
 use std::sync::atomic::{AtomicU32, Ordering};
+{%- endif %}
 use crate::property::{{stinger.name | UpperCamelCase}}InitialPropertyValues;
 use stinger_rwlock_watch::{RwLockWatch};
 {%endif%}
@@ -70,7 +72,9 @@ struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
 struct {{stinger.name | UpperCamelCase}}Properties {
     {%for prop_name, prop in stinger.properties.items()-%}
     pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.rust.type}}>>,
+    {%-if config.properties.version_tracking%}
     {{prop_name | snake_case}}_version: Arc<AtomicU32>,
+    {%-endif%}
     {%-endfor%}
 }
 {%endif%}{# if any properties #}
@@ -222,7 +226,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
             {%-for prop_name, prop in stinger.properties.items()%}
             {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(initial_property_values.{{prop_name | snake_case}}.clone())),
+            {%-if config.properties.version_tracking%}
             {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(initial_property_values.{{prop_name | snake_case}}_version)),
+            {%-endif%}
             {%-endfor%}
         };
 
@@ -233,7 +239,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         {
             let topic = strfmt("{{prop.value_topic()}}", &topic_param_map).unwrap();
             let payload_obj = {{ property_wrap(prop, 'initial_property_values.' ~ (prop_name|snake_case)) }};
-            let msg = message::property_value(&topic, &payload_obj, initial_property_values.{{prop_name | snake_case}}_version).unwrap();
+            let msg = message::property_value(&topic, &payload_obj{%if config.properties.version_tracking%}, initial_property_values.{{prop_name | snake_case}}_version{%endif%}).unwrap();
             let _ = connection.publish_nowait(msg);
         }
         {%endfor%}
@@ -485,7 +491,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     async fn update_{{prop_name|snake_case}}_value(
             mut publisher: C, 
             property_pointer: Arc<RwLockWatch<{{prop.rust.type}}>>,  // Arc to the property value
+            {%- if config.properties.version_tracking %}
             version_pointer: Arc<AtomicU32>,
+            {%- endif %}
             msg: MqttMessage
     )
     {
@@ -503,6 +511,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                 return_code = MethodReturnCode::PayloadError(format!("Missing Content-Type; expected '{}'", expected_content_type));
             }
         }
+{%- if config.properties.version_tracking %}
 
         match return_code {
             MethodReturnCode::Success(_) => {
@@ -529,6 +538,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             }
             _ => { /* Do nothing, error already set. */ }
         }
+{%- endif %}
 
         let opt_new_value = match return_code {
             MethodReturnCode::Success(_) => {
@@ -692,12 +702,14 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         {%-for prop_name, prop in stinger.properties.items()%}
         { // Set up property change request handling task
             let mut publisher_for_{{prop_name|snake_case}}_prop = self.mqtt_client.clone();
+            {%- if config.properties.version_tracking %}
             let {{prop_name|snake_case}}_prop_version = props.{{prop_name | snake_case}}_version.clone();
+            {%- endif %}
             let topic_param_map_for_{{prop_name|snake_case}} = topic_param_map.clone();
             if let Some(mut rx_for_{{prop_name|snake_case}}_prop) = props.{{prop_name | snake_case}}.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some((request, opt_responder)) = rx_for_{{prop_name|snake_case}}_prop.recv().await {
-                        debug!("Received request to update '{{prop_name}}' property value through local watch channel. Current version is {}, request is: {:?}", {{prop_name|snake_case}}_prop_version.load(Ordering::SeqCst), request);
+                        debug!("Received request to update '{{prop_name}}' property value through local watch channel. {%if config.properties.version_tracking%}Current version is {}, request{%else%}Request{%endif%} is: {:?}"{%if config.properties.version_tracking%}, {{prop_name|snake_case}}_prop_version.load(Ordering::SeqCst){%endif%}, request);
                         let payload_obj = {{ property_wrap(prop, 'request.clone()') }};
                         {%- if not prop.payload.is_protobuf %}
                         if let Err(err) = payload_obj.validate_schema() {
@@ -708,9 +720,11 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                             continue;
                         }
                         {%- endif %}
+                        {%- if config.properties.version_tracking %}
                         let version_value = {{prop_name|snake_case}}_prop_version.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1; // fetch_add returns the previous value, so add 1 to get the new version after the update.
+                        {%- endif %}
                         let topic: String = strfmt("{{prop.value_topic()}}", &topic_param_map_for_{{prop_name|snake_case}}).unwrap();
-                        match message::property_value(&topic, &payload_obj, version_value) {
+                        match message::property_value(&topic, &payload_obj{%if config.properties.version_tracking%}, version_value{%endif%}) {
                             Ok(msg) => {
                                 let publish_result = publisher_for_{{prop_name|snake_case}}_prop.publish(msg).await;
                                 if let Some(responder) = opt_responder {
@@ -813,7 +827,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                                     {{stinger.rust.server_struct_name}}::<C>::update_{{prop_name | snake_case}}_value(
                                             publisher.clone(),
                                             properties.{{prop_name | snake_case}}.clone(),
+                                            {%- if config.properties.version_tracking %}
                                             properties.{{prop_name | snake_case}}_version.clone(),
+                                            {%- endif %}
                                             msg
                                     ).await;
                                 }
@@ -921,7 +937,9 @@ mod tests {
         let initial_property_values = {{stinger.name | UpperCamelCase}}InitialPropertyValues {
             {%for prop_name, prop in stinger.properties.items()%}
             {{prop_name | snake_case}}: {{ property_example(prop) }},
+            {%-if config.properties.version_tracking%}
             {{prop_name | snake_case}}_version: 1,
+            {%-endif%}
             {%endfor%}
         };
         {%endif%}
@@ -977,7 +995,7 @@ mod tests {
             let payload: {{prop.payload.rust.class_name}} = serde_json::from_str(json_str).unwrap();
             {%- endif %}
 
-            let update_req = property_update_request(&property_{{prop_name|snake_case}}_topic, &payload, initial_property_values.{{prop_name | snake_case}}_version, correlation_uuid, property_{{prop_name|snake_case}}_response_topic).unwrap();
+            let update_req = property_update_request(&property_{{prop_name|snake_case}}_topic, &payload{%if config.properties.version_tracking%}, initial_property_values.{{prop_name | snake_case}}_version{%endif%}, correlation_uuid, property_{{prop_name|snake_case}}_response_topic).unwrap();
 
             info!("Inject message to {}", update_req.topic);
             let result = mock_mqtt.simulate_receive(update_req);

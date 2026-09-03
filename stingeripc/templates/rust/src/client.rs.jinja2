@@ -35,9 +35,11 @@ use tokio::sync::{broadcast{%if stinger.methods|length > 0 or stinger.properties
 use tokio::task::JoinError;
 #[allow(unused_imports)]
 use tracing::{debug, error, info, warn};
-{% if stinger.properties|length > 0 %}
+{% if stinger.signals|length > 0 or stinger.properties|length > 0 %}
 #[allow(unused_imports)]
 use std::sync::atomic::{AtomicU32, Ordering};
+{%endif%}
+{% if stinger.properties|length > 0 %}
 use stinger_rwlock_watch::{RwLockWatch};
 #[allow(unused_imports)]
 use stinger_rwlock_watch::ReadOnlyLockWatch;
@@ -52,10 +54,15 @@ struct {{stinger.name | UpperCamelCase }}SubscriptionIds {
     any_method_response: u32,
     {%endif%}
     {%for sig_name, sig in stinger.signals.items()-%}
-    {{sig_name | snake_case}}_signal: Option<u32>,
+    /// Set when the '{{sig_name}}' signal is first subscribed to, which happens when the
+    /// first receiver is handed out rather than at construction;
+    /// `UNSUBSCRIBED_SUBSCRIPTION_ID` until then.
+    {{sig_name | snake_case}}_signal: Arc<AtomicU32>,
     {%-endfor%}
     {%for prop_name, prop in stinger.properties.items()-%}
-    {{prop_name | snake_case}}_property_value: u32,
+    /// Set when the '{{prop_name}}' property is first subscribed to, which happens on
+    /// first use rather than at construction; `UNSUBSCRIBED_SUBSCRIPTION_ID` until then.
+    {{prop_name | snake_case}}_property_value: Arc<AtomicU32>,
     {%endfor%}
     {%if stinger.properties | length > 0 %}
     any_property_update_response: u32,
@@ -73,12 +80,32 @@ struct {{stinger.name | UpperCamelCase }}SignalChannels {
     {%endfor%}
 }
 
+{%if stinger.signals | length > 0 or stinger.properties | length > 0%}
+/// Sentinel for a signal or property topic that has not been subscribed to yet.  A real
+/// broker subscription id is never this value.
+const UNSUBSCRIBED_SUBSCRIPTION_ID: u32 = u32::MAX;
+
+/// Sentinel for a subscription that is in flight, so that two concurrent first uses of the
+/// same signal or property do not each subscribe.
+const SUBSCRIBING_SUBSCRIPTION_ID: u32 = u32::MAX - 1;
+{%endif%}
+
 {%if stinger.properties | length > 0%}
+/// How long a property read waits for the server's current value after subscribing.
+const PROPERTY_VALUE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
+/// The client's cached copy of each property.
+///
+/// Each value is an `Option` because nothing is subscribed to at construction time: the
+/// value stays `None` until the application asks for that property and the server
+/// publishes it.
 #[derive(Clone)]
 struct {{stinger.name | UpperCamelCase}}Properties {
     {%for prop_name, prop in stinger.properties.items()-%}
-    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.rust.type}}>>,
+    pub {{prop_name | snake_case}}: Arc<RwLockWatch<Option<{{prop.rust.type}}>>>,
+    {%-if config.properties.version_tracking%}
     pub {{prop_name | snake_case}}_version: Arc<AtomicU32>,
+    {%-endif%}
     {%endfor%}
 }
 {%endif%}
@@ -125,7 +152,11 @@ pub struct {{stinger.rust.client_struct_name}}<C: Mqtt5PubSub> {
 impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}}<C> {
 
     /// Creates a new {{stinger.rust.client_struct_name}} that uses an Mqtt5PubSub.
-    pub async fn new(mut connection: C, discovery_info: DiscoveredService) -> Self {
+    ///
+    /// This subscribes only to the aggregate method- and property-response topics.  Signal
+    /// and property value topics are subscribed to on first use, so an interface with
+    /// neither leaves the connection untouched here.
+    pub async fn new({%if stinger.methods|length > 0 or stinger.properties|length > 0%}mut {%endif%}connection: C, discovery_info: DiscoveredService) -> Self {
 
         // Create a channel for messages to get from the Connection object to this {{stinger.rust.client_struct_name}} object.
         // The Connection object uses a clone of the tx side of the channel.
@@ -133,6 +164,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
 
         let client_id = connection.get_client_id();
 
+        {%if stinger.methods|length > 0 or stinger.properties|length > 0%}
         let mut topic_map = HashMap::from([
             ("interface_name".to_string(), "{{stinger.name}}".to_string()),
             ("service_id".to_string(), discovery_info.interface_info.instance.clone()),
@@ -141,6 +173,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
             ("{{topic_param}}".to_string(), discovery_info.interface_info.{{topic_param | snake_case}}.as_str().to_string()),
             {%-endfor%}
         ]);
+        {%endif%}
 
         {%if stinger.methods|length > 0%}
         topic_map.insert("method_name".to_string(), "+".to_string());
@@ -150,24 +183,17 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         debug!("Subscription (id={}) to any method response topic", subscription_id_any_method_response);
         {%endif%}
 
-        // Subscribe to all the topics needed for signals.
-        {%for signal_name, signal in stinger.signals.items()-%}
-        topic_map.insert("signal_name".to_string(), "{{signal_name}}".to_string());
-        let topic_{{signal_name | snake_case}}_signal = strfmt("{{signal.topic()}}", &topic_map).unwrap();
-        let subscription_id_{{signal_name | snake_case}}_signal = connection.subscribe(topic_{{signal_name | snake_case}}_signal, QoS::ExactlyOnce, message_received_tx.clone()).await;
-        let subscription_id_{{signal_name | snake_case}}_signal = subscription_id_{{signal_name | snake_case}}_signal.unwrap_or(u32::MAX);
-        debug!("Subscription (id={}) to signal topic for '{{signal_name}}'", subscription_id_{{signal_name | snake_case}}_signal);
-        {%endfor%}
+        {%if stinger.signals|length > 0 %}
+        // Signal topics are deliberately not subscribed to here.  Each signal is subscribed
+        // to when its first receiver is handed out, so a client never receives signals no
+        // part of the application is listening for.
+        {%endif%}
 
-        // Subscribe to all the topics needed for properties.
-        {% for prop_name, prop in stinger.properties.items() %}
-        topic_map.insert("property_name".to_string(), "{{prop_name}}".to_string());
-        let topic_{{prop_name | snake_case}}_property_value = strfmt("{{prop.value_topic()}}", &topic_map).unwrap();
-        let subscription_id_{{prop_name | snake_case}}_property_value = connection.subscribe(topic_{{prop_name | snake_case}}_property_value, QoS::AtLeastOnce, message_received_tx.clone()).await;
-        let subscription_id_{{prop_name | snake_case}}_property_value = subscription_id_{{prop_name | snake_case}}_property_value.unwrap_or(u32::MAX);
-        debug!("Subscription (id={}) to property value topic for '{{prop_name}}'", subscription_id_{{prop_name | snake_case}}_property_value);
-        {% endfor %}
-
+        {%if stinger.properties|length > 0 %}
+        // Property value topics are deliberately not subscribed to here.  Each property is
+        // subscribed to on first use -- when it is watched, read or set -- so a client never
+        // receives properties it was never asked about.
+        {%endif%}
         {%if stinger.properties|length > 0 %}
         topic_map.insert("property_name".to_string(), "+".to_string());
         let topic_any_property_update_response = strfmt("{{stinger.all_properties_response_topic()}}", &topic_map).unwrap();
@@ -179,8 +205,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         {%if stinger.properties|length > 0%}
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
         {%-for prop_name, prop in stinger.properties.items()%}
-            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(discovery_info.properties.{{prop_name | snake_case}})),
-            {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(discovery_info.properties.{{prop_name | snake_case}}_version)),
+            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(None)),
+            {%-if config.properties.version_tracking%}
+            {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(0)),
+            {%-endif%}
         {%-endfor%}
         };
         {%endif%}
@@ -190,10 +218,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
             any_method_response: subscription_id_any_method_response,
             {%endif%}
             {%-for sig_name, sig in stinger.signals.items()-%}
-            {{sig_name | snake_case}}_signal: Some(subscription_id_{{sig_name | snake_case}}_signal),
+            {{sig_name | snake_case}}_signal: Arc::new(AtomicU32::new(UNSUBSCRIBED_SUBSCRIPTION_ID)),
             {%endfor%}
             {%-for prop_name, prop in stinger.properties.items()-%}
-            {{prop_name | snake_case}}_property_value: subscription_id_{{prop_name | snake_case}}_property_value,
+            {{prop_name | snake_case}}_property_value: Arc::new(AtomicU32::new(UNSUBSCRIBED_SUBSCRIPTION_ID)),
             {%endfor%}
             {%if stinger.properties | length > 0 %}
             any_property_update_response: subscription_id_any_property_update_response,
@@ -227,14 +255,58 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     }
 
     {%for sig_name, sig in stinger.signals.items()-%}
+    /// Subscribes to the '{{sig_name}}' signal's topic, at most once.
+    ///
+    /// Nothing subscribes to signal topics when the client is constructed; the subscription
+    /// is made when the first receiver for this signal is handed out.
+    async fn ensure_{{sig_name | snake_case}}_signal_subscribed(&self) {
+        // Claim the subscription with a compare-exchange, so two concurrent first uses of
+        // this signal do not each subscribe.
+        if self.subscription_ids.{{sig_name | snake_case}}_signal
+            .compare_exchange(
+                UNSUBSCRIBED_SUBSCRIPTION_ID,
+                SUBSCRIBING_SUBSCRIPTION_ID,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            )
+            .is_err()
+        {
+            return;
+        }
+
+        let mut topic_param_map = self.base_topic_params();
+        topic_param_map.insert("signal_name".to_string(), "{{sig_name}}".to_string());
+        let topic = strfmt("{{sig.topic()}}", &topic_param_map).unwrap();
+        let mut connection = self.mqtt_client.clone();
+        match connection.subscribe(topic.clone(), QoS::ExactlyOnce, self.msg_streamer_tx.clone()).await {
+            Ok(subscription_id) => {
+                debug!("Subscription (id={}) to signal topic for '{{sig_name}}'", subscription_id);
+                self.subscription_ids.{{sig_name | snake_case}}_signal.store(subscription_id, Ordering::Release);
+            }
+            Err(e) => {
+                error!("Failed to subscribe to the '{{sig_name}}' signal topic '{}': {:?}", topic, e);
+                // Release the claim so a later call can try again.
+                self.subscription_ids.{{sig_name | snake_case}}_signal.store(UNSUBSCRIBED_SUBSCRIPTION_ID, Ordering::Release);
+            }
+        }
+    }
+
     /// Get the RX receiver side of the broadcast channel for the '{{sig_name}}' signal.
     /// The signal payload, `{{sig.payload.rust.class_name}}`, will be put onto the channel whenever it is received.
-    pub fn get_{{sig_name|snake_case}}_receiver(&self) -> broadcast::Receiver<{{sig.payload.rust.channel_type}}> {
-        self.signal_channels.{{sig_name | snake_case}}_sender.subscribe()
+    ///
+    /// Asking for a receiver is what subscribes the client to the '{{sig_name}}' signal, so a
+    /// signal nothing listens for is never received.  A broadcast channel does not replay,
+    /// so a signal emitted before the first receiver is handed out is still missed.
+    pub async fn get_{{sig_name|snake_case}}_receiver(&self) -> broadcast::Receiver<{{sig.payload.rust.channel_type}}> {
+        // Take the receiver before subscribing, so a signal arriving while the subscription
+        // is being made is not missed.
+        let receiver = self.signal_channels.{{sig_name | snake_case}}_sender.subscribe();
+        self.ensure_{{sig_name | snake_case}}_signal_subscribed().await;
+        receiver
     }
     {%endfor%}
 
-    {%if stinger.methods | length > 0 or stinger.properties | length > 0 or stinger.commands | length > 0 %}
+    {%if stinger.signals | length > 0 or stinger.methods | length > 0 or stinger.properties | length > 0 or stinger.commands | length > 0 %}
     /// Builds the topic-template parameters that stay constant for the lifetime of
     /// this client (interface name, service instance id, client id and any
     /// configured topic parameters).  Callers insert the request-specific keys
@@ -267,12 +339,14 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     #[allow(clippy::too_many_arguments)]
     async fn run_property_update_request_handler<T, P, MakePayload, ExtractValue>(
         property_name: &'static str,
-        mut request_rx: tokio::sync::mpsc::Receiver<(T, Option<oneshot::Sender<Option<T>>>)>,
+        mut request_rx: tokio::sync::mpsc::Receiver<(Option<T>, Option<oneshot::Sender<Option<Option<T>>>>)>,
         mut publisher: C,
         resp_map: Arc<Mutex<HashMap<Uuid, oneshot::Sender<MethodReturnCode>>>>,
         update_topic: String,
         response_topic: String,
+        {%- if config.properties.version_tracking %}
         version: Arc<AtomicU32>,
+        {%- endif %}
         make_payload: MakePayload,
         extract_value: ExtractValue,
     ) where
@@ -281,7 +355,16 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         MakePayload: Fn(T) -> P + Send + 'static,
         ExtractValue: Fn(P) -> T + Send + 'static,
     {
-        while let Some((value, opt_responder)) = request_rx.recv().await {
+        while let Some((opt_value, opt_responder)) = request_rx.recv().await {
+            // The lock holds an Option because a property's value is unknown until it has
+            // been received; there is nothing to ask the server for while it still is.
+            let Some(value) = opt_value else {
+                warn!("Property {} was set locally to no value; nothing to request of the server", property_name);
+                if let Some(responder) = opt_responder {
+                    let _ = responder.send(None);
+                }
+                continue;
+            };
             debug!("Property {} has changed locally to {:?}, sending update request to server", property_name, value);
             let payload_obj = make_payload(value);
             let correlation_id = Uuid::new_v4();
@@ -290,7 +373,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                 let mut hashmap = resp_map.lock().expect("Mutex was poisoned");
                 hashmap.insert(correlation_id, sender);
             }
-            match message::property_update_request(&update_topic, &payload_obj, version.load(Ordering::Relaxed), correlation_id, response_topic.clone()) {
+            match message::property_update_request(&update_topic, &payload_obj, {%if config.properties.version_tracking%}version.load(Ordering::Relaxed), {%endif%}correlation_id, response_topic.clone()) {
                 Ok(msg) => {
                     debug!("Publishing property update request for '{}' to topic '{}': {:?}", property_name, update_topic, payload_obj);
                     let _publish_result = publisher.publish(msg).await;
@@ -301,7 +384,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                             if let Some(responder) = opt_responder {
                                 if let Some(response_text) = opt_response_text {
                                     let resp_obj = <P as crate::payloads::WirePayload>::from_bytes(&response_text).unwrap();
-                                    let _ = responder.send(Some(extract_value(resp_obj)));
+                                    let _ = responder.send(Some(Some(extract_value(resp_obj))));
                                 } else {
                                     warn!("No response payload received for property update request for '{}'", property_name);
                                     let _ = responder.send(None);
@@ -425,20 +508,116 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
 
     {%endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
+    /// Subscribes to the `{{prop_name}}` property's value topic, at most once.
+    ///
+    /// Nothing subscribes to property values when the client is constructed; the
+    /// subscription is made the first time the application shows interest in this
+    /// property, by watching, reading or setting it.
+    async fn ensure_{{prop_name | snake_case}}_property_subscribed(&self) {
+        // Claim the subscription with a compare-exchange, so two concurrent first uses of
+        // this property do not each subscribe.
+        if self.subscription_ids.{{prop_name | snake_case}}_property_value
+            .compare_exchange(
+                UNSUBSCRIBED_SUBSCRIPTION_ID,
+                SUBSCRIBING_SUBSCRIPTION_ID,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            )
+            .is_err()
+        {
+            return;
+        }
+
+        let mut topic_param_map = self.base_topic_params();
+        topic_param_map.insert("property_name".to_string(), "{{prop_name}}".to_string());
+        let topic = strfmt("{{prop.value_topic()}}", &topic_param_map).unwrap();
+        let mut connection = self.mqtt_client.clone();
+        match connection.subscribe(topic.clone(), QoS::AtLeastOnce, self.msg_streamer_tx.clone()).await {
+            Ok(subscription_id) => {
+                debug!("Subscription (id={}) to property value topic for '{{prop_name}}'", subscription_id);
+                self.subscription_ids.{{prop_name | snake_case}}_property_value.store(subscription_id, Ordering::Release);
+            }
+            Err(e) => {
+                error!("Failed to subscribe to the '{{prop_name}}' property value topic '{}': {:?}", topic, e);
+                // Release the claim so a later call can try again.
+                self.subscription_ids.{{prop_name | snake_case}}_property_value.store(UNSUBSCRIBED_SUBSCRIPTION_ID, Ordering::Release);
+            }
+        }
+    }
+
     /// Watch for changes to the `{{prop_name}}` property.
-    /// This returns a watch::Receiver that can be awaited on for changes to the property value.
-    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{{prop.rust.type}}> {
-        self.properties.{{prop_name | snake_case}}.subscribe()
+    ///
+    /// This subscribes to the property and returns a `watch::Receiver` that can be awaited
+    /// on for changes.  The receiver holds `None` until the server publishes a value, and
+    /// `Some(value)` from then on.
+    pub async fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<Option<{{prop.rust.type}}>> {
+        // Take the receiver before subscribing, so a value arriving while the subscription
+        // is being made is not missed.
+        let receiver = self.properties.{{prop_name | snake_case}}.subscribe();
+        self.ensure_{{prop_name | snake_case}}_property_subscribed().await;
+        receiver
+    }
+
+    /// Returns the current value of the `{{prop_name}}` property.
+    ///
+    /// Subscribes to the property if it is not subscribed already, then waits up to
+    /// `PROPERTY_VALUE_TIMEOUT` for the server to publish a value.  Returns
+    /// `MethodReturnCode::Timeout` if none arrives in that time.
+    pub async fn get_{{prop_name | snake_case}}(&self) -> Result<{{prop.rust.type}}, MethodReturnCode> {
+        self.await_{{prop_name | snake_case}}_property().await
+    }
+
+    /// Subscribes to the `{{prop_name}}` property if needed and waits for its first value.
+    ///
+    {%- if config.properties.version_tracking %}
+    /// This backs both reading the property and handing out its lock: an update request has
+    /// to carry the version of the value this client last saw, so a writer cannot be given
+    /// out before that value is known either.
+    {%- else %}
+    /// This backs both reading the property and handing out its lock: an update is made
+    /// against the value this client last saw, so a writer cannot be given out before that
+    /// value is known either.
+    {%- endif %}
+    async fn await_{{prop_name | snake_case}}_property(&self) -> Result<{{prop.rust.type}}, MethodReturnCode> {
+        let mut receiver = self.properties.{{prop_name | snake_case}}.subscribe();
+        self.ensure_{{prop_name | snake_case}}_property_subscribed().await;
+
+        if let Some(value) = (*receiver.borrow_and_update()).clone() {
+            return Ok(value);
+        }
+
+        let wait_for_value = async {
+            while receiver.changed().await.is_ok() {
+                if let Some(value) = (*receiver.borrow_and_update()).clone() {
+                    return Some(value);
+                }
+            }
+            None
+        };
+        match tokio::time::timeout(PROPERTY_VALUE_TIMEOUT, wait_for_value).await {
+            Ok(Some(value)) => Ok(value),
+            Ok(None) => Err(MethodReturnCode::Timeout(
+                "The '{{prop_name}}' property watch channel closed before a value arrived".to_string(),
+            )),
+            Err(_) => Err(MethodReturnCode::Timeout(format!(
+                "No value for the '{{prop_name}}' property was received within {:?}",
+                PROPERTY_VALUE_TIMEOUT
+            ))),
+        }
     }
     {%if not prop.read_only %}
-    /// Sets the `{{prop_name}}` property and returns a oneshot that receives the acknowledgment back from the server.
+    /// Requests that the server change the `{{prop_name}}` property, and awaits the
+    /// acknowledgment back from the server.
     pub async fn set_{{prop_name | snake_case}}(
             &mut self, 
             value: {{prop.rust.type}}
     ) -> MethodReturnCode {
-        let write_request_lock = self.get_{{prop_name | snake_case}}_handle();
+        let write_request_lock = match self.get_{{prop_name | snake_case}}_handle().await {
+            Ok(handle) => handle,
+            Err(code) => return code,
+        };
         let mut writer = write_request_lock.write().await;
-        *writer = value;
+        *writer = Some(value);
         match writer.commit(std::time::Duration::from_secs(5)).await {
             CommitResult::Applied(_) => {
                 MethodReturnCode::Success(None)
@@ -447,12 +626,26 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         }   
     }
 
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<WriteRequestLockWatch<{{prop.rust.type}}>> {
-        self.properties.{{prop_name | snake_case}}.write_request().into()
+    /// Returns the lock behind the `{{prop_name}}` property, for a read-modify-write under
+    /// a single commit rather than clobbering a concurrent change.
+    ///
+    {%- if config.properties.version_tracking %}
+    /// Subscribes to the property and waits for its current value first, because an update
+    /// request has to carry the version of the value this client last saw.
+    {%- else %}
+    /// Subscribes to the property and waits for its current value first, so the
+    /// read-modify-write starts from the value the server last published.
+    {%- endif %}
+    pub async fn get_{{prop_name | snake_case}}_handle(&self) -> Result<Arc<WriteRequestLockWatch<Option<{{prop.rust.type}}>>>, MethodReturnCode> {
+        self.await_{{prop_name | snake_case}}_property().await?;
+        Ok(self.properties.{{prop_name | snake_case}}.write_request().into())
     }
     {%else%}
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> Arc<ReadOnlyLockWatch<{{prop.rust.type}}>> {
-        self.properties.{{prop_name | snake_case}}.read_only().into()
+    /// Returns a read-only handle to the `{{prop_name}}` property, after subscribing to it
+    /// and waiting for its current value.
+    pub async fn get_{{prop_name | snake_case}}_handle(&self) -> Result<Arc<ReadOnlyLockWatch<Option<{{prop.rust.type}}>>>, MethodReturnCode> {
+        self.await_{{prop_name | snake_case}}_property().await?;
+        Ok(self.properties.{{prop_name | snake_case}}.read_only().into())
     }
     {%endif%}
     {%endfor%}
@@ -503,7 +696,9 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                 self.pending_responses.clone(),
                 update_topic,
                 response_topic,
+                {%- if config.properties.version_tracking %}
                 props.{{prop_name | snake_case}}_version.clone(),
+                {%- endif %}
                 |value| {{ property_wrap(prop, 'value') }},
                 |resp_obj: {{prop.payload.rust.class_name}}| {{ property_unwrap(prop, 'resp_obj') }},
             ));
@@ -585,7 +780,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                         },
                         {%endif%}
                         {%-for signal_name, signal in stinger.signals.items()%}
-                        _i if sub_ids.{{signal_name | snake_case}}_signal == Some(_i) => {
+                        _i if _i == sub_ids.{{signal_name | snake_case}}_signal.load(Ordering::Relaxed) => {
                             debug!("Received {{signal_name}} signal message");
                             // Find broadcast channel.
                             let chan = sig_chans.{{signal_name | snake_case}}_sender.clone();
@@ -594,7 +789,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                         },
                         {%endfor%}
                         {%-for prop_name, prop in stinger.properties.items()%}
-                        _i if _i == sub_ids.{{prop_name | snake_case}}_property_value => {
+                        _i if _i == sub_ids.{{prop_name | snake_case}}_property_value.load(Ordering::Relaxed) => {
                             debug!("Received '{{prop_name}}' property value");
                             let props_copy = props.clone();
                             tokio::spawn(async move {
@@ -610,13 +805,15 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                                         // Get a write-guard and set the local copy of the property value.
                                         let mut guard = props_copy.{{prop_name | snake_case}}.write().await;
                                         debug!("{{prop_name | CONST_CASE}} property value updated: {:?}", {{ property_unwrap(prop, "pl") }});
-                                        *guard = {{ property_unwrap(prop, 'pl') }}.clone();
+                                        *guard = Some({{ property_unwrap(prop, 'pl') }}.clone());
+                                        {%- if config.properties.version_tracking %}
                                         // Hold onto the write-guard while we set the local copy of the property version.
                                         if let Some(version_str) = msg.user_properties.get("PropertyVersion") {
                                             if let Ok(version_num) = version_str.parse::<u32>() {
                                                 props_copy.{{prop_name | snake_case}}_version.store(version_num, std::sync::atomic::Ordering::Relaxed);
                                             }
                                         }
+                                        {%- endif %}
                                     },
                                     Err(e) => {
                                         warn!("Failed to deserialize '{}' into {{prop.payload.rust.class_name}}: {}", String::from_utf8_lossy(&msg.payload), e);
@@ -646,7 +843,6 @@ mod tests {
     use stinger_mqtt_trait::mock::MockClient;
     use tracing_subscriber::EnvFilter;
     use crate::interface::InterfaceInfo;
-    {% if stinger.properties|length > 0%}use crate::property::{{stinger.name | UpperCamelCase}}InitialPropertyValues;{%endif%}
 
     #[tokio::test]
     async fn mock_client() {
@@ -664,15 +860,6 @@ mod tests {
             {%-endfor%}
         ]);
 
-        {%if stinger.properties|length > 0%}
-        let initial_property_values = {{stinger.name | UpperCamelCase}}InitialPropertyValues {
-            {%for prop_name, prop in stinger.properties.items()%}
-            {{prop_name | snake_case}}: {{ property_example(prop) }},
-            {{prop_name | snake_case}}_version: 1,
-            {%endfor%}
-        };
-        {%endif%}
-
         let topic = strfmt("{{stinger.interface_info_topic()}}", &server_topic_param_map).unwrap();
         let interface_info = crate::interface::InterfaceInfoBuilder::default()
             .interface_name(server_topic_param_map.get("interface_name").unwrap().to_string())
@@ -687,7 +874,6 @@ mod tests {
 
         let discovery_info = DiscoveredService {
             interface_info: interface_info,
-            {%if stinger.properties|length > 0%}properties: initial_property_values,{%endif%}
         };
 
         let mut client = {{stinger.rust.client_struct_name}}::new(mock_mqtt.clone(), discovery_info).await;
@@ -697,6 +883,29 @@ mod tests {
         tokio::spawn(async move {
             let _ = client_for_loop.run_loop().await;
         });
+
+        {%for sig_name, sig in stinger.signals.items()%}
+        { // Nothing is subscribed to a signal until a receiver for it is asked for.
+            let mut topic_param_map = server_topic_param_map.clone();
+            topic_param_map.insert("signal_name".to_string(), "{{sig_name}}".to_string());
+            let {{sig_name|snake_case}}_topic = strfmt("{{sig.topic()}}", &topic_param_map).unwrap();
+
+            // `simulate_receive` reports how many subscriptions matched, so a count of zero
+            // says the client has not subscribed to this signal's topic.
+            let {{sig_name|snake_case}}_msg = MqttMessage::simple({{sig_name|snake_case}}_topic.clone(), QoS::AtLeastOnce, false, Bytes::new());
+            assert_eq!(
+                mock_mqtt.simulate_receive({{sig_name|snake_case}}_msg.clone()).unwrap(), 0,
+                "Subscribed to the '{{sig_name}}' signal topic before a receiver was asked for"
+            );
+
+            // Asking for a receiver is what subscribes to the signal.
+            let _{{sig_name|snake_case}}_rx = client.get_{{sig_name|snake_case}}_receiver().await;
+            assert_eq!(
+                mock_mqtt.simulate_receive({{sig_name|snake_case}}_msg).unwrap(), 1,
+                "Asking for a '{{sig_name}}' receiver did not subscribe to its signal topic"
+            );
+        }
+        {%endfor%}
 
         {%for method_name, method in stinger.methods.items()%}
         { // Test calling the {{method_name}} method.
@@ -740,16 +949,41 @@ mod tests {
         {%endfor%}
 
         {% for prop_name, prop in stinger.properties.items() %}
+        { // Nothing is subscribed to a property until the application asks for it.
+            let mut topic_param_map = server_topic_param_map.clone();
+            topic_param_map.insert("property_name".to_string(), "{{prop_name}}".to_string());
+            let {{prop_name|snake_case}}_value_topic = strfmt("{{prop.value_topic()}}", &topic_param_map).unwrap();
+
+            // A value message, the way the server would publish it.  `simulate_receive`
+            // reports how many subscriptions matched, so a count of zero says the client
+            // has not subscribed to this property's value topic.
+            let {{prop_name|snake_case}}_payload = {{ property_wrap(prop, property_example(prop)) }};
+            let {{prop_name|snake_case}}_msg = crate::message::property_value(&{{prop_name|snake_case}}_value_topic, &{{prop_name|snake_case}}_payload, 1).unwrap();
+            assert_eq!(
+                mock_mqtt.simulate_receive({{prop_name|snake_case}}_msg.clone()).unwrap(), 0,
+                "Subscribed to the '{{prop_name}}' property value topic before the application asked for it"
+            );
+
+            // Watching the property is what subscribes to it.
+            let _{{prop_name|snake_case}}_watch = client.watch_{{prop_name | snake_case}}().await;
+            assert_eq!(
+                mock_mqtt.simulate_receive({{prop_name|snake_case}}_msg).unwrap(), 1,
+                "Watching the '{{prop_name}}' property did not subscribe to its value topic"
+            );
+            sleep(Duration::from_millis(50)).await;
+
+            assert!(client.get_{{prop_name | snake_case}}().await.is_ok(), "Expected a value for the '{{prop_name}}' property after the server published one");
+        }
         {%if not prop.read_only %}
         { // Test setting the {{prop_name}} property if it is not read-only.
             // Create an example value to set the property to.
             let {{prop_name|snake_case}}_new_value = {{ property_example(prop) }};
 
             mock_mqtt.clear_published_messages();
-            let {{prop_name|snake_case}}_handle = client.get_{{prop_name | snake_case}}_handle();
+            let {{prop_name|snake_case}}_handle = client.get_{{prop_name | snake_case}}_handle().await.expect("Expected a writable handle for '{{prop_name}}'");
             { // Guard scope
                 let mut guard = {{prop_name|snake_case}}_handle.write().await;
-                *guard = {{prop_name|snake_case}}_new_value;
+                *guard = Some({{prop_name|snake_case}}_new_value);
             } // drop guard should send the mqtt request to update the property value on the server.
             sleep(Duration::from_millis(50)).await; // Its not so much the sleep time as the await that allows other async code to complete.
 

@@ -42,6 +42,7 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
         _receiveMessage(msg);
     });
 
+    {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
     std::map<std::string, std::string> topicParams;
     topicParams["client_id"] = _broker->GetClientId();
     topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
@@ -49,11 +50,13 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
     {%-for topic_param in config.topics.params %}
     topicParams["{{topic_param}}"] = _instanceInfo.{{topic_param|lowerCamelCase}}.value_or("error_{{topic_param}}_not_found");
     {%-endfor%}
+    {%endif%}
 
-    {%for sig_name, sig in stinger.signals.items() %}
-    auto {{sig_name | lowerCamelCase}}Topic = stinger::utils::format("{{sig.topic()}}", topicParams);
-    _{{sig_name | lowerCamelCase}}SignalSubscriptionId = _broker->Subscribe({{sig_name | lowerCamelCase}}Topic, {{stinger.signal_qos}});
-    {%-endfor%}{# end signals for loop #}
+    {%if stinger.signals|length > 0 %}
+    // Signal topics are deliberately not subscribed to here.  Each signal is subscribed to
+    // when its first callback is registered, so a client never receives signals nothing is
+    // listening for.
+    {%endif%}
     {%-for method_name, method in stinger.methods.items() %}
     { // Restrict scope
         auto {{method_name | lowerCamelCase}}ResponseTopic = stinger::utils::format("{{method.response_topic()}}", topicParams);
@@ -62,11 +65,10 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
         _{{method_name | lowerCamelCase}}MethodSubscriptionId = _broker->Subscribe(responseTopicStringStream.str(), {{stinger.method_response_qos}});
     }
     {%-endfor%}{# end methods for loop #}
-    {%-for prop_name, prop in stinger.properties.items() %}
-    auto {{prop_name | lowerCamelCase}}ValueTopic = stinger::utils::format("{{prop.value_topic()}}", topicParams);
-    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe({{prop_name | lowerCamelCase}}ValueTopic, {{stinger.property_value_qos}});
-    {%-endfor%}{# end properties for loop #}
     {%if stinger.properties|length > 0 %}
+    // Property value topics are deliberately not subscribed to here.  Each property is
+    // subscribed to on first use -- when a callback is registered for it, or when its
+    // value is read -- so a client never receives properties it was never asked about.
     auto anyPropertyUpdateResponseTopic = stinger::utils::format("{{stinger.all_properties_response_topic()}}", topicParams);
     _anyPropertyUpdateResponseSubscriptionId = _broker->Subscribe(anyPropertyUpdateResponseTopic, 1);
     {%endif%}{# end if properties #}
@@ -87,7 +89,7 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Mes
     int subscriptionId = msg.properties.subscriptionId.value_or(noSubId);
     _broker->Log(LOG_DEBUG, "Received message on topic %s with subscription id=%d", msg.topic.c_str(), subscriptionId);
     {%-for sig_name, sig in stinger.signals.items() %}
-    if (subscriptionId == _{{sig_name | lowerCamelCase}}SignalSubscriptionId)
+    if (subscriptionId != noSubId && subscriptionId == _{{sig_name | lowerCamelCase}}SignalSubscriptionId)
     {
         _broker->Log(LOG_INFO, "Handling {{sig_name}} signal");
         if (msg.properties.debugInfo.has_value())
@@ -183,7 +185,7 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Mes
     }
     {%-endfor%}{# for methods #}
     {%-for prop_name, prop in stinger.properties.items() %}
-    {%if not loop.first%}else {%endif%}if (subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId)
+    {%if not loop.first%}else {%endif%}if (subscriptionId != noSubId && subscriptionId == _{{prop_name | lowerCamelCase}}PropertySubscriptionId)
     {
         _receive{{prop_name | UpperCamelCase}}PropertyUpdate(msg);
     }
@@ -197,10 +199,36 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Mes
 
 
 {%-for sig_name, sig in stinger.signals.items() %}
+void {{stinger.cpp.client_class_name}}::_subscribeTo{{sig_name | UpperCamelCase}}Signal()
+{
+    std::lock_guard<std::mutex> lock(_{{sig_name | lowerCamelCase}}SignalSubscriptionMutex);
+    if (_{{sig_name | lowerCamelCase}}SignalSubscriptionId != -1)
+    {
+        return;
+    }
+
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    {%-for topic_param in config.topics.params %}
+    topicParams["{{topic_param}}"] = _instanceInfo.{{topic_param|lowerCamelCase}}.value_or("error_{{topic_param}}_not_found");
+    {%-endfor%}
+
+    auto {{sig_name | lowerCamelCase}}Topic = stinger::utils::format("{{sig.topic()}}", topicParams);
+    _broker->Log(LOG_DEBUG, "Subscribing to '{{sig_name}}' signal topic %s", {{sig_name | lowerCamelCase}}Topic.c_str());
+    _{{sig_name | lowerCamelCase}}SignalSubscriptionId = _broker->Subscribe({{sig_name | lowerCamelCase}}Topic, {{stinger.signal_qos}});
+}
+
 void {{stinger.cpp.client_class_name}}::register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb)
 {
-    std::lock_guard<std::mutex> lock(_{{sig_name | lowerCamelCase}}SignalCallbacksMutex);
-    _{{sig_name | lowerCamelCase}}SignalCallbacks.push_back(cb);
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_{{sig_name | lowerCamelCase}}SignalCallbacksMutex);
+        _{{sig_name | lowerCamelCase}}SignalCallbacks.push_back(cb);
+    }
+    // Registering interest in the signal is what subscribes to it.  Done outside the lock
+    // above, since the incoming-message path takes that same lock.
+    _subscribeTo{{sig_name | UpperCamelCase}}Signal();
 }
 {%-endfor%}
 
@@ -321,6 +349,40 @@ void {{stinger.cpp.client_class_name}}::send{{command_name | UpperCamelCase}}Com
 }
 {%endfor%}{# end for each command #}
 {%for prop_name, prop in stinger.properties.items()%}
+void {{stinger.cpp.client_class_name}}::_subscribeTo{{prop_name | UpperCamelCase}}Property()
+{
+    std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertySubscriptionMutex);
+    if (_{{prop_name | lowerCamelCase}}PropertySubscriptionId != -1)
+    {
+        return;
+    }
+
+    std::map<std::string, std::string> topicParams;
+    topicParams["client_id"] = _broker->GetClientId();
+    topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
+    topicParams["interface_name"] = NAME;
+    {%-for topic_param in config.topics.params %}
+    topicParams["{{topic_param}}"] = _instanceInfo.{{topic_param|lowerCamelCase}}.value_or("error_{{topic_param}}_not_found");
+    {%-endfor%}
+
+    auto {{prop_name | lowerCamelCase}}ValueTopic = stinger::utils::format("{{prop.value_topic()}}", topicParams);
+    _broker->Log(LOG_DEBUG, "Subscribing to '{{prop_name}}' property value topic %s", {{prop_name | lowerCamelCase}}ValueTopic.c_str());
+    _{{prop_name | lowerCamelCase}}PropertySubscriptionId = _broker->Subscribe({{prop_name | lowerCamelCase}}ValueTopic, {{stinger.property_value_qos}});
+}
+
+void {{stinger.cpp.client_class_name}}::_await{{prop_name | UpperCamelCase}}Property()
+{
+    _subscribeTo{{prop_name | UpperCamelCase}}Property();
+
+    std::unique_lock<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
+    if (!_{{prop_name | lowerCamelCase}}PropertyReceivedCondition.wait_for(lock, PROPERTY_VALUE_TIMEOUT, [this] {
+            return _{{prop_name | lowerCamelCase}}PropertyReceived;
+        }))
+    {
+        throw stinger::error::TimeoutException("No value for the '{{prop_name}}' property was received in time");
+    }
+}
+
 void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}PropertyUpdate(const stinger::mqtt::Message& msg)
 {
     if (msg.properties.debugInfo.has_value())
@@ -338,8 +400,13 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
     { // Scope lock
         std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
         _{{prop_name | lowerCamelCase}}Property = tempValue;
+{%- if config.properties.version_tracking %}
         _last{{prop_name | UpperCamelCase}}PropertyVersion = msg.properties.propertyVersion ? *msg.properties.propertyVersion : -1;
+{%- endif %}
+        _{{prop_name | lowerCamelCase}}PropertyReceived = true;
     }
+    // Release any getter or update request waiting for the first value.
+    _{{prop_name | lowerCamelCase}}PropertyReceivedCondition.notify_all();
     // Notify all registered callbacks.
     { // Scope lock
         std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyCallbacksMutex);
@@ -363,13 +430,22 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
 }
 
 
-{{pr.get_property_definition(stinger.cpp.client_class_name, prop_name, prop)}}
+{{pr.get_property_definition(stinger.cpp.client_class_name, prop_name, prop, true)}}
 
-{{pr.callback_registration_definition(stinger.cpp.client_class_name, prop_name, prop)}}
+{{pr.callback_registration_definition(stinger.cpp.client_class_name, prop_name, prop, true)}}
 
 {% if not prop.read_only %}
-std::future<bool> {{stinger.cpp.client_class_name}}::update{{prop.name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}}) const
+std::future<bool> {{stinger.cpp.client_class_name}}::update{{prop.name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}})
 {
+{%- if config.properties.version_tracking %}
+    // The server rejects an update request whose version does not match the version it
+    // last published, so the current value has to be known before one can be sent.
+{%- else %}
+    // An update request is only sent once this client knows the property's current value,
+    // so this subscribes to the property and waits for that value to arrive.
+{%- endif %}
+    _await{{prop_name | UpperCamelCase}}Property();
+
     {{prop.payload.cpp.class_name}} propertyPayload{ {%for arg in prop.arg_list%}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
     auto payloadStr = Wire<{{prop.payload.cpp.class_name}}>::ToString(propertyPayload);
 
@@ -384,7 +460,7 @@ std::future<bool> {{stinger.cpp.client_class_name}}::update{{prop.name | UpperCa
     std::string update_topic = stinger::utils::format("{{prop.update_topic()}}", topicParams);
     std::string response_topic = stinger::utils::format("{{prop.response_topic()}}", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
-    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, payloadStr, _last{{prop_name | UpperCamelCase}}PropertyVersion, correlationData, response_topic);
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, payloadStr, {%if config.properties.version_tracking%}_last{{prop_name | UpperCamelCase}}PropertyVersion{%else%}std::nullopt{%endif%}, correlationData, response_topic);
     return _broker->Publish(msg);
 
 }

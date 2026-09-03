@@ -1,8 +1,14 @@
 {% import 'partials/args.jinja2' as ar %}
 {%macro prop_value_type(prop) -%}{%if prop.cpp.is_optional and prop.value.arg_type.name.lower() != 'struct'%}{{prop.cpp.value_type}}{%else%}{{prop.payload.cpp.class_name}}{%endif%}{%endmacro%}
-{%macro public_declarations(prop_name, prop, client)%}
+{%macro public_declarations(prop_name, prop, client, config)%}
 // ---{{prop_name}} Property---
-
+{%if client%}
+// Gets the current value of the `{{prop_name}}` property.
+// Nothing is subscribed to at construction time, so the first call subscribes to the
+// property and blocks for up to `PROPERTY_VALUE_TIMEOUT` waiting for the server to
+// publish a value.  Throws `stinger::error::TimeoutException` if none arrives.
+{{prop.cpp.temp_type}} get{{prop_name | UpperCamelCase}}Property();
+{%-else%}
 // Gets the latest value of the `{{prop_name}}` property, if one has been received.
 // If no value has been received yet, an empty optional is returned.
 {%if prop.cpp.is_optional%}
@@ -10,30 +16,66 @@
 {%-else%}
 std::optional<{{prop.cpp.value_type}}> get{{prop_name | UpperCamelCase}}Property();
 {%-endif%}
+{%-endif%}
 
 // Add a callback that will be called whenever the `{{prop_name}}` property is updated.
 // The provided method will be called whenever a new value for the `{{prop_name}}` property is received.
+{%- if client %}
+// Registering a callback is what subscribes to the `{{prop_name}}` property, so the
+// callback is invoked with the server's current value shortly after this returns.
+{%- endif %}
 void register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void({{ar.declarationParams(prop.arg_list)}})>& cb);
 {% if not client or not prop.read_only %}
-{% if client %}std::future<bool>{%else%}void{%endif%} update{{prop_name | UpperCamelCase}}Property({{ar.declarationParams(prop.arg_list)}}){%if client%} const{%endif%};
+{%- if client %}
+{%- if config.properties.version_tracking %}
+// Asks the server to change the `{{prop_name}}` property.  The request carries the
+// version of the value this client last saw, so this also subscribes to the property and
+// waits for that value, throwing `stinger::error::TimeoutException` if none arrives.
+{%- else %}
+// Asks the server to change the `{{prop_name}}` property.  The property's current value is
+// awaited first, so this also subscribes to the property and waits for that value,
+// throwing `stinger::error::TimeoutException` if none arrives.
+{%- endif %}
+{%- endif %}
+{% if client %}std::future<bool>{%else%}void{%endif%} update{{prop_name | UpperCamelCase}}Property({{ar.declarationParams(prop.arg_list)}});
 {%endif%}
 {%endmacro%}
 
-{%macro private_declarations(prop_name, prop, client)%}
+{%macro private_declarations(prop_name, prop, client, config)%}
 // ---{{prop_name}} Property---
 
 // {%if client %}Last received{%else%}Current{%endif%} value for the `{{prop_name}}` property.
 std::optional<{{prop.payload.cpp.class_name}}> _{{prop_name | lowerCamelCase}}Property;
-
+{% if config.properties.version_tracking %}
 // This is the property version {% if client %}of the last received `{{prop_name}}` property update.{%else%} of `{{prop_name}}`.{%endif%}
 int _last{{prop_name | UpperCamelCase}}PropertyVersion = -1;
-
-// Mutex for protecting access to the `{{prop_name}}` property and its version.
+{% endif %}
+// Mutex for protecting access to the `{{prop_name}}` property{%if config.properties.version_tracking%} and its version{%endif%}.
 mutable std::mutex _{{prop_name | lowerCamelCase}}PropertyMutex;
-
+{% if client %}
+// Mutex for protecting the subscription bookkeeping below.  Kept separate from
+// `_{{prop_name | lowerCamelCase}}PropertyMutex` so that a retained value delivered during Subscribe()
+// cannot deadlock against the thread doing the subscribing.
+mutable std::mutex _{{prop_name | lowerCamelCase}}PropertySubscriptionMutex;
+{% endif %}
 // MQTT Subscription ID for `{{prop_name}}` property {%if client %}updates{%else%}update requests{%endif%}.
-int _{{prop_name | lowerCamelCase}}PropertySubscriptionId;
+int _{{prop_name | lowerCamelCase}}PropertySubscriptionId = -1;
+{% if client %}
+// Signalled when a value for the `{{prop_name}}` property arrives, so that a getter
+// waiting on the first value can proceed.  Guarded by `_{{prop_name | lowerCamelCase}}PropertyMutex`.
+mutable std::condition_variable _{{prop_name | lowerCamelCase}}PropertyReceivedCondition;
 
+// Distinguishes "no value received yet" from a received value; `_{{prop_name | lowerCamelCase}}Property`
+// alone cannot, because an optional property's value may legitimately be absent.
+bool _{{prop_name | lowerCamelCase}}PropertyReceived = false;
+
+// Subscribes to the `{{prop_name}}` property's value topic, at most once.
+void _subscribeTo{{prop_name | UpperCamelCase}}Property();
+
+// Subscribes to the `{{prop_name}}` property if needed and blocks until a value has been
+// received, throwing `stinger::error::TimeoutException` if none arrives in time.
+void _await{{prop_name | UpperCamelCase}}Property();
+{% endif %}
 // Method for parsing a JSON payload that updates the `{{prop_name}}` property.
 void _receive{{prop_name | UpperCamelCase}}PropertyUpdate(const stinger::mqtt::Message& msg);
 
@@ -42,7 +84,19 @@ std::vector<std::function<void({{ar.declarationParams(prop.arg_list)}})>> _{{pro
 std::mutex _{{prop_name | lowerCamelCase}}PropertyCallbacksMutex;
 {%endmacro%}
 
-{%macro get_property_definition(class_name, prop_name, prop)%}
+{%macro get_property_definition(class_name, prop_name, prop, client=false)%}
+{%if client%}
+{{prop.cpp.temp_type}} {{class_name}}::get{{prop_name | UpperCamelCase}}Property()
+{
+    _await{{prop_name | UpperCamelCase}}Property();
+    std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
+    if (!_{{prop_name | lowerCamelCase}}Property)
+    {
+        throw stinger::error::TimeoutException("The '{{prop_name}}' property has no value");
+    }
+    return {%if prop.cpp.is_protobuf%}*_{{prop_name | lowerCamelCase}}Property{%else%}_{{prop_name | lowerCamelCase}}Property->{{prop.value.name|lowerCamelCase}}{%endif%};
+}
+{%else%}
 {%if prop.cpp.is_optional%}
 {{prop.cpp.temp_type}} {{class_name}}::get{{prop_name | UpperCamelCase}}Property()
 {%-else%}
@@ -56,12 +110,20 @@ std::optional<{{prop.cpp.value_type}}> {{class_name}}::get{{prop_name | UpperCam
     }
     return std::nullopt;
 }
+{%endif%}
 {%endmacro%}
 
-{%macro callback_registration_definition(class_name, prop_name, prop)%}
+{%macro callback_registration_definition(class_name, prop_name, prop, client=false)%}
 void {{class_name}}::register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void({{ar.methodParams(prop.arg_list)}})>& cb)
 {
-    std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyCallbacksMutex);
-    _{{prop_name | lowerCamelCase}}PropertyCallbacks.push_back(cb);
+    { // Scope lock
+        std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyCallbacksMutex);
+        _{{prop_name | lowerCamelCase}}PropertyCallbacks.push_back(cb);
+    }
+{%- if client %}
+    // Showing interest in the property is what subscribes to it.  Done outside the lock
+    // above, since the incoming-message path takes that same lock.
+    _subscribeTo{{prop_name | UpperCamelCase}}Property();
+{%- endif %}
 }
 {%endmacro%}

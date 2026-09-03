@@ -59,7 +59,7 @@ async fn main() {
     // We need to discover a service instance before we can create the client.
     // For this demo, we assume a singleton server.
     let service_discovery = {{stinger.name|UpperCamelCase}}Discovery::new(&mut mqttier_client).await.unwrap();
-    // The `discovered_singleton` struct contains the service_id and initial property values.
+    // The `discovered_singleton` struct contains the service's interface info.
     let discovered_singleton = service_discovery.get_singleton_service().await;
 
     #[cfg(feature = "metrics")]
@@ -77,7 +77,8 @@ async fn main() {
     });
 
     {%for sig_name, sig in stinger.signals.items()%}
-    let mut sig_rx = {{stinger.name|snake_case}}_client.get_{{sig_name|snake_case}}_receiver();
+    // Asking for the receiver is what subscribes the client to the signal.
+    let mut sig_rx = {{stinger.name|snake_case}}_client.get_{{sig_name|snake_case}}_receiver().await;
     println!("Got signal receiver for {{sig_name}}");
 
     sleep(Duration::from_secs(5)).await;
@@ -98,11 +99,13 @@ async fn main() {
     });
     {%endfor%}
     {%if stinger.properties|length > 0  %}
-    // This task subscribes to a watch chanel for each property to get notified of changes.
+    // This task subscribes to a watch channel for each property to get notified of changes.
+    // Watching a property is also what subscribes the client to it: nothing is subscribed
+    // to at construction time.  Each channel holds `None` until the server publishes a value.
     let client_for_prop_change = {{stinger.name|snake_case}}_client.clone();
     let _prop_change_rx_task = tokio::spawn(async move {
         {%for prop_name, prop in stinger.properties.items()-%}
-        let mut {{prop_name|snake_case}}_change_rx = client_for_prop_change.watch_{{prop_name|snake_case}}();
+        let mut {{prop_name|snake_case}}_change_rx = client_for_prop_change.watch_{{prop_name|snake_case}}().await;
         {%endfor%}
 
         loop {
@@ -150,11 +153,19 @@ async fn main() {
     });
     {%endif%}
 
-    // Property handles are Send so we can move them into tasks.
-    {%for prop_name, prop in stinger.properties.items()%}
-    let {{prop_name|snake_case}}_handle = {{stinger.name|snake_case}}_client.get_{{prop_name|snake_case}}_handle();
-    {%endfor%}
     {%if stinger.properties|length > 0 %}
+    // Getting a property handle subscribes to the property and waits for the server's
+    // current value, so it can fail with a timeout if the server never publishes one.
+    // Handles are Send, so they can be moved into a task once obtained.
+    {%for prop_name, prop in stinger.properties.items()%}
+    let {{prop_name|snake_case}}_handle = match {{stinger.name|snake_case}}_client.get_{{prop_name|snake_case}}_handle().await {
+        Ok(handle) => handle,
+        Err(code) => {
+            eprintln!("Could not read the '{{prop_name}}' property: {:?}", code);
+            return;
+        }
+    };
+    {%endfor%}
     let property_update_task = tokio::spawn(async move {
         let mut i = 0;
         loop {
@@ -171,7 +182,7 @@ async fn main() {
             { // Scoping for '{{prop_name}}' property.  Demonstrates creating a request to set the value.
                 let {{prop_name|snake_case}}_new_value = {%if not prop.payload.is_protobuf and prop.value.arg_type.name.lower() == "primitive" and prop.value.type.name.lower() == "string"%}format!("new-value-{}", i).into(){%else%}{{ property_example_external(prop) }}{%endif%};
                 let mut write_lock = {{prop_name|snake_case}}_handle.write().await;
-                *write_lock = {{prop_name|snake_case}}_new_value;
+                *write_lock = Some({{prop_name|snake_case}}_new_value);
                 println!("<~~ Sending request to update property '{{prop_name}}' to new value: {:?}", *write_lock);
             }
             sleep(Duration::from_secs(10)).await;

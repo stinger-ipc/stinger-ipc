@@ -29,14 +29,16 @@ pub fn unpublish(topic: &str) -> MqttMessage {
 pub fn property_value<T: WirePayload>(
         topic: &str, 
         payload: &T, 
-        property_version: u32,
-) -> Result<MqttMessage, MethodReturnCode> {
+{%if config.properties.version_tracking%}        property_version: u32,
+{%endif%}) -> Result<MqttMessage, MethodReturnCode> {
     let mut builder = MqttMessageBuilder::default();
     builder.topic(topic).qos(QoS::AtLeastOnce).retain(true);
     match payload.to_bytes() {
         Ok(bytes) => {
             builder.payload(bytes).content_type(Some(T::content_type().to_string()));
+            {%- if config.properties.version_tracking %}
             builder.user_property("PropertyVersion", property_version.to_string());
+            {%- endif %}
         }
         Err(e) => return Err(MethodReturnCode::ServerSerializationError(e.to_string())),
     }
@@ -45,7 +47,7 @@ pub fn property_value<T: WirePayload>(
 }
 
 #[cfg(feature = "client")]
-pub fn property_update_request<T: WirePayload>(topic: &str, payload: &T, property_version: u32, correlation_id: Uuid, response_topic: String) -> Result<MqttMessage, MethodReturnCode> {
+pub fn property_update_request<T: WirePayload>(topic: &str, payload: &T, {%if config.properties.version_tracking%}property_version: u32, {%endif%}correlation_id: Uuid, response_topic: String) -> Result<MqttMessage, MethodReturnCode> {
     let msg = MqttMessageBuilder::default()
         .topic(topic)
         .payload(payload.to_bytes().map_err(MethodReturnCode::ClientSerializationError)?)
@@ -53,7 +55,9 @@ pub fn property_update_request<T: WirePayload>(topic: &str, payload: &T, propert
         .qos(QoS::AtLeastOnce)
         .retain(false)
         .response_topic(response_topic)
+        {%- if config.properties.version_tracking %}
         .user_property("PropertyVersion", property_version.to_string())
+        {%- endif %}
         .correlation_data(Bytes::from(correlation_id.to_string()))
         .build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;
     Ok(msg)
@@ -84,7 +88,9 @@ pub fn property_update_response<T: WirePayload>(topic: &str, payload: &T, correl
 pub fn stable_property_value<T: WirePayload>(
         topic: &str,
         payload: &T,
+        {%- if config.properties.version_tracking %}
         property_version: u32,
+        {%- endif %}
         version: &str,
 ) -> Result<MqttMessage, MethodReturnCode> {
     let mut builder = MqttMessageBuilder::default();
@@ -92,7 +98,9 @@ pub fn stable_property_value<T: WirePayload>(
     match payload.to_bytes() {
         Ok(bytes) => {
             builder.payload(bytes).content_type(Some(T::content_type().to_string()));
+            {%- if config.properties.version_tracking %}
             builder.user_property("PropertyVersion", property_version.to_string());
+            {%- endif %}
         }
         Err(e) => return Err(MethodReturnCode::ServerSerializationError(e.to_string())),
     }
@@ -101,7 +109,7 @@ pub fn stable_property_value<T: WirePayload>(
 }
 
 #[cfg(feature = "client")]
-pub fn stable_property_update_request<T: WirePayload>(topic: &str, payload: &T, property_version: u32, correlation_id: Uuid, response_topic: String, version: &str) -> Result<MqttMessage, MethodReturnCode> {
+pub fn stable_property_update_request<T: WirePayload>(topic: &str, payload: &T, {%if config.properties.version_tracking%}property_version: u32, {%endif%}correlation_id: Uuid, response_topic: String, version: &str) -> Result<MqttMessage, MethodReturnCode> {
     let msg = MqttMessageBuilder::default()
         .topic(topic)
         .payload(payload.to_bytes().map_err(MethodReturnCode::ClientSerializationError)?)
@@ -109,7 +117,9 @@ pub fn stable_property_update_request<T: WirePayload>(topic: &str, payload: &T, 
         .qos(QoS::AtLeastOnce)
         .retain(false)
         .response_topic(response_topic)
+        {%- if config.properties.version_tracking %}
         .user_property("PropertyVersion", property_version.to_string())
+        {%- endif %}
         .user_property("Version", version)
         .correlation_data(Bytes::from(correlation_id.to_string()))
         .build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;

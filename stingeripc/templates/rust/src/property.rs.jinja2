@@ -8,7 +8,9 @@ pub struct {{stinger.name | UpperCamelCase}}InitialPropertyValues {
     {%for prop_name, prop in stinger.properties.items()-%}
     {%if prop.rust.is_optional%}#[builder(default = "None")]{%endif-%}
     pub {{prop_name | snake_case}}: {{prop.rust.type}},
+    {%-if config.properties.version_tracking%}
     pub {{prop_name | snake_case}}_version: u32,
+    {%-endif%}
     {%endfor%}
 }
 

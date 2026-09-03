@@ -1304,7 +1304,7 @@ requires-dist = [
     { name = "ruamel-yaml", specifier = ">=0.18.14" },
     { name = "semantic-version", specifier = ">=2.10.0" },
     { name = "stevedore", specifier = ">=5.5.0" },
-    { name = "stinger-python-utils", specifier = "~=0.2.0" },
+    { name = "stinger-python-utils", specifier = "~=0.3.0" },
     { name = "typer", specifier = ">=0.16.1" },
 ]
 
@@ -1323,15 +1323,15 @@ dev = [
 
 [[package]]
 name = "stinger-python-utils"
-version = "0.2.0"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
     { name = "pyqttier" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/56/df/a4f523ab83c59edef03e5674ac54b28e507392b4fd39d8a1d5fa8d3ab756/stinger_python_utils-0.2.0.tar.gz", hash = "sha256:ceb29e7951408de4a289c220aefbdc104d45696ec165d55296c21278412c8b58", size = 102871, upload-time = "2026-08-28T23:02:02.985Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/41/d2/92b4987aa0c54d694455c5736081b8fc8d3918544b76b75f65fe3291aaea/stinger_python_utils-0.3.0.tar.gz", hash = "sha256:7a66b0707911db57c6c69feddc46a4a531a67189500ad6fd8c7e487c3639dd4b", size = 102904, upload-time = "2026-09-03T15:03:52.258Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bb/b6/c86b0e24d147866fab2096db65ad9762f3e81296c4f726e16183ed635ae3/stinger_python_utils-0.2.0-py3-none-any.whl", hash = "sha256:f23617b15d9e4e711f4d4bc49509df3c9a88b4deec9933f656d5b8e3a86d5c34", size = 5867, upload-time = "2026-08-28T23:02:01.767Z" },
+    { url = "https://files.pythonhosted.org/packages/0b/05/75ad46712123646ad646f3f246c23839413c73293199ade3c4a8349ffcbc/stinger_python_utils-0.3.0-py3-none-any.whl", hash = "sha256:7e1077368ff645d5218ec7488ac261bd243596d70e21bd9f2bc631f68589a9b9", size = 5900, upload-time = "2026-09-03T15:03:51.056Z" },
 ]
 
 [[package]]

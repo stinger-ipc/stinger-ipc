@@ -114,7 +114,9 @@ async fn main() {
     let initial_property_values = {{stinger.name | UpperCamelCase}}InitialPropertyValues {
         {%for prop_name, prop in stinger.properties.items()%}
         {{prop_name | snake_case}}: {{ property_example_external(prop) }},
+        {%-if config.properties.version_tracking%}
         {{prop_name | snake_case}}_version: 1,
+        {%-endif%}
         {%endfor%}
     };
     {%endif%}

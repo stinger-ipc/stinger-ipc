@@ -208,7 +208,9 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
             response_topic=response_topic,
             correlation_data=correlation_data,
             content_type="application/json",
+            {%if config.properties.version_tracking-%}
             user_properties={"PropertyVersion": str(server._property_{{prop_name|snake_case}}.version)}
+            {%endif%}
         )
         mock_connection.simulate_message(incoming_msg)
 
@@ -259,7 +261,9 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
             response_topic=response_topic,
             correlation_data=correlation_data,
             content_type="application/json",
+            {%if config.properties.version_tracking-%}
             user_properties={"PropertyVersion": str(server._property_{{prop_name|snake_case}}.version)}
+            {%endif%}
         )
         mock_connection.simulate_message(incoming_msg)
         {%if prop.read_only%}
@@ -279,6 +283,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
     {%endif%} {# end stinger owned values #}
 
     {%if not prop.read_only and config.properties.stinger_owned_values%}
+    {%if config.properties.version_tracking-%}
     def test_{{prop_name|snake_case}}_property_receive_out_of_sync(self, server, mock_connection):
         """Test that receiving a property update for '{{prop_name|snake_case}}' updates the server property and calls callbacks."""
         received_data = None
@@ -322,6 +327,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.OUT_OF_SYNC.value), f"Expected OUT_OF_SYNC return code, got '{resp.user_properties.get('ReturnCode')}'"
         assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
 
+    {%endif-%}
     def test_{{prop_name|snake_case}}_property_receive_nonsense_payload(self, server, mock_connection):
         """Test that receiving a property update for '{{prop_name|snake_case}}' updates the server property and calls callbacks."""
         received_data = None
@@ -345,7 +351,9 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
             content_type="application/json",
             response_topic=response_topic,
             correlation_data=correlation_data,
+            {%if config.properties.version_tracking-%}
             user_properties={"PropertyVersion": str(server._property_{{prop_name|snake_case}}.version)}
+            {%endif%}
         )
         mock_connection.simulate_message(incoming_msg)
 
@@ -382,7 +390,9 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
             content_type="application/json",
             response_topic=response_topic,
             correlation_data=correlation_data,
+            {%if config.properties.version_tracking-%}
             user_properties={"PropertyVersion": str(server._property_{{prop_name|snake_case}}.version)}
+            {%endif%}
         )
         mock_connection.simulate_message(incoming_msg)
 

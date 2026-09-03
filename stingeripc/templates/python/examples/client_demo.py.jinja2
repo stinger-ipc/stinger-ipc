@@ -19,7 +19,7 @@ def request_loop(client: {{stinger.python.client_class_name}}):
     while True:
         {%-for method_name, method in stinger.methods.items()%}
         print("Making call to '{{method_name|snake_case}}'")
-        future_resp = client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name|snake_case}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+        future_resp = client.{{method_name|snake_case}}({{ codec.example_payload(method.request_payload, method.arg_list) }})
         try:
             print(f"RESULT:  {future_resp.result(5)}")
         except futures.TimeoutError:
@@ -29,7 +29,7 @@ def request_loop(client: {{stinger.python.client_class_name}}):
         {%for command_name, command in stinger.commands.items()%}
         print("Sending the '{{command_name|snake_case}}' command")
         # A command is fire-and-forget, so there is nothing to wait for.
-        client.send_{{command_name|snake_case}}({%for arg in command.arg_list%}{{arg.name|snake_case}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+        client.send_{{command_name|snake_case}}({{ codec.example_payload(command.payload, command.arg_list) }})
         sleep(5)
         {%endfor%}{# for each command #}
         {%for prop_name, prop in stinger.properties_rw.items()%}

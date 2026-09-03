@@ -7,9 +7,10 @@ import pytest
 import sys
 from pathlib import Path
 {{ imports.datetime_types(config) }}
-from {{stinger.name | loweronly}}ipc.client import {{stinger.name | UpperCamelCase}}Client, DiscoveredInstance
+from {{stinger.name | loweronly}}ipc.client import {{stinger.name | UpperCamelCase}}Client, DiscoveredInstance{%if stinger.properties | length > 0 %}, PropertyValueUnavailableError{%endif%}
 {%if stinger.properties | length > 0 -%}
-from {{stinger.name | loweronly}}ipc.property import {{stinger.name | UpperCamelCase}}InitialPropertyValues
+from {{stinger.name | loweronly}}ipc import client as client_module
+from stinger_python_utils.message_creator import MessageCreator
 {%endif-%}
 from {{stinger.name | loweronly}}ipc.interface_types import *
 from pyqttier.mock import MockConnection
@@ -21,16 +22,6 @@ def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
     json_str = model.model_dump_json(by_alias=True)
     return json.loads(json_str)
 
-{%if stinger.properties | length > 0 %}
-@pytest.fixture
-def initial_property_values():
-    initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
-        {%-for prop_name, prop in stinger.properties.items()%}
-        {{prop_name|snake_case}}={{ codec.property_example(prop) }},
-        {%-endfor%}
-    )
-    return initial_property_values
-{%endif%}
 
 @pytest.fixture
 def mock_connection():
@@ -40,13 +31,10 @@ def mock_connection():
 
 
 @pytest.fixture
-def client(mock_connection{%if stinger.properties | length > 0 %}, initial_property_values{%endif%}):
+def client(mock_connection):
     """Fixture providing a {{stinger.name}} client with mocked connection."""
     mock_discovered_instance = DiscoveredInstance(
         instance_id="x",
-        {%if stinger.properties | length > 0 -%}
-        initial_property_values=initial_property_values,
-        {%endif%}{# any properties #}
         info={{stinger.name|UpperCamelCase}}InterfaceInfo(
             instance="x",
             connection_topic="{{stinger.interface_info_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
@@ -71,23 +59,80 @@ class TestClient:
         assert client is not None, "Client failed to initialize"
         assert client.service_id == "x", "Client service_id does not match expected value"
 
-{%if stinger.properties | length > 0 %}
-class TestClientProperties:
+{%if stinger.signals | length > 0 %}
+class TestClientSignals:
+    """The client subscribes to a signal only once a handler is registered."""
 
-    def test_client_properties_initialization(self, client, initial_property_values):
-        """Test that client properties are initialized correctly."""
-        {%for prop_name, prop in stinger.properties.items()%}
-        assert hasattr(client, '{{prop_name|snake_case}}'), "Client missing property '{{prop_name|snake_case}}'"
-        {%-if not prop.python.is_optional%}
-        assert client.{{prop_name|snake_case}} is not None, "Property '{{prop_name|snake_case}}' not initialized properly"
-        {%-endif%}
-        assert client.{{prop_name|snake_case}} == initial_property_values.{{prop_name|snake_case}}, "Property '{{prop_name|snake_case}}' value does not match expected value"
-        {%endfor%}
+    {%for sig_name, sig in stinger.signals.items()%}
+    def test_{{sig_name|snake_case}}_subscribes_when_handler_registered(self, mock_connection, client):
+        before = mock_connection.get_subscription_count()
+
+        client.receive_{{sig_name|snake_case}}(lambda **kwargs: None)
+        assert mock_connection.get_subscription_count() == before + 1, "Registering a '{{sig_name|snake_case}}' handler did not subscribe to the signal"
+
+        # A second handler of either kind reuses the one subscription.
+        client.receive_{{sig_name|snake_case}}_payload(lambda payload: None)
+        assert mock_connection.get_subscription_count() == before + 1, "Registering a second '{{sig_name|snake_case}}' handler subscribed again"
+    {%endfor%}
+{%endif%}
+
+{%if stinger.properties | length > 0 %}
+{%for prop_name, prop in stinger.properties.items()%}
+def publish_{{prop_name|snake_case}}_value(mock_connection, value{%if config.properties.version_tracking%}, version: int = 1{%endif%}):
+    """Delivers a '{{prop_name}}' property value to the client, the way the server would."""
+    topic = "{{prop.value_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
+    prop_obj = {{ codec.property_wrap(prop, 'value') }}
+    mock_connection.simulate_message({{ codec.property_state_message(prop.payload, "topic", "prop_obj", "version" if config.properties.version_tracking else "None") }})
+{%endfor%}
+
+class TestClientProperties:
+    """The client subscribes to a property only once the application asks for it."""
 
     {%for prop_name, prop in stinger.properties.items()%}
+    def test_{{prop_name|snake_case}}_subscribes_when_handler_registered(self, mock_connection, client):
+        before = mock_connection.get_subscription_count()
+
+        client.{{prop_name|snake_case}}_changed(lambda value: None)
+        assert mock_connection.get_subscription_count() == before + 1, "Registering a '{{prop_name|snake_case}}' handler did not subscribe to the property"
+
+        # A second handler reuses the one subscription.
+        client.{{prop_name|snake_case}}_changed(lambda value: None)
+        assert mock_connection.get_subscription_count() == before + 1, "Registering a second '{{prop_name|snake_case}}' handler subscribed again"
+
+    def test_{{prop_name|snake_case}}_getter_subscribes_and_returns_value(self, mock_connection, client):
+        before = mock_connection.get_subscription_count()
+        expected_{{prop_name|snake_case}} = {{ codec.property_example(prop) }}
+
+        # The getter blocks until a value arrives, so subscribe first (by registering a
+        # handler), deliver the value, and only then read it.
+        client.{{prop_name|snake_case}}_changed(lambda value: None)
+        assert mock_connection.get_subscription_count() == before + 1, "Not subscribed to the '{{prop_name|snake_case}}' property value topic"
+        publish_{{prop_name|snake_case}}_value(mock_connection, expected_{{prop_name|snake_case}})
+
+        assert client.{{prop_name|snake_case}} == expected_{{prop_name|snake_case}}, "Property '{{prop_name|snake_case}}' getter did not return the received value"
+
+    def test_{{prop_name|snake_case}}_getter_raises_without_a_value(self, monkeypatch, mock_connection, client):
+        # Nothing publishes a value, so the getter should give up and raise.
+        monkeypatch.setattr(client_module, "PROPERTY_VALUE_TIMEOUT_SECONDS", 0.05)
+        before = mock_connection.get_subscription_count()
+
+        with pytest.raises(PropertyValueUnavailableError):
+            _ = client.{{prop_name|snake_case}}
+
+        assert mock_connection.get_subscription_count() == before + 1, "The '{{prop_name|snake_case}}' getter did not subscribe to the property"
+
     {%- if not prop.payload.is_protobuf %}{#- a protobuf property has no example field values to compare #}
     {%- if not prop.read_only %}
     def test_{{prop_name|snake_case}}_setter(self, mock_connection, client):
+        {%if config.properties.version_tracking-%}
+        # An update request carries the version of the value the client last saw, so the
+        # property has to have been received before it can be set.
+        {%else-%}
+        # The setter waits for the server's current value, so the property has to have been
+        # received before it can be set.
+        {%endif-%}
+        client.{{prop_name|snake_case}}_changed(lambda value: None)
+        publish_{{prop_name|snake_case}}_value(mock_connection, {{ codec.property_example(prop) }})
         mock_connection.clear_published_messages()
 
         new_{{prop_name | snake_case}}_value = {{ codec.property_example(prop) }}
@@ -100,9 +145,15 @@ class TestClientProperties:
         published_msg_json_obj = json.loads(published_msg.payload)
         new_{{prop_name | snake_case}}_obj = {{ codec.property_wrap(prop, 'new_' ~ (prop_name|snake_case) ~ '_value') }}
         assert json.loads(new_{{prop_name | snake_case}}_obj.model_dump_json(by_alias=True)) == published_msg_json_obj, "Property '{{prop_name|snake_case}}' setter did not publish the correct JSON payload"
+
+    def test_{{prop_name|snake_case}}_setter_raises_without_a_value(self, monkeypatch, client):
+        monkeypatch.setattr(client_module, "PROPERTY_VALUE_TIMEOUT_SECONDS", 0.05)
+
+        with pytest.raises(PropertyValueUnavailableError):
+            client.{{prop_name|snake_case}} = {{ codec.property_example(prop) }}
     {%endif%}{# don't generate for readonly#}
     {%- endif %}
-    {%-endfor%}{# each property#}
+    {%endfor%}{# each property#}
 {%endif%}
 {%if stinger.methods | length > 0 %}
 class TestClientMethods:
