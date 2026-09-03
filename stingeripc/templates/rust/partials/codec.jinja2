@@ -245,6 +245,10 @@ let data = {{ payload.rust.struct_name }} {
 {%- macro property_wrap(prop, value_expr) -%}
 {%- if prop.payload.is_protobuf -%}
 {{ value_expr }}
+{%- elif value_expr == prop.value.name|snake_case -%}
+{{ prop.payload.rust.struct_name }} {
+                        {{ value_expr }},
+                    }
 {%- else -%}
 {{ prop.payload.rust.struct_name }} {
                         {{ prop.value.name|snake_case }}: {{ value_expr }},

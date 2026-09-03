@@ -14,17 +14,20 @@ This is the Client for the {{stinger.name}} interface.
 #[cfg(feature = "client")]
 use stinger_mqtt_trait::{Mqtt5PubSub};
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
+#[allow(unused_imports)]
 use crate::message;
 use std::collections::HashMap;
 {%if stinger.methods|length > 0 or stinger.properties|length > 0 -%}
 use uuid::Uuid;
 {%endif-%}
+#[allow(unused_imports)]
 use serde_json;
 extern crate strfmt;
 use strfmt::strfmt;
 use crate::discovery::DiscoveredService;
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
+#[allow(unused_imports)]
 use bytes::Bytes;
 {%- if stinger.uses_duration() %}
 #[allow(unused_imports)]
@@ -69,6 +72,7 @@ struct {{stinger.name | UpperCamelCase }}SubscriptionIds {
     {%endif%}
 }
 
+{%if stinger.signals | length > 0 %}
 /// This struct holds the tx side of a broadcast channels used when receiving signals.
 /// The rx side of the broadcast channels can be created from the tx side later.
 /// When {{stinger.rust.client_struct_name}} gets a message and determines that it
@@ -79,6 +83,7 @@ struct {{stinger.name | UpperCamelCase }}SignalChannels {
     {{sig_name|snake_case}}_sender: broadcast::Sender<{{sig.payload.rust.channel_type}}>,
     {%endfor%}
 }
+{%endif%}
 
 {%if stinger.signals | length > 0 or stinger.properties | length > 0%}
 /// Sentinel for a signal or property topic that has not been subscribed to yet.  A real
@@ -336,7 +341,6 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     /// * `T` is the property's value type (what the application sets).
     /// * `P` is the serializable wire payload for the property: the generated
     ///   `*Property` struct, which wraps `T` in its single named field.
-    #[allow(clippy::too_many_arguments)]
     async fn run_property_update_request_handler<T, P, MakePayload, ExtractValue>(
         property_name: &'static str,
         mut request_rx: tokio::sync::mpsc::Receiver<(Option<T>, Option<oneshot::Sender<Option<Option<T>>>>)>,
@@ -461,7 +465,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                 {%if not method.has_response %}
                 Ok(())
                 {%else%}
+                {%- if method.response_payload.is_protobuf %}
+                let return_bytes = payload_str.unwrap_or_else(Bytes::new);
+                {%- else %}
                 let return_bytes = payload_str.unwrap_or_else(|| {{ empty_payload_bytes(method.response_payload) }});
+                {%- endif %}
                 let return_obj = <{{method.response_payload.rust.struct_name}} as WirePayload>::from_bytes(&return_bytes)
                     .map_err(MethodReturnCode::ClientDeserializationError)?;
                 {%- if method.response_payload.is_protobuf %}
@@ -650,6 +658,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     {%endif%}
     {%endfor%}
 
+    {% if stinger.methods|length > 0 or stinger.properties|length > 0 %}
     fn get_return_code_from_message(msg: &MqttMessage) -> MethodReturnCode {
         let mut return_code: MethodReturnCode = MethodReturnCode::Success(Some(msg.payload.clone()));
         if let Some(retval) = msg.user_properties.get("ReturnCode") {
@@ -664,6 +673,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         }
         return_code
     }
+    {%endif%} {# if there are some methods or properties #}
 
     /// Starts the tasks that process messages received.
     pub async fn run_loop(&mut self) -> Result<(), JoinError> {

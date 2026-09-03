@@ -69,7 +69,7 @@ def emit_protobuf_bindings(template_dir: Path, outdir: Path, stinger, config_obj
     recipe = tomllib.loads(recipe_path.read_text())
 
     proto_src = (inname.parent / config_obj.protobuf.path).resolve()
-    sources = ProtobufSources(proto_src, config_obj.protobuf.protoc)
+    sources = ProtobufSources(proto_src, config_obj.protobuf.protoc, python37=config_obj.python.python37)
 
     # The .proto files travel with the generated code, so the output is
     # self-contained and can be regenerated for another language later.
@@ -125,7 +125,7 @@ def resolve_protobuf_messages(stinger, config_obj, inname: Path) -> None:
     # travel together regardless of where the generator is invoked from.
     proto_dir = (inname.parent / config_obj.protobuf.path).resolve()
     print(f"🧬 [bold cyan]PROTOS:[/bold cyan] {proto_dir}")
-    sources = ProtobufSources(proto_dir, config_obj.protobuf.protoc)
+    sources = ProtobufSources(proto_dir, config_obj.protobuf.protoc, python37=config_obj.python.python37)
     sources.resolve_all(refs)
     for ref in stinger.protobuf_messages():
         print(f"🧬    MSG: {ref.full_name} ({ref.proto_file})")

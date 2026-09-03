@@ -1,7 +1,9 @@
 use crate::payloads::{MethodReturnCode, WirePayload};
 use stinger_mqtt_trait::message::{MqttMessage, QoS, MqttMessageBuilder};
+#[allow(unused_imports)]
 use bytes::Bytes;
 #[cfg(feature = "client")]
+#[allow(unused_imports)]
 use uuid::Uuid;
 
 #[cfg(any(feature = "server", test))]

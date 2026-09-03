@@ -15,7 +15,9 @@ This is the Server for the {{stinger.name}} interface.
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
+#[allow(unused_imports)]
 use bytes::Bytes;
+#[allow(unused_imports)]
 use tokio::sync::{oneshot};
 use std::collections::HashMap;
 use strfmt::strfmt;
@@ -24,8 +26,10 @@ use std::any::Any;
 use async_trait::async_trait;
 {%endif%}
 use tokio::sync::{Mutex as AsyncMutex};
+#[allow(unused_imports)]
 use std::sync::{Arc, Mutex};
 {%if stinger.methods|length > 0 or stinger.properties|length > 0 or stinger.commands|length > 0 %}
+#[allow(unused_imports)]
 use serde_json;
 use tokio::sync::{broadcast{%if stinger.properties|length > 0 %}, watch{%endif%}};
 {%endif%}
@@ -36,7 +40,9 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use crate::property::{{stinger.name | UpperCamelCase}}InitialPropertyValues;
 use stinger_rwlock_watch::{RwLockWatch};
 {%endif%}
+#[allow(unused_imports)]
 use stinger_mqtt_trait::{Mqtt5PubSub, MqttPublishSuccess, Mqtt5PubSubError};
+#[allow(unused_imports)]
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 #[allow(unused_imports)]
 use stinger_rwlock_watch::{WriteRequestLockWatch, CommitResult};
@@ -47,6 +53,7 @@ type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode
 #[cfg(feature = "server")]
 #[allow(unused_imports)]
 use tracing::{debug, info, warn, error};
+#[allow(unused_imports)]
 use crate::message;
 #[cfg(feature = "metrics")]
 use serde::Serialize;
@@ -93,7 +100,7 @@ struct {{stinger.name | UpperCamelCase }}CommandChannels {
 {%endif%}{# any commands #}
 
 #[cfg(feature = "metrics")]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct {{stinger.name | UpperCamelCase }}ServerMetrics {
     {%for method_name, method in stinger.methods.items()-%}
     pub {{method_name | snake_case}}_calls: u64,
@@ -102,21 +109,6 @@ pub struct {{stinger.name | UpperCamelCase }}ServerMetrics {
     {%if stinger.properties | length > 0 %}
     pub initial_property_publish_time: std::time::Duration,
     {%endif%}
-}
-
-#[cfg(feature = "metrics")]
-impl Default for {{stinger.name | UpperCamelCase }}ServerMetrics {
-    fn default() -> Self {
-        {{stinger.name | UpperCamelCase }}ServerMetrics {
-            {%for method_name, method in stinger.methods.items()-%}
-            {{method_name | snake_case}}_calls: 0,
-            {{method_name | snake_case}}_errors: 0,
-            {%endfor%}
-            {%if stinger.properties | length > 0 %}
-            initial_property_publish_time: std::time::Duration::from_secs(0),
-            {%endif%}
-        }
-    }
 }
 
 #[derive(Clone)]
@@ -162,6 +154,9 @@ pub struct {{stinger.rust.server_struct_name}}<C: Mqtt5PubSub> {
 }
 
 impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
+    // `connection` and `metrics` are only mutated when there are methods, properties, or
+    // commands to subscribe to below; a signals-only interface leaves both untouched.
+    #[allow(unused_mut)]
     pub async fn new(
             mut connection: C,
             {%if stinger.methods|length > 0%}method_handlers: Arc<AsyncMutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers<C>>>>, {%endif%}
@@ -282,6 +277,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         self.metrics.clone()
     }
 
+    {%if stinger.signals | length > 0 %}
     /// Converts a oneshot channel receiver into a future.
     async fn oneshot_to_future(
         ch: oneshot::Receiver<Result<MqttPublishSuccess, Mqtt5PubSubError>>,
@@ -315,7 +311,8 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             }
         })
     }
-    {%if stinger.methods | length > 0 or stinger.properties | length > 0 %}
+    {%endif%}
+    {%if stinger.methods | length > 0 %}
     /// Publishes an error response to the given response topic with the given correlation data.
     async fn publish_error_response(mut publisher: C, response_topic: Option<String>, correlation_data: Option<Bytes>, err: MethodReturnCode) {
         if let Some(resp_topic) = response_topic {
@@ -618,7 +615,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     }
 
     /// Sets the value of the {{prop_name}} property.
-    pub async fn set_{{prop_name}}(&mut self, value: {{prop.rust.type}}) -> SentMessageFuture {
+    pub async fn set_{{prop_name | snake_case}}(&mut self, value: {{prop.rust.type}}) -> SentMessageFuture {
         let write_request_lock = self.get_{{prop_name | snake_case}}_handle();
         Box::pin(async move { 
             let mut write_request = write_request_lock.write().await;

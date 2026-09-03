@@ -1,4 +1,22 @@
 #![doc = include_str!("../docs/overview.md")]
+// Property and argument values are cloned out of shared/locked state through the same
+// generated code path regardless of their concrete type, so a value's type being `Copy`
+// (e.g. an interface property declared as an integer or float) is incidental, not a sign
+// the clone is wasteful.
+#![allow(clippy::clone_on_copy)]
+// Schema validation serializes a field through `&self.field` so the same generated code
+// works whether the field's type is `Copy` or not; dropping the borrow would fail to
+// compile for non-Copy fields (moving out of `&self`), so it can't be done per-callsite.
+#![allow(clippy::needless_borrows_for_generic_args)]
+// Property and channel types nest Arc/RwLockWatch/Option around whatever type the
+// interface declares (e.g. an optional list of structs), so how deep that nesting gets
+// is up to the interface definition, not something a fixed set of type aliases here
+// could pre-empt.
+#![allow(clippy::type_complexity)]
+// Generated functions for methods, signals, and commands take one parameter per
+// argument the interface declares, so their arity is set by the interface definition,
+// not something the generator can bound in advance.
+#![allow(clippy::too_many_arguments)]
 
 /// Long-form guides for using this interface.
 ///

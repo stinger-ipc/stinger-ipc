@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+tasks:
+  unittest:
+    desc: Run the unit tests
+    cmds:
+      - cargo test --all-features
+
+  lint:
+    desc: Check formatting and run clippy
+    cmds:
+      - cargo fmt --check
+      - cargo clippy --all-features -- -D warnings

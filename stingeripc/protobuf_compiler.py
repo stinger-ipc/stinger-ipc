@@ -28,10 +28,17 @@ from .payload import ProtobufMessageRef
 # protoc is not always installed system-wide.  This wrapper package ships the
 # compiler and is the same one the repository's own protobuf checks use, so the
 # fallback produces the same compiler version the project already tests against.
-PROTOC_WRAPPER = ["uvx", "--from=protoc-wrapper@33.0", "protoc"]
+PROTOC_WRAPPER_VERSION = "33.0"
+
+# Since protoc 25, generated Python bindings stamp a `runtime_version` import that
+# only exists in protobuf>=4.25 -- which in turn dropped Python 3.7 support.  A
+# python37 target is pinned to protobuf==4.24.4 (the last release still compatible
+# with 3.7), so its bindings must come from a protoc old enough not to add that
+# stamp.
+PROTOC_WRAPPER_VERSION_PYTHON37 = "22.0.0"
 
 
-def find_protoc(configured: Optional[str] = None) -> list[str]:
+def find_protoc(configured: Optional[str] = None, python37: bool = False) -> list[str]:
     """Return the command that runs ``protoc``, as an argv prefix.
 
     Prefers an explicitly configured executable, then one on ``PATH``, and
@@ -43,17 +50,22 @@ def find_protoc(configured: Optional[str] = None) -> list[str]:
             raise ProtobufError(f"Configured protoc executable not found: '{configured}'.  Check [protobuf] protoc in your config.")
         return [resolved]
 
-    on_path = shutil.which("protoc")
-    if on_path:
-        return [on_path]
+    # A python37 target needs a specific protoc version -- whatever happens to be
+    # on PATH is not good enough, since its gencode must match the pinned,
+    # 3.7-compatible protobuf runtime rather than whatever is newest.
+    if not python37:
+        on_path = shutil.which("protoc")
+        if on_path:
+            return [on_path]
 
     if shutil.which("uvx"):
-        return list(PROTOC_WRAPPER)
+        version = PROTOC_WRAPPER_VERSION_PYTHON37 if python37 else PROTOC_WRAPPER_VERSION
+        return ["uvx", f"--from=protoc-wrapper@{version}", "protoc"]
 
     raise ProtobufError(
         "protoc was not found.  Install the protobuf compiler and put it on PATH, "
         "set [protobuf] protoc = \"/path/to/protoc\" in your config, or install 'uv' "
-        "so stinger can fall back to 'uvx --from=protoc-wrapper@33.0 protoc'."
+        f"so stinger can fall back to 'uvx --from=protoc-wrapper@{PROTOC_WRAPPER_VERSION} protoc'."
     )
 
 
@@ -78,9 +90,9 @@ def _message_names(proto_file: FileDescriptorProto) -> list[tuple[str, Descripto
 class ProtobufSources:
     """The ``.proto`` files an interface draws its messages from."""
 
-    def __init__(self, proto_dir: Path, protoc: Optional[str] = None):
+    def __init__(self, proto_dir: Path, protoc: Optional[str] = None, python37: bool = False):
         self.proto_dir = Path(proto_dir)
-        self._protoc = find_protoc(protoc)
+        self._protoc = find_protoc(protoc, python37=python37)
         self._index: Optional[dict[str, tuple[str, DescriptorProto]]] = None
 
     @property

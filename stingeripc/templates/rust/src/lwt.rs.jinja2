@@ -34,6 +34,7 @@ impl StingerAvailability {
     /// `{"online":true}` and `{"online":false}` respectively,
     /// published at QoS 1
     /// with retain enabled and no periodic republish interval.
+    #[allow(clippy::new_ret_no_self)]
     pub fn new({%for param in utils.get_topic_arguments(config.topics.lwt) %}{{param}}: impl Into<String>, {% endfor %}) -> Arc<dyn AvailabilityHelper + Send + Sync> {
         {% for param in utils.get_topic_arguments(config.topics.lwt) %}
         let {{param}} = {{param}}.into();
@@ -77,6 +78,7 @@ impl AvailabilityHelper for StingerAvailability {
     }
 }
 
+#[allow(clippy::useless_format)]
 pub fn client_id_creator({%for param in utils.get_topic_arguments(config.discovery.client_id) %}{{param}}: impl Into<String>, {% endfor %}) -> String {
     {% for param in utils.get_topic_arguments(config.discovery.client_id) %}
     let {{param}} = {{param}}.into();

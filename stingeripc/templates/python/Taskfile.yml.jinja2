@@ -1,0 +1,14 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+tasks:
+  unittest:
+    desc: Run the unit tests
+    cmds:
+      - uv run --with pytest pytest -vv
+
+  lint:
+    desc: Type check the source and tests with mypy
+    cmds:
+      - uv run --with mypy mypy ./src/ ./tests/

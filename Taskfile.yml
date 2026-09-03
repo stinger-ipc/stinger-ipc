@@ -40,17 +40,19 @@ tasks:
       - task: python:docs
 
   cpp:
-    desc: Generate, compile, and test all C++ interfaces
+    desc: Generate, compile, lint, and test all C++ interfaces
     cmds:
       - task: cpp:generate
       - task: cpp:compile
+      - task: cpp:lint
       - task: cpp:unittest
 
   rust:
-    desc: Generate, check, and test all Rust interfaces
+    desc: Generate, check, lint, and test all Rust interfaces
     cmds:
       - task: rust:generate
       - task: rust:check
+      - task: rust:lint
       - task: rust:unittest
 
   validate:*:
@@ -108,6 +110,27 @@ tasks:
     vars:
       IFACE: '{{index .MATCH 0}}'
 
+  python37:unittest:*:
+    desc: Run generated Python 3.7 unit tests for an interface in Docker
+    dir: "{{.GENERATED_DIR}}/{{.IFACE}}/python37/"
+    deps:
+      - task: python37:generate:{{index .MATCH 0}}
+    sources:
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/python37/tests/**"
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/python37/src/**"
+    cmds:
+      - docker run --rm -v "$PWD:/workspace" -w /workspace python:3.7-slim sh -c "pip install --no-cache-dir --quiet pytest . && python -m pytest -vv"
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  python37:unittest:
+    desc: Run generated Python 3.7 unit tests for all interfaces in Docker
+    deps:
+      - for: { var: INTERFACES }
+        task: python37:unittest:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: python37:unittest:{{ .ITEM }}
+
   python-alt1:generate:*:
     desc: Generate Python code for an interface with alternative settings
     deps:
@@ -151,10 +174,8 @@ tasks:
     sources:
       - example_interfaces/{{.IFACE}}/python/tests/**
       - example_interfaces/{{.IFACE}}/python/src/**
-    generates:
-      - "{{.GENERATED_DIR}}/{{.IFACE}}/python/tests/junit.xml"
     cmds:
-      - uv run pytest -vv --junit-xml=junit.xml
+      - task unittest
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -167,7 +188,7 @@ tasks:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/tests/*.py"
       - "{{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/src/*.py"
     cmds:
-      - uv run pytest -vv
+      - task unittest
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -182,6 +203,10 @@ tasks:
         task: python-alt1:unittest:{{ .ITEM }}
       - for: { var: PROTO_INTERFACES }
         task: python-alt1:unittest:{{ .ITEM }}
+      - for: { var: INTERFACES }
+        task: python37:unittest:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: python37:unittest:{{ .ITEM }}
 
   python:mypy:*:
     desc: Run mypy type checking for an interface
@@ -192,10 +217,10 @@ tasks:
       - ./src/**
       - ./tests/**
     cmds:
-      - uv run mypy ./src/ ./tests/
+      - task lint
     vars:
       IFACE: '{{index .MATCH 0}}'
-    
+
   python-alt1:mypy:*:
     desc: Run mypy type checking for an interface generated with alternative settings
     dir: generated/{{.IFACE}}/python-alt1/
@@ -205,7 +230,7 @@ tasks:
       - ./src/**
       - ./tests/**
     cmds:
-      - uv run mypy ./src/ ./tests/
+      - task lint
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -298,12 +323,13 @@ tasks:
 
   cpp:unittest:*:
     desc: Run C++ unit tests for an interface
+    dir: "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/"
     deps:
-      - task: cpp:compile:{{index .MATCH 0}}
+      - task: cpp:generate:{{index .MATCH 0}}
     sources:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/**"
     cmds:
-      - cd "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/build" && ctest --output-on-failure
+      - task unittest
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -314,6 +340,26 @@ tasks:
         task: cpp:unittest:{{ .ITEM }}
       - for: { var: PROTO_INTERFACES }
         task: cpp:unittest:{{ .ITEM }}
+
+  cpp:lint:*:
+    desc: Check C++ source formatting for an interface
+    dir: "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/"
+    deps:
+      - task: cpp:generate:{{index .MATCH 0}}
+    sources:
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/**"
+    cmds:
+      - task lint
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  cpp:lint:
+    desc: Check C++ source formatting for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: cpp:lint:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: cpp:lint:{{ .ITEM }}
 
   rust:generate:*:
     desc: Generate Rust code for an interface
@@ -326,7 +372,9 @@ tasks:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/rust/**"
     cmds:
       - uv run stinger generate {{.CLI_ARGS}} --language rust --config ./example_interfaces/topic_prefix.toml --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/rust/"
-      - cd "{{.GENERATED_DIR}}/{{.IFACE}}/rust/" && cargo fmt
+      # Run twice: rustfmt does not always reach a fixed point in one pass on deeply
+      # nested match expressions, so a single run can leave the tree not fully formatted.
+      - cd "{{.GENERATED_DIR}}/{{.IFACE}}/rust/" && cargo fmt && cargo fmt
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -373,7 +421,7 @@ tasks:
     sources:
       - ./**
     cmds:
-      - cargo test --all-features
+      - task unittest
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -384,6 +432,26 @@ tasks:
         task: rust:unittest:{{ .ITEM }}
       - for: { var: PROTO_INTERFACES }
         task: rust:unittest:{{ .ITEM }}
+
+  rust:lint:*:
+    desc: Check Rust formatting and run clippy for an interface
+    dir: "{{.GENERATED_DIR}}/{{.IFACE}}/rust/"
+    deps:
+      - task: rust:generate:{{index .MATCH 0}}
+    sources:
+      - ./**
+    cmds:
+      - task lint
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  rust:lint:
+    desc: Check Rust formatting and run clippy for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: rust:lint:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: rust:lint:{{ .ITEM }}
 
   asyncapi:generate:*:
     desc: Generate AsyncAPI documentation for an interface

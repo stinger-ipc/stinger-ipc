@@ -71,12 +71,9 @@ pub struct DiscoveredService {
 impl ServiceInDiscovery {
     /// Attempts to convert a ServiceInDiscovery into a DiscoveredService
     pub fn to_discovered_service(&self) -> Option<DiscoveredService> {
-        match &self.interface_info {
-            Some(info) => Some(DiscoveredService {
-                interface_info: info.clone(),
-            }),
-            _ => None,
-        }
+        self.interface_info.as_ref().map(|info| DiscoveredService {
+            interface_info: info.clone(),
+        })
     }
 }
 
@@ -276,7 +273,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
             // Parse instance_id from topic (format: {{stinger.interface_info_topic()}})
             let topic_parts: Vec<&str> = message.topic.split('/').collect();
             let instance_id_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, "service_id")}};
-            if topic_parts.len() >= instance_id_expected_index + 1 {
+            if topic_parts.len() > instance_id_expected_index {
                 let instance_id = topic_parts[instance_id_expected_index].to_string();
                 let mut interfaces_guard = instances_in_discovery
                     .write()
@@ -321,7 +318,13 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
 impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> Drop for {{stinger.name|UpperCamelCase}}Discovery<C> {
     fn drop(&mut self) {
         self.info_listener_handle.abort();
-        let _ = self.connection.unsubscribe(self.interface_discovery_topic.clone());
+        // unsubscribe() is async, and drop() cannot await; spawn it so the future is
+        // actually polled instead of being silently discarded.
+        let mut connection = self.connection.clone();
+        let topic = self.interface_discovery_topic.clone();
+        tokio::spawn(async move {
+            let _ = connection.unsubscribe(topic).await;
+        });
         debug!("Dropping {{stinger.name}} discovery object after unsubscribing from the discovery topic");
     }
 }
