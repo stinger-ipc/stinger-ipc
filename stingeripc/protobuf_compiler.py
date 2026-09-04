@@ -111,11 +111,11 @@ _WELL_KNOWN_MODULES = (
     "wrappers_pb2",
 )
 
-_well_known_index: Optional[dict[str, tuple[str, DescriptorProto]]] = None
+_well_known_index: Optional[dict[str, tuple[str, str, DescriptorProto]]] = None
 
 
-def well_known_message_index() -> dict[str, tuple[str, DescriptorProto]]:
-    """Fully-qualified name -> (declaring file, descriptor) for the well-known types.
+def well_known_message_index() -> dict[str, tuple[str, str, DescriptorProto]]:
+    """Fully-qualified name -> (declaring file, package, descriptor) for the well-known types.
 
     Read out of the protobuf runtime that stinger itself imports, so the messages
     match the ones the generated code will use, and no protoc invocation is needed
@@ -123,14 +123,14 @@ def well_known_message_index() -> dict[str, tuple[str, DescriptorProto]]:
     """
     global _well_known_index
     if _well_known_index is None:
-        index: dict[str, tuple[str, DescriptorProto]] = {}
+        index: dict[str, tuple[str, str, DescriptorProto]] = {}
         for module_name in _WELL_KNOWN_MODULES:
             module = importlib.import_module(f"google.protobuf.{module_name}")
             file_descriptor = module.DESCRIPTOR
             file_proto = FileDescriptorProto()
             file_descriptor.CopyToProto(file_proto)
             for full_name, descriptor in _message_names(file_proto):
-                index[full_name] = (file_descriptor.name, descriptor)
+                index[full_name] = (file_descriptor.name, file_proto.package, descriptor)
         _well_known_index = index
     return _well_known_index
 
@@ -141,7 +141,7 @@ class ProtobufSources:
     def __init__(self, proto_dir: Path, protoc: Optional[str] = None, python37: bool = False):
         self.proto_dir = Path(proto_dir)
         self._protoc = find_protoc(protoc, python37=python37)
-        self._index: Optional[dict[str, tuple[str, DescriptorProto]]] = None
+        self._index: Optional[dict[str, tuple[str, str, DescriptorProto]]] = None
 
     @property
     def proto_files(self) -> list[Path]:
@@ -179,14 +179,14 @@ class ProtobufSources:
             descriptor_set.ParseFromString(out.read_bytes())
             return descriptor_set
 
-    def _message_index(self) -> dict[str, tuple[str, DescriptorProto]]:
-        """Fully-qualified message name -> (declaring file, descriptor), compiled once."""
+    def _message_index(self) -> dict[str, tuple[str, str, DescriptorProto]]:
+        """Fully-qualified message name -> (declaring file, package, descriptor), compiled once."""
         if self._index is None:
-            index: dict[str, tuple[str, DescriptorProto]] = {}
+            index: dict[str, tuple[str, str, DescriptorProto]] = {}
             if self.has_sources:
                 for proto_file in self.descriptor_set().file:
                     for full_name, descriptor in _message_names(proto_file):
-                        index[full_name] = (proto_file.name, descriptor)
+                        index[full_name] = (proto_file.name, proto_file.package, descriptor)
             self._index = index
         return self._index
 
@@ -211,8 +211,9 @@ class ProtobufSources:
             hint = f"  Did you mean: {', '.join(suggestions)}?" if suggestions else f"  Available messages: {', '.join(known) or '(none)'}"
             where = "protobuf's well-known types" if ref.is_well_known else str(self.proto_dir)
             raise ProtobufError(f"Protobuf message '{ref.full_name}' was not found in {where}.{hint}")
-        proto_file, descriptor = found
+        proto_file, package, descriptor = found
         ref._proto_file = proto_file
+        ref._package = package
         ref._descriptor = descriptor
 
     def resolve_all(self, refs: Sequence[ProtobufMessageRef]) -> None:

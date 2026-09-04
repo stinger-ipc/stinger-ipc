@@ -9,7 +9,7 @@ dependencies = [
     "paho-mqtt>=2.1.0",
     "isodate>=0.7.2",
     "jsonschema>=4.0.0", # Not the best json schema library.  TODO: use a faster one.
-    "pyqttier>=0.2.5",
+    "pyqttier>=0.2.11",
     "stinger-python-utils>=0.3.0",{% if stinger.uses_protobuf() %}
     "protobuf{%if config.python.python37%}==4.24.4{%else%}>=5.29{%endif%}", # This interface carries protobuf payloads.{% endif %}
     {%if config.python.python37%}"typing-extensions>=4.0.0",{%endif%}

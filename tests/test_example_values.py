@@ -61,6 +61,30 @@ class TestUnconstrainedExamplesAreUnchanged(unittest.TestCase):
         values = {arg.get_random_example_value("python", seed=seed) for seed in SEEDS}
         self.assertGreater(len(values), 1)
 
+    def test_every_seed_matches_the_original_draw(self):
+        """The pools an unconstrained argument draws from, as they were before
+        ``schema`` constraints existed.
+
+        ``random.choice`` picks by index, so adding one candidate to a pool changes the
+        example value at most seeds -- and with it every generated demo, test, and doc
+        page.  Checking one seed per type is not enough to catch that: when the integer
+        pool grew from ten candidates to seventeen, the float and string pools grew too
+        yet still happened to land on their first entry at seed 2.  So this replays the
+        original draw over a spread of seeds instead.
+        """
+        pools = {
+            "boolean": [True, False],
+            "float": [3.14, 1.0, 2.5, 97.9, 1.53],
+            "integer": [42, 1981, 2020, 2022, 1200, 5, 99, 123, 2025, 1955],
+            "string": ['"apples"', '"Joe"', '"example"', '"foo"', '"bar"', '"tiger"', '"bear"', '"root beer"'],
+        }
+        for arg_type, pool in pools.items():
+            arg = Arg.new_arg_from_stinger({"name": "x", "type": arg_type})
+            for seed in range(50):
+                with self.subTest(arg_type=arg_type, seed=seed):
+                    random.seed(seed)
+                    self.assertEqual(arg.get_random_example_value("python", seed=seed), random.choice(pool))
+
 
 class TestConstrainedPrimitiveExamples(unittest.TestCase):
     """Every example value satisfies the argument's constraint, for every seed."""

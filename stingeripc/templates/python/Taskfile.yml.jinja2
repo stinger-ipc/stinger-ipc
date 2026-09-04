@@ -6,9 +6,17 @@ tasks:
   unittest:
     desc: Run the unit tests
     cmds:
+{%- if config.python.python37 %}
+      - docker run --rm -v "$PWD:/workspace" -w /workspace python:3.7-slim sh -c "pip install --no-cache-dir --quiet pytest . && python -m pytest -vv"
+{%- else %}
       - uv run --with pytest pytest -vv
+{%- endif %}
 
   lint:
     desc: Type check the source and tests with mypy
     cmds:
+{%- if config.python.python37 %}
+      - docker run --rm -v "$PWD:/workspace" -w /workspace python:3.7-slim sh -c "pip install --no-cache-dir --quiet mypy . && python -m mypy ./src/ ./tests/"
+{%- else %}
       - uv run --with mypy mypy ./src/ ./tests/
+{%- endif %}

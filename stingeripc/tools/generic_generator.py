@@ -5,7 +5,7 @@ import tomllib
 import shutil
 import typer
 from typing_extensions import Annotated
-from typing import Optional, Any
+from typing import Optional, Any, Sequence
 from pathlib import Path
 from rich import print
 import importlib.resources
@@ -81,13 +81,23 @@ def emit_protobuf_bindings(template_dir: Path, outdir: Path, stinger, config_obj
     copy_to = outdir / recipe["copy_to"].format(**placeholders)
     copy_to.mkdir(parents=True, exist_ok=True)
     for proto in sources.proto_files:
-        shutil.copyfile(proto, copy_to / proto.name)
+        # Relative to the source root, not just the file name: protoc addresses an
+        # import by that path and mirrors it in the output, so a flattened copy
+        # would compile to different module paths than the ones shipped beside it.
+        destination = copy_to / proto.relative_to(sources.proto_dir)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(proto, destination)
     print(f"🧬    PROTO: copied {len(sources.proto_files)} .proto file(s)")
 
     out_dir = outdir / recipe["out_dir"].format(**placeholders)
     out_dir.mkdir(parents=True, exist_ok=True)
     sources.run(*[flag.format(out=out_dir, **placeholders) for flag in recipe["flags"]])
     print(f"🧬    PROTO: compiled bindings into {recipe['out_dir'].format(**placeholders)}")
+
+    # protoc names an import after the .proto file it came from, which resolves
+    # only when the bindings sit directly on the import path.  A language whose
+    # bindings live inside a package says here how to respell those imports.
+    apply_rewrites(out_dir, recipe.get("rewrite", []))
 
     # Some languages need a module file listing whatever protoc produced, which
     # protoc itself does not write because it does not know how the language
@@ -112,6 +122,33 @@ def emit_protobuf_bindings(template_dir: Path, outdir: Path, stinger, config_obj
         target = outdir / name.format(**placeholders)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content.format(**placeholders))
+
+
+def apply_rewrites(out_dir: Path, rules: Sequence[dict]) -> None:
+    """Apply a recipe's ``[[rewrite]]`` regex substitutions to the protoc output.
+
+    Each rule names a ``glob`` of files under the binding directory, a ``pattern``
+    matched line by line, and its ``replacement``.  This exists because protoc
+    writes imports that assume its output directory is itself on the import path;
+    a language that nests the bindings inside a package has to respell them.
+
+    A replacement may use ``{up}``, which stands for the way back up to the binding
+    directory from the file being rewritten -- one leading dot per level, plus one
+    for the directory itself.  protoc mirrors the .proto layout in its output, so a
+    binding in a subdirectory refers to a top-level one from further down.
+    """
+    for rule in rules:
+        pattern = re.compile(rule["pattern"], re.MULTILINE)
+        rewritten = 0
+        for path in sorted(out_dir.rglob(rule["glob"])):
+            up = "." * (len(path.relative_to(out_dir).parent.parts) + 1)
+            before = path.read_text()
+            after, count = pattern.subn(rule["replacement"].format(up=up), before)
+            if count:
+                path.write_text(after)
+                rewritten += count
+        if rewritten:
+            print(f"\U0001f9ec    PROTO: rewrote {rewritten} import(s) in {rule['glob']}")
 
 
 def protobuf_sources(config_obj, inname: Path) -> ProtobufSources:

@@ -329,7 +329,7 @@ class RustPropertySymbols(RustSymbols):
     def local_type(self) -> str:
         """Unqualified Rust type name for the property's value."""
         if self.is_protobuf:
-            return self._prop.payload.protobuf.message_name
+            return self._prop.payload.protobuf.rust.scoped_name
         return self._prop.value.rust.local_type
 
     @property
@@ -432,13 +432,23 @@ class RustProtobufRefSymbols(RustSymbols):
         return "crate::proto"
 
     @property
+    def scoped_name(self) -> str:
+        """The message's path below its module, e.g. ``analytics::DetectionEvent``.
+
+        prost has no nested structs: a message declared inside another becomes a
+        struct in a module named after the parent, in snake case.
+        """
+        parents = [stringmanip.snake_case(name) for name in self._ref.scope]
+        return "::".join([*parents, self._ref.message_name])
+
+    @property
     def qualified_name(self) -> str:
         """How generated Rust code names this message, fully qualified from the crate root."""
         if self._ref.is_well_known:
             substitute = _RUST_WELL_KNOWN_EXCEPTIONS.get(self._ref.message_name)
             if substitute is not None:
                 return substitute
-        return f"{self.module_path}::{self._ref.message_name}"
+        return f"{self.module_path}::{self.scoped_name}"
 
     @property
     def external_name(self) -> str:
@@ -451,4 +461,4 @@ class RustProtobufRefSymbols(RustSymbols):
         """
         if self._ref.is_well_known:
             return self.qualified_name
-        return f"proto::{self._ref.message_name}"
+        return f"proto::{self.scoped_name}"

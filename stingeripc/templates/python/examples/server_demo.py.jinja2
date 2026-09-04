@@ -16,6 +16,7 @@ from {{stinger.python.module_name}}.server import {{stinger.python.server_class_
 from {{stinger.python.module_name}}.property import {%if config.properties.stinger_owned_values %}{{stinger.name|UpperCamelCase}}InitialPropertyValues{%else%}{{stinger.name|UpperCamelCase}}PropertyAccess{%endif%}
 {%endif%} {#- end has properties -#}
 from {{stinger.python.module_name}}.interface_types import *
+{{- codec.example_imports(stinger, stinger.python.module_name) }}
 
 {%if (stinger.properties|length > 0) and (not config.properties.stinger_owned_values) %}
 class {{stinger.name|UpperCamelCase}}PropertyOwnership:
@@ -101,17 +102,17 @@ if __name__ == '__main__':
 
     {%for method_name, method in stinger.methods.items()%}
     @server.handle_{{method_name | snake_case}} 
-    async def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.python.return_value_annotation}}:
+    async def {{method_name | snake_case}}({{ codec.handler_params(method.request_payload, method.arg_list, name="request") }}) -> {{method.python.return_value_annotation}}:
         """ This is an example handler for the '{{method_name}}' method.  """
-        print(f"--> Running {{method_name | snake_case}}({%for arg in method.arg_list %}{ {{-arg.name-}}{% if 'bytes' in arg.python.annotation %}!r{%endif-%} }{%if not loop.last%}, {%endif%}{%endfor%})'")
-        return {{method.get_return_value_random_example_value('python')}}
+        print(f"--> Running {{method_name | snake_case}}({%if method.request_payload.is_protobuf%}{request}{%else%}{%for arg in method.arg_list %}{ {{-arg.name-}}{% if 'bytes' in arg.python.annotation %}!r{%endif-%} }{%if not loop.last%}, {%endif%}{%endfor%}{%endif%})'")
+        return {%if method.response_payload.is_protobuf%}{{method.response_payload.python.class_name}}(){%else%}{{method.get_return_value_random_example_value('python')}}{%endif%}
     {%endfor%}
     {%for command_name, command in stinger.commands.items()%}
     @server.receive_{{command_name | snake_case}}
-    def on_{{command_name | snake_case}}({%for arg in command.arg_list%}{{arg.name}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def on_{{command_name | snake_case}}({{ codec.handler_params(command.payload, command.arg_list) }}):
         """ This is an example handler for the '{{command_name}}' command.  A command has no
         response, so this returns nothing. """
-        print(f"==> Received the '{{command_name}}' command: {%for arg in command.arg_list %}{{arg.name}}={ {{-arg.name-}}{% if 'bytes' in arg.python.annotation %}!r{%endif-%} }{%if not loop.last%}, {%endif%}{%endfor%}")
+        print(f"==> Received the '{{command_name}}' command: {%if command.payload.is_protobuf%}{payload}{%else%}{%for arg in command.arg_list %}{{arg.name}}={ {{-arg.name-}}{% if 'bytes' in arg.python.annotation %}!r{%endif-%} }{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}")
     {%endfor%}
     {%if config.properties.stinger_owned_values %}
     {%for prop_name, prop in stinger.properties.items()%}

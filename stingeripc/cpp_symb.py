@@ -456,7 +456,16 @@ class CppProtobufRefSymbols(CppSymbols):
         return f"<{header}>" if self._ref.is_well_known else f'"proto/{header}"'
 
     @property
+    def scoped_name(self) -> str:
+        """The message's name below its namespace, e.g. ``Analytics::DetectionEvent``.
+
+        protoc declares a nested message as a class inside its parent, so the
+        enclosing messages spell out the same way the namespace does.
+        """
+        return "::".join(self._ref.scoped_name.split("."))
+
+    @property
     def qualified_name(self) -> str:
         """How generated C++ code names this message, e.g. ``::weather::v1::CurrentConditions``."""
         ns = self.namespace
-        return f"::{ns}::{self._ref.message_name}" if ns else f"::{self._ref.message_name}"
+        return f"::{ns}::{self.scoped_name}" if ns else f"::{self.scoped_name}"

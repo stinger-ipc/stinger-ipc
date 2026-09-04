@@ -31,6 +31,23 @@
 {%- endfor -%}
 {%- endmacro -%}
 
+{#
+    The same imports, for a file that lives outside the generated package (an
+    example script or a test module). `imports()` above uses a relative import
+    for this interface's own messages, which only resolves from inside the
+    package itself, so this spells the same module out by its absolute name
+    instead.
+#}
+{%- macro example_imports(stinger, module_name) -%}
+{%- for ref in stinger.protobuf_messages() | unique(attribute='python.module') | sort(attribute='python.module') %}
+{%- if ref.is_well_known %}
+from google.protobuf import {{ ref.python.module }}
+{%- else %}
+from {{ module_name }}.proto import {{ ref.python.module }}
+{%- endif %}
+{%- endfor -%}
+{%- endmacro -%}
+
 {# Expression turning a payload object into the bytes that go on the wire. #}
 {%- macro encode(payload, obj_expr) -%}
 {%- if payload.is_protobuf -%}
@@ -62,6 +79,36 @@
 {{ handler_expr }}({{ obj_expr }})
 {%- else -%}
 {{ handler_expr }}(**{{ obj_expr }}.model_dump())
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    The parameter list of an application handler for this payload.
+
+    A JSON payload spreads into one annotated parameter per argument, which is
+    the API generated code has always had.  A protobuf payload has none to
+    spread: the handler takes the message itself, since keeping the message
+    whole is exactly what declaring a protobuf payload asks for.  `name` is the
+    parameter the protobuf form uses.
+#}
+{%- macro handler_params(payload, arg_list, name="payload") -%}
+{%- if payload.is_protobuf -%}
+{{ name }}: {{ payload.python.class_name }}
+{%- else -%}
+{%- for arg in arg_list %}{{ arg.name }}: {{ arg.python.annotation }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    The positional arguments a dispatcher calls a handler with, as a trailing-
+    comma list ready to sit inside brackets.  The protobuf form is the message;
+    the JSON form is one field read off it per declared argument.
+#}
+{%- macro handler_positional(payload, arg_list, obj_expr) -%}
+{%- if payload.is_protobuf -%}
+{{ obj_expr }}, 
+{%- else -%}
+{%- for arg in arg_list %}{{ obj_expr }}.{{ arg.name|snake_case }}, {% endfor -%}
 {%- endif -%}
 {%- endmacro -%}
 

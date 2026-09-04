@@ -8,6 +8,7 @@ from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from {{stinger.python.module_name}}.client import {{stinger.python.client_class_name}}, {{stinger.python.client_class_name}}Builder
 from {{stinger.python.module_name}}.discovery import {{stinger.python.client_class_name}}Discoverer
 from {{stinger.python.module_name}}.interface_types import *
+{{- codec.example_imports(stinger, stinger.python.module_name) }}
 import threading
 
 client_builder = {{stinger.python.client_class_name}}Builder()

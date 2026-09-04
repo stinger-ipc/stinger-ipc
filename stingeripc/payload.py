@@ -48,19 +48,51 @@ class ProtobufMessageRef(BaseModel):
 
     _descriptor: Any = PrivateAttr(default=None)
     _proto_file: Optional[str] = PrivateAttr(default=None)
+    _package: Optional[str] = PrivateAttr(default=None)
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
 
     @property
     def package(self) -> str:
-        """The message's protobuf package, or '' for a message at the top level."""
+        """The message's protobuf package, or '' for a message at the top level.
+
+        Only the declaring file says where the package ends and the message path
+        begins -- ``a.b.C`` is a message ``C`` in package ``a.b`` just as readily
+        as a message ``C`` nested in message ``b`` at the top level -- so this is
+        exact once resolved and, before then, guesses the common case of an
+        unnested message so that :attr:`is_well_known` can be asked early.
+        """
+        if self._package is not None:
+            return self._package
         return self.full_name.rpartition(".")[0]
 
     @property
     def message_name(self) -> str:
-        """The message's own name, without its package."""
+        """The message's own name, without its package or any enclosing messages."""
         return self.full_name.rpartition(".")[2]
+
+    @property
+    def scope(self) -> list[str]:
+        """The messages this one is declared inside, outermost first.
+
+        Empty for a message declared at the top level of its file.  A nested
+        message is named through its parents in every target language, so the
+        leaf name alone does not identify it.
+        """
+        return self.scoped_name.split(".")[:-1]
+
+    @property
+    def scoped_name(self) -> str:
+        """The message's name relative to its package, e.g. ``Analytics.DetectionEvent``.
+
+        The same as :attr:`message_name` for a message declared at the top level
+        of its file, and prefixed with each enclosing message for a nested one.
+        """
+        package = self.package
+        if package and self.full_name.startswith(f"{package}."):
+            return self.full_name[len(package) + 1 :]
+        return self.full_name
 
     @property
     def is_resolved(self) -> bool:

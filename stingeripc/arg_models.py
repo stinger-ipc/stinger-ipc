@@ -40,10 +40,23 @@ _DERIVE_SCAN_LIMIT = 2000
 # The stock example values for each primitive type.  They are the plain JSON values rather
 # than language-rendered snippets, so a candidate can be checked against a 'schema'
 # constraint before it is rendered.
+#
+# An unconstrained argument draws from these and only these, so do not add to them:
+# `random.choice` picks by index, so one extra candidate changes the example value at
+# every seed, and with it every generated demo, test, and doc page.
 _BOOLEAN_EXAMPLES: tuple[bool, ...] = (True, False)
-_FLOAT_EXAMPLES: tuple[float, ...] = (3.14, 1.0, 2.5, 97.9, 1.53, 2.718, 1.618, 1.4142, 0.333333333, 98.6)
-_INTEGER_EXAMPLES: tuple[int, ...] = (42, 1981, 2020, 2022, 1200, 5, 99, 123, 2025, 1955, 2, 0, 10, 100, 25, 216, 256)
-_STRING_EXAMPLES: tuple[str, ...] = ("apples", "Joe", "example", "foo", "bar", "tiger", "bear", "root beer", "smart home", "pegasus", "general", "be wise")
+_FLOAT_EXAMPLES: tuple[float, ...] = (3.14, 1.0, 2.5, 97.9, 1.53)
+_INTEGER_EXAMPLES: tuple[int, ...] = (42, 1981, 2020, 2022, 1200, 5, 99, 123, 2025, 1955)
+_STRING_EXAMPLES: tuple[str, ...] = ("apples", "Joe", "example", "foo", "bar", "tiger", "bear", "root beer")
+
+# Offered only to a *constrained* argument, on top of the stock values above.  A narrow
+# constraint often rules out every stock value, and a recognisable extra candidate reads
+# better in generated output than the mechanically derived value it would otherwise fall
+# back to.  They are kept out of the unconstrained draw because widening it would churn
+# the examples of every argument that has no constraint at all.
+_EXTRA_FLOAT_EXAMPLES: tuple[float, ...] = (2.718, 1.618, 1.4142, 0.333333333, 98.6)
+_EXTRA_INTEGER_EXAMPLES: tuple[int, ...] = (2, 0, 10, 100, 25, 216, 256)
+_EXTRA_STRING_EXAMPLES: tuple[str, ...] = ("smart home", "pegasus", "general", "be wise")
 
 
 def _draft4_validator(schema: dict[str, Any]) -> Any:
@@ -176,20 +189,26 @@ class Arg(BaseModel):
         finally:
             random.setstate(random_state)
 
-    def _pick_example_value(self, candidates: Sequence[Any], derive: Optional[Callable[[dict[str, Any]], Sequence[Any]]] = None) -> Any:
+    def _pick_example_value(
+        self,
+        candidates: Sequence[Any],
+        extra: Sequence[Any] = (),
+        derive: Optional[Callable[[dict[str, Any]], Sequence[Any]]] = None,
+    ) -> Any:
         """Choose a random example value that satisfies this argument's ``schema`` constraint.
 
-        An argument with no constraint gets a plain random choice, so its example values
-        are exactly what they were before constraints were taken into account.  When a
-        constraint is declared, the stock candidates are narrowed to the conforming ones;
-        if none conform, the constraint's own ``enum`` and then values derived from its
-        bounds are tried.  The point is that generated demos, tests, and documentation
-        never carry a value that the generated validation code would reject.
+        An argument with no constraint gets a plain random choice over ``candidates``
+        alone, so its example values are exactly what they were before constraints were
+        taken into account.  When a constraint is declared, ``extra`` widens the pool
+        before it is narrowed to the conforming values; if none conform, the constraint's
+        own ``enum`` and then values derived from its bounds are tried.  The point is that
+        generated demos, tests, and documentation never carry a value that the generated
+        validation code would reject.
         """
         if not self.value_schema:
             return random.choice(list(candidates))
 
-        conforming = [candidate for candidate in candidates if self.schema_allows(candidate)]
+        conforming = [candidate for candidate in (*candidates, *extra) if self.schema_allows(candidate)]
         if conforming:
             return random.choice(conforming)
 
@@ -439,11 +458,11 @@ class ArgPrimitive(Arg):
                 if lang != "python":
                     retval = str(retval).lower()
             elif self.primitive_type == ArgPrimitiveType.FLOAT:
-                retval = self._pick_example_value(_FLOAT_EXAMPLES, _derive_floats)
+                retval = self._pick_example_value(_FLOAT_EXAMPLES, _EXTRA_FLOAT_EXAMPLES, _derive_floats)
             elif self.primitive_type == ArgPrimitiveType.INTEGER:
-                retval = self._pick_example_value(_INTEGER_EXAMPLES, _derive_integers)
+                retval = self._pick_example_value(_INTEGER_EXAMPLES, _EXTRA_INTEGER_EXAMPLES, _derive_integers)
             elif self.primitive_type == ArgPrimitiveType.STRING:
-                retval = f'"{self._pick_example_value(_STRING_EXAMPLES, _derive_strings)}"'
+                retval = f'"{self._pick_example_value(_STRING_EXAMPLES, _EXTRA_STRING_EXAMPLES, _derive_strings)}"'
                 if lang == "rust":
                     retval = f"{retval}.to_string()"
                 if self.optional and lang in ["cpp", "c++"]:

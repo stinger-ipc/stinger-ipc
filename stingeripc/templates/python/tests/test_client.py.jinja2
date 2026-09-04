@@ -10,6 +10,8 @@ from pathlib import Path
 from {{stinger.name | loweronly}}ipc.client import {{stinger.name | UpperCamelCase}}Client, DiscoveredInstance{%if stinger.properties | length > 0 %}, PropertyValueUnavailableError{%endif%}
 {%if stinger.properties | length > 0 -%}
 from {{stinger.name | loweronly}}ipc import client as client_module
+{%endif-%}
+{%if stinger.properties | length > 0 or stinger.uses_protobuf() -%}
 from stinger_python_utils.message_creator import MessageCreator
 {%endif-%}
 from {{stinger.name | loweronly}}ipc.interface_types import *
@@ -67,12 +69,29 @@ class TestClientSignals:
     def test_{{sig_name|snake_case}}_subscribes_when_handler_registered(self, mock_connection, client):
         before = mock_connection.get_subscription_count()
 
-        client.receive_{{sig_name|snake_case}}(lambda **kwargs: None)
+        client.receive_{{sig_name|snake_case}}({%if sig.payload.is_protobuf%}lambda payload: None{%else%}lambda **kwargs: None{%endif%})
         assert mock_connection.get_subscription_count() == before + 1, "Registering a '{{sig_name|snake_case}}' handler did not subscribe to the signal"
 
         # A second handler of either kind reuses the one subscription.
         client.receive_{{sig_name|snake_case}}_payload(lambda payload: None)
         assert mock_connection.get_subscription_count() == before + 1, "Registering a second '{{sig_name|snake_case}}' handler subscribed again"
+    {%- if sig.payload.is_protobuf %}
+
+    def test_{{sig_name|snake_case}}_delivers_the_message_to_every_handler(self, mock_connection, client):
+        """A protobuf signal has no arguments to spread, so each handler is given the message."""
+        received = [] # type: list
+        client.receive_{{sig_name|snake_case}}(lambda payload: received.append(("recv", payload)))
+        client.receive_{{sig_name|snake_case}}_payload(lambda payload: received.append(("payload", payload)))
+
+        sent = {{sig.payload.python.class_name}}()
+        topic = "{{sig.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
+        mock_connection.simulate_message({{ codec.signal_message(sig.payload, "topic", "sent") }})
+
+        assert len(received) == 2, f"Both '{{sig_name|snake_case}}' handlers should have been called, but got {received}"
+        for kind, payload in received:
+            assert isinstance(payload, {{sig.payload.python.class_name}}), f"The {kind} handler was called with {type(payload)} rather than the message"
+            assert payload == sent, f"The {kind} handler did not receive the message that was sent"
+    {%- endif %}
     {%endfor%}
 {%endif%}
 
@@ -159,7 +178,36 @@ class TestClientProperties:
 class TestClientMethods:
 
     {%for method_name, method in stinger.methods.items()%}
-    {%- if method.request_payload.is_protobuf %}{# protobuf payloads carry no example values to build a message from #}{% else %}
+    {%- if method.request_payload.is_protobuf %}
+    def test_{{method_name|snake_case}}_method_call_sends_request(self, mock_connection, client):
+        """A protobuf method takes the request message itself and publishes it as bytes."""
+        request = {{method.request_payload.python.class_name}}()
+        client.{{method_name|snake_case}}(request)
+        assert len(mock_connection.published_messages) == 1, "No message was published for '{{method_name|snake_case}}' method call"
+        message = mock_connection.published_messages[0]
+        expected_topic = "{{method.request_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
+        assert message.topic == expected_topic, f"Incorrect topic for '{{method_name|snake_case}}' method call: {message.topic}"
+        assert message.content_type == "application/protobuf", f"'{{method_name|snake_case}}' request was published as '{message.content_type}'"
+        assert message.payload == request.SerializeToString(), "Published payload is not the serialized request message"
+
+    def test_{{method_name|snake_case}}_response_resolves_to_the_message(self, mock_connection, client):
+        """The future for a protobuf method resolves to the response message, not to a field of it."""
+        fut = client.{{method_name|snake_case}}({{method.request_payload.python.class_name}}())
+        request_msg = mock_connection.published_messages[0]
+
+        expected = {{method.python.return_value_annotation}}()
+        mock_connection.simulate_message(MessageCreator.binary_response_message(
+            request_msg.response_topic,
+            expected.SerializeToString(),
+            "application/protobuf",
+            0,
+            request_msg.correlation_data,
+        ))
+
+        result = fut.result(1)
+        assert isinstance(result, {{method.python.return_value_annotation}}), f"The future resolved to {type(result)} rather than the response message"
+        assert result == expected, "The future did not resolve to the response that was sent"
+    {%- else %}
     def test_{{method_name|snake_case}}_method_call_sends_request(self, mock_connection, client):
         kwargs = {
         {%-for arg in method.arg_list%}
@@ -178,7 +226,24 @@ class TestClientMethods:
 class TestClientCommands:
 
     {%for command_name, command in stinger.commands.items()%}
-    {%- if command.payload.is_protobuf %}{# protobuf payloads carry no example values to build a message from #}{% else %}
+    {%- if command.payload.is_protobuf %}
+    def test_send_{{command_name|snake_case}}_publishes_command(self, mock_connection, client):
+        """A protobuf command takes the message itself and publishes it as bytes."""
+        payload = {{command.python.payload_class_name}}()
+        client.send_{{command_name|snake_case}}(payload)
+
+        published_list = mock_connection.find_published("{{command.topic() | regex_replace("\{[A-Za-z_]+\}", "+") }}")
+        assert len(published_list) == 1, f"No message was published for the '{{command_name|snake_case}}' command.  Messages: {mock_connection.published_messages}"
+
+        message = published_list[0]
+        expected_topic = "{{command.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
+        assert message.topic == expected_topic, f"Incorrect topic for the '{{command_name|snake_case}}' command: {message.topic}"
+        assert message.qos == {{stinger.command_qos}}, "Command '{{command_name|snake_case}}' was published with incorrect QoS"
+        assert message.retain is False, "Command '{{command_name|snake_case}}' was published with incorrect retain flag"
+        assert message.content_type == "application/protobuf", "Command '{{command_name|snake_case}}' was published with incorrect content type"
+        assert message.response_topic is None, "Command '{{command_name|snake_case}}' must not carry a response topic"
+        assert message.payload == payload.SerializeToString(), "Published payload is not the serialized command message"
+    {%- else %}
     def test_send_{{command_name|snake_case}}_publishes_command(self, mock_connection, client):
         kwargs = {
         {%-for arg in command.arg_list%}

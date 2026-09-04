@@ -329,7 +329,14 @@ class PythonMethodSymbols(PythonSymbols):
 
     @property
     def return_value_annotation(self) -> str:
-        """Python return type annotation for the method's return value."""
+        """Python return type annotation for the method's return value.
+
+        A protobuf method has no single named return value to annotate: its
+        response *is* the message, so that is what a handler returns and what
+        the caller's future resolves to.
+        """
+        if self._method.response_payload.is_protobuf:
+            return self._method.response_payload.python.class_name
         if self._method.return_value is None:
             return "None"
         return self._method.return_value.python.annotation
@@ -394,7 +401,14 @@ class PythonPropertySymbols(PythonSymbols):
 
     @property
     def local_type(self) -> str:
-        """Unqualified Python type name for the property's value."""
+        """Unqualified Python type name for the property's value.
+
+        A protobuf message has no unqualified name in a generated module's scope:
+        it is only ever reached through its ``_pb2`` module, so the qualified name
+        is the local one.
+        """
+        if self.is_protobuf:
+            return self.class_name
         return self.class_name.split(".")[-1]
 
     @property
@@ -511,5 +525,9 @@ class PythonProtobufRefSymbols(PythonSymbols):
 
     @property
     def qualified_name(self) -> str:
-        """How generated Python code names this message, e.g. ``weather_pb2.CurrentConditions``."""
-        return f"{self.module}.{self._ref.message_name}"
+        """How generated Python code names this message, e.g. ``weather_pb2.CurrentConditions``.
+
+        protoc nests a nested message's class inside its parent's, so the path
+        from the module down through every enclosing message is what names it.
+        """
+        return f"{self.module}.{self._ref.scoped_name}"

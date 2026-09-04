@@ -16,3 +16,21 @@ flags = ["--python_out={out}", "--pyi_out={out}"]
 # only once this exists.
 [write]
 "src/{python_package}/proto/__init__.py" = "# Generated protobuf bindings for the {interface} interface.\n"
+
+# When one .proto imports another, protoc writes a top-level `import camera_pb2 as
+# camera__pb2` into the bindings, because it assumes its output directory is on
+# sys.path.  Here the bindings are a subpackage of the generated package, so those
+# imports are respelled as relative ones.  The first rule covers a sibling .proto,
+# the second one in a subdirectory -- which protoc imports from a top-level package
+# named after that directory.  A well-known type comes from the installed protobuf
+# runtime rather than from this package, so `google.` is left alone.  `.pyi` stubs
+# spell their imports the same way the modules do, so the globs match both.
+[[rewrite]]
+glob = "*_pb2.py*"
+pattern = '^import (\w+_pb2)( as \w+)?$'
+replacement = 'from {up} import \g<1>\g<2>'
+
+[[rewrite]]
+glob = "*_pb2.py*"
+pattern = '^from (?!google\.)([A-Za-z_]\w*(?:\.\w+)*) import (\w+_pb2)( as \w+)?$'
+replacement = 'from {up}\g<1> import \g<2>\g<3>'

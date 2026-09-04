@@ -38,7 +38,7 @@ from stinger_python_utils.return_codes import (
     stinger_exception_factory,
 )
 from .interface_types import *
-{%macro method_type_annotation(method) %}Callable[[{%if method.arg_list | length > 0%}{%for arg in method.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%else%}{%endif%}], Union[{{method.python.return_value_annotation}}, Coroutine[Any, Any, {{method.python.return_value_annotation}}]]]{%endmacro%}
+{%macro method_type_annotation(method) %}Callable[[{%if method.request_payload.is_protobuf%}{{method.request_payload.python.class_name}}{%else%}{%for arg in method.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}], Union[{{method.python.return_value_annotation}}, Coroutine[Any, Any, {{method.python.return_value_annotation}}]]]{%endmacro%}
 {%for command_name, command in stinger.commands.items()-%}
 {{command.python.callback_type_name}} = {% if command.payload.is_protobuf %}Callable[[{{command.python.payload_class_name}}], None]{% else %}Union[Callable[[{%for arg in command.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None], Callable[[Any{%for arg in command.arg_list%}{%if loop.first%}, {%endif%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]]{% endif %}
 {%endfor%}
@@ -384,16 +384,23 @@ class {{stinger.python.server_class_name}}:
             return
         for payload_handler in self._command_payload_callbacks_for_{{command_name|snake_case}}:
             payload_handler(payload)
+        {%if command.payload.is_protobuf-%}
+        # A protobuf command has no named arguments to spread, so both callback lists are
+        # called the same way: with the message itself.
+        for handler in self._command_recv_callbacks_for_{{command_name|snake_case}}:
+            handler(payload) # type: ignore[call-arg]
+        {%else-%}
         # Read the fields off the model rather than dumping it, so handlers are given the
         # native Python values (bytes, structs, enums) instead of their JSON encodings.
         for handler in self._command_recv_callbacks_for_{{command_name|snake_case}}:
             handler({%-for arg in command.arg_list%}
                 {{arg.name|snake_case}}=payload.{{arg.name|snake_case}},{%endfor%}
             ) # type: ignore[call-arg]
+        {%-endif%}
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
-    {%- set handler_returns = (method.python.return_value_annotation, method.return_value.description or "The result to send back to the client.") if method.return_value else ("None", "Nothing; an empty response is sent back to the client.") %}
+    {%- set handler_returns = (method.python.return_value_annotation, "The message to send back to the client.") if method.response_payload.is_protobuf else ((method.python.return_value_annotation, method.return_value.description or "The result to send back to the client.") if method.return_value else ("None", "Nothing; an empty response is sent back to the client.")) %}
     def handle_{{method_name | snake_case}}(self, handler: {{method_type_annotation(method)}}):
         """ {{ docstrings.google_docstring(method.documentation, 8, args=method.arg_list, returns=handler_returns, extra="This is a decorator to decorate a method that will handle the '" ~ method_name ~ "' method calls. The decorated handler is called with the method's arguments and must return the value described below.") }}
         """
@@ -421,7 +428,7 @@ class {{stinger.python.server_class_name}}:
         response_topic = message.response_topic
 
         if self._method_{{method_name|snake_case}}_handler is not None:
-            method_args = [{%for arg in method.arg_list %}payload.{{arg.name|snake_case}}, {%endfor%}] # type: List[Any]
+            method_args = [{{ codec.handler_positional(method.request_payload, method.arg_list, "payload") }}] # type: List[Any]
             
             return_json = ""
             debug_msg = None # type: Optional[str]
@@ -432,7 +439,13 @@ class {{stinger.python.server_class_name}}:
                         raise RuntimeError(f"Method handler for '{{method_name}}' returned a coroutine, but no event loop was provided to the server to run it on.")
                     return_value = asyncio.run_coroutine_threadsafe(return_value, self._event_loop).result()
                 
-                {%if method.return_value is none%}
+                {%if method.response_payload.is_protobuf%}
+                # A protobuf method's response *is* the message the handler returned; there is
+                # no generated wrapper with a single named field to put it in.
+                if not isinstance(return_value, {{method.python.return_value_annotation}}):
+                    raise ServerSerializationErrorStingerMethodException(f"The return value must be of type {{method.python.return_value_annotation}}, but was {type(return_value)}")
+                return_data = return_value
+                {%elif method.return_value is none%}
                 return_data = "{}"
                 {%else%}
                 if not isinstance(return_value, {{method.return_value.python.local_type}}){% if method.return_value.optional %} and return_value is not None{% endif %}:

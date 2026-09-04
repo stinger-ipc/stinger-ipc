@@ -415,7 +415,21 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
 {%if stinger.signals | length > 0 %}
 class Test{{stinger.name|UpperCamelCase}}ServerSignals:
     {%for signal_name, signal in stinger.signals.items()%}
-    {%- if signal.payload.is_protobuf %}{# protobuf payloads carry no example values to build a message from #}{% else %}
+    {%- if signal.payload.is_protobuf %}
+    def test_server_emit_{{signal_name|snake_case}}(self, server, mock_connection):
+        """Test that the server can emit the protobuf '{{signal_name|snake_case}}' signal."""
+        payload = {{signal.payload.python.class_name}}()
+        server.emit_{{signal_name|snake_case}}_payload(payload)
+
+        published_list = mock_connection.find_published("{{signal.topic() | regex_replace("\{[A-Za-z_]+\}", "+") }}")
+        assert len(published_list) == 1, "No message was published for signal '{{signal_name|snake_case}}'.  Messages: {mock_connection.published_messages}"
+
+        msg = published_list[0]
+        expected_topic = "{{signal.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
+        assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
+        assert msg.content_type == "application/protobuf", f"Signal '{{signal_name|snake_case}}' was published as '{msg.content_type}'"
+        assert msg.payload == payload.SerializeToString(), "Published payload is not the serialized protobuf message"
+    {%- else %}
     def test_server_emit_{{signal_name|snake_case}}(self, server, mock_connection):
         """Test that the server can emit the '{{signal_name|snake_case}}' signal."""
         signal_data = {
@@ -445,7 +459,44 @@ class Test{{stinger.name|UpperCamelCase}}ServerSignals:
 {%if stinger.methods | length > 0 %}
 class Test{{stinger.name|UpperCamelCase}}ServerMethods:
     {%for method_name, method in stinger.methods.items()%}
-    {%- if method.request_payload.is_protobuf %}{# protobuf payloads carry no example values to build a message from #}{% else %}
+    {%- if method.request_payload.is_protobuf %}
+    def test_server_handle_{{method_name|snake_case}}_method(self, server, mock_connection):
+        """Test that a protobuf '{{method_name|snake_case}}' request reaches the handler whole and its reply is sent back."""
+        handler_callback_data = {{method.python.return_value_annotation}}()
+        received_request = None # type: Any
+        def handler(request: {{method.request_payload.python.class_name}}) -> {{method.python.return_value_annotation}}:
+            nonlocal received_request
+            received_request = request
+            return handler_callback_data
+
+        server.handle_{{method_name|snake_case}}(handler)
+
+        request_obj = {{method.request_payload.python.class_name}}()
+        response_topic = "client/test/response"
+        correlation_data = b"method-1234"
+        incoming_msg = Message(
+            topic="{{method.request_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
+            payload=request_obj.SerializeToString(),
+            qos=1,
+            retain=False,
+            content_type="application/protobuf",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert received_request is not None, "Handler for method '{{method_name|snake_case}}' was not called"
+        assert isinstance(received_request, {{method.request_payload.python.class_name}}), f"Handler was called with {type(received_request)} rather than the request message"
+        assert received_request == request_obj, "Handler did not receive the request that was sent"
+
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for method '{{method_name|snake_case}}'."
+
+        resp_msg = published_list[0]
+        assert resp_msg.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+        assert resp_msg.content_type == "application/protobuf", f"Response to '{{method_name|snake_case}}' was published as '{resp_msg.content_type}'"
+        assert resp_msg.payload == handler_callback_data.SerializeToString(), "Response payload is not the serialized message the handler returned"
+    {%- else %}
     def test_server_handle_{{method_name|snake_case}}_method(self, server, mock_connection):
         """Test that the server can handle the '{{method_name|snake_case}}' method."""
         handler_callback_data = {{method.get_return_value_random_example_value('python')}}
@@ -510,7 +561,45 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
 {%if stinger.commands | length > 0 %}
 class Test{{stinger.name|UpperCamelCase}}ServerCommands:
     {%for command_name, command in stinger.commands.items()%}
-    {%- if command.payload.is_protobuf %}{# protobuf payloads carry no example values to build a message from #}{% else %}
+    {%- if command.payload.is_protobuf %}
+    def _{{command_name|snake_case}}_message(self, payload):
+        return Message(
+            topic="{{command.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
+            payload=payload.SerializeToString(),
+            qos={{stinger.command_qos}},
+            retain=False,
+            content_type="application/protobuf",
+        )
+
+    def test_server_receive_{{command_name|snake_case}}_command(self, server, mock_connection):
+        """Test that a received protobuf '{{command_name|snake_case}}' command reaches every registered handler whole."""
+        received = [] # type: List[Any]
+        def handler(payload) -> None:
+            received.append(payload)
+
+        # A command allows any number of handlers, so register two of them.
+        server.receive_{{command_name|snake_case}}(handler)
+        server.receive_{{command_name|snake_case}}(handler)
+
+        command_obj = {{command.python.payload_class_name}}()
+        mock_connection.clear_published_messages() # ignore the property values and interface info published at startup
+        mock_connection.simulate_message(self._{{command_name|snake_case}}_message(command_obj))
+
+        assert len(received) == 2, f"Both handlers for the '{{command_name|snake_case}}' command should have been called, but got {len(received)} call(s)"
+        for payload in received:
+            assert isinstance(payload, {{command.python.payload_class_name}}), f"Handler was called with {type(payload)} rather than the command message"
+            assert payload == command_obj, "Handler did not receive the command that was sent"
+
+        # A command is fire-and-forget, so nothing at all may be published in response.
+        assert len(mock_connection.published_messages) == 0, f"The '{{command_name|snake_case}}' command must not publish a response, but published {mock_connection.published_messages}"
+
+    def test_server_{{command_name|snake_case}}_command_without_handler_is_dropped(self, server, mock_connection):
+        """Test that a protobuf '{{command_name|snake_case}}' command with no registered handler is dropped rather than raising."""
+        mock_connection.clear_published_messages() # ignore the property values and interface info published at startup
+        mock_connection.simulate_message(self._{{command_name|snake_case}}_message({{command.python.payload_class_name}}()))
+
+        assert len(mock_connection.published_messages) == 0, f"The '{{command_name|snake_case}}' command must not publish anything, but published {mock_connection.published_messages}"
+    {%- else %}
     def test_server_receive_{{command_name|snake_case}}_command(self, server, mock_connection):
         """Test that a received '{{command_name|snake_case}}' command reaches every registered handler."""
         received_args = [] # type: List[Dict[str, Any]]

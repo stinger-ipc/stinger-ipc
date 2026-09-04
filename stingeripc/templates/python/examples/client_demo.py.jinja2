@@ -10,6 +10,7 @@ from {{stinger.python.module_name}}.lwt import StingerPresence
 from {{stinger.python.module_name}}.client import {{stinger.python.client_class_name}}, {{stinger.python.client_class_name}}Builder
 from {{stinger.python.module_name}}.discovery import {{stinger.python.client_class_name}}Discoverer
 from {{stinger.python.module_name}}.interface_types import *
+{{- codec.example_imports(stinger, stinger.python.module_name) }}
 import threading
 
 {% if (stinger.methods|length + stinger.properties_rw|length + stinger.commands|length) > 0%}
@@ -56,12 +57,16 @@ if __name__ == '__main__':
     client_builder = {{stinger.python.client_class_name}}Builder()
     {%for sig_name, sig in stinger.signals.items()%}
     @client_builder.receive_{{sig_name | snake_case }}
-    def print_{{sig_name}}_receipt({%for arg in sig.arg_list%}{{arg.name}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
+    def print_{{sig_name}}_receipt({{ codec.handler_params(sig.payload, sig.arg_list) }}):
         """{{sig.description}}
+        {%if sig.payload.is_protobuf-%}
+        @param payload {{sig.payload.python.class_name}} The signal's protobuf message.
+        {%else-%}
         {%for arg in sig.arg_list-%}
         @param {{arg.name}} {{arg.python.annotation}} {{arg.description or ''}}
-        {%endfor%}"""
-        print(f"Got a '{{sig_name}}' signal: {%for arg in sig.arg_list%}{{arg.name}}={ {{arg.name}}{% if 'bytes' in arg.python.annotation %}!r{%endif-%} } {%endfor%}")
+        {%endfor%}
+        {%-endif%}"""
+        print(f"Got a '{{sig_name}}' signal: {%if sig.payload.is_protobuf%}{payload}{%else%}{%for arg in sig.arg_list%}{{arg.name}}={ {{arg.name}}{% if 'bytes' in arg.python.annotation %}!r{%endif-%} } {%endfor%}{%endif%}")
     {%endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
     @client_builder.{{prop_name | snake_case}}_updated
