@@ -135,6 +135,7 @@ class ProtobufConfig(BaseModel):
         default=None,
         description="The protoc executable to use; auto-detected when unset",
     )
+    mime_type: str = Field(default="application/protobuf", description="The mime type used in the MQTTv5 content-type property")
 
 
 class DiscoveryConfig(BaseModel):

@@ -75,7 +75,7 @@ struct Wire<{{type_name}}> {
 
 template <>
 struct Wire<{{type_name}}> {
-    static constexpr const char* kContentType = "application/protobuf";
+    static constexpr const char* kContentType = "{{config.protobuf.mime_type}}";
 
     static std::string ToString(const {{type_name}}& value)
     {

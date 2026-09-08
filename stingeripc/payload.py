@@ -172,7 +172,7 @@ class Payload(BaseModel):
     @property
     def content_type(self) -> str:
         """The MQTT content type that messages carrying this payload are published with."""
-        return "application/protobuf" if self.is_protobuf else "application/json"
+        return self._config.protobuf.mime_type if self.is_protobuf else "application/json"
 
     @property
     def value_schemas(self) -> list[Arg]:

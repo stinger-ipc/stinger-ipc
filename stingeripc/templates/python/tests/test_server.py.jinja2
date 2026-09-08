@@ -427,7 +427,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerSignals:
         msg = published_list[0]
         expected_topic = "{{signal.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
-        assert msg.content_type == "application/protobuf", f"Signal '{{signal_name|snake_case}}' was published as '{msg.content_type}'"
+        assert msg.content_type == "{{ config.protobuf.mime_type }}", f"Signal '{{signal_name|snake_case}}' was published as '{msg.content_type}'"
         assert msg.payload == payload.SerializeToString(), "Published payload is not the serialized protobuf message"
     {%- else %}
     def test_server_emit_{{signal_name|snake_case}}(self, server, mock_connection):
@@ -479,7 +479,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
             payload=request_obj.SerializeToString(),
             qos=1,
             retain=False,
-            content_type="application/protobuf",
+            content_type="{{ config.protobuf.mime_type }}",
             response_topic=response_topic,
             correlation_data=correlation_data,
         )
@@ -494,7 +494,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
 
         resp_msg = published_list[0]
         assert resp_msg.correlation_data == correlation_data, "Correlation data in response does not match expected value"
-        assert resp_msg.content_type == "application/protobuf", f"Response to '{{method_name|snake_case}}' was published as '{resp_msg.content_type}'"
+        assert resp_msg.content_type == "{{ config.protobuf.mime_type }}", f"Response to '{{method_name|snake_case}}' was published as '{resp_msg.content_type}'"
         assert resp_msg.payload == handler_callback_data.SerializeToString(), "Response payload is not the serialized message the handler returned"
     {%- else %}
     def test_server_handle_{{method_name|snake_case}}_method(self, server, mock_connection):
@@ -568,7 +568,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerCommands:
             payload=payload.SerializeToString(),
             qos={{stinger.command_qos}},
             retain=False,
-            content_type="application/protobuf",
+            content_type="{{ config.protobuf.mime_type }}",
         )
 
     def test_server_receive_{{command_name|snake_case}}_command(self, server, mock_connection):
