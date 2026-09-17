@@ -30,3 +30,21 @@
 #include {{ include }}
 {%- endfor -%}
 {%- endmacro -%}
+
+{#
+    An example instance of a payload's protobuf message, as a single expression.
+
+    A message left at its defaults encodes to zero bytes, and a zero-byte retained
+    publish tells the broker to drop a property's retained value rather than store
+    an empty one, so an example fills in what it can.  protobuf's C++ classes are
+    populated through setters rather than by aggregate initialization, hence the
+    immediately-invoked lambda; a message with nothing to set (`google.protobuf.Empty`,
+    say) is simply default-constructed.
+#}
+{%- macro example_message(payload) -%}
+{%- if payload.protobuf.example_fields -%}
+[] { {{ payload.cpp.class_name }} example; {% for field in payload.protobuf.example_fields %}example.set_{{ field.name|lower }}({{ field.get_random_example_value(lang="c++") }}); {% endfor %}return example; }()
+{%- else -%}
+{{ payload.cpp.class_name }}{}
+{%- endif -%}
+{%- endmacro -%}

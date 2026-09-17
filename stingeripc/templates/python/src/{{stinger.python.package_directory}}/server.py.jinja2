@@ -371,9 +371,11 @@ class {{stinger.python.server_class_name}}:
         A command has no response, so a payload we cannot make sense of can only be logged
         and dropped; there is nowhere to report the error to.
         """
+        {% if (not command.payload.is_protobuf) or config.protobuf.mime_type is not false %}
         if message.content_type is None or message.content_type != '{{ codec.content_type(command.payload) }}':
-            self._logger.warning("Received '{{command_name}}' command with unexpected content type")
+            self._logger.warning("Received '{{command_name}}' command with unexpected content type: %s", message.content_type)
             return
+        {% endif %}
         try:
             payload = {{ codec.decode(command.payload, "message.payload") }}
         except (json.JSONDecodeError, ValidationError) as e:

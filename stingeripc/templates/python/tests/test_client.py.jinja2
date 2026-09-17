@@ -187,7 +187,7 @@ class TestClientMethods:
         message = mock_connection.published_messages[0]
         expected_topic = "{{method.request_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
         assert message.topic == expected_topic, f"Incorrect topic for '{{method_name|snake_case}}' method call: {message.topic}"
-        assert message.content_type == "application/protobuf", f"'{{method_name|snake_case}}' request was published as '{message.content_type}'"
+        assert message.content_type == "{{ config.protobuf.mime_type }}", f"'{{method_name|snake_case}}' request was published as '{message.content_type}'"
         assert message.payload == request.SerializeToString(), "Published payload is not the serialized request message"
 
     def test_{{method_name|snake_case}}_response_resolves_to_the_message(self, mock_connection, client):
@@ -199,7 +199,7 @@ class TestClientMethods:
         mock_connection.simulate_message(MessageCreator.binary_response_message(
             request_msg.response_topic,
             expected.SerializeToString(),
-            "application/protobuf",
+            "{{ config.protobuf.mime_type }}",
             0,
             request_msg.correlation_data,
         ))
@@ -240,7 +240,7 @@ class TestClientCommands:
         assert message.topic == expected_topic, f"Incorrect topic for the '{{command_name|snake_case}}' command: {message.topic}"
         assert message.qos == {{stinger.command_qos}}, "Command '{{command_name|snake_case}}' was published with incorrect QoS"
         assert message.retain is False, "Command '{{command_name|snake_case}}' was published with incorrect retain flag"
-        assert message.content_type == "application/protobuf", "Command '{{command_name|snake_case}}' was published with incorrect content type"
+        assert message.content_type == "{{ config.protobuf.mime_type }}", "Command '{{command_name|snake_case}}' was published with incorrect content type"
         assert message.response_topic is None, "Command '{{command_name|snake_case}}' must not carry a response topic"
         assert message.payload == payload.SerializeToString(), "Published payload is not the serialized command message"
     {%- else %}

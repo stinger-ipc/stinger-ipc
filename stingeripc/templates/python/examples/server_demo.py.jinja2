@@ -105,7 +105,7 @@ if __name__ == '__main__':
     async def {{method_name | snake_case}}({{ codec.handler_params(method.request_payload, method.arg_list, name="request") }}) -> {{method.python.return_value_annotation}}:
         """ This is an example handler for the '{{method_name}}' method.  """
         print(f"--> Running {{method_name | snake_case}}({%if method.request_payload.is_protobuf%}{request}{%else%}{%for arg in method.arg_list %}{ {{-arg.name|snake_case-}}{% if 'bytes' in arg.python.annotation %}!r{%endif-%} }{%if not loop.last%}, {%endif%}{%endfor%}{%endif%})'")
-        return {%if method.response_payload.is_protobuf%}{{method.response_payload.python.class_name}}(){%else%}{{method.get_return_value_random_example_value('python')}}{%endif%}
+        return {%if method.response_payload.is_protobuf%}{{codec.example_message(method.response_payload)}}{%else%}{{method.get_return_value_random_example_value('python')}}{%endif%}
     {%endfor%}
     {%for command_name, command in stinger.commands.items()%}
     @server.receive_{{command_name | snake_case}}

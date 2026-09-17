@@ -10,12 +10,13 @@ method, which is the only element with two independent wire bodies.
 
 from __future__ import annotations
 
+import random
 from enum import Enum
 from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
-from .arg_models import Arg
+from .arg_models import _BOOLEAN_EXAMPLES, _FLOAT_EXAMPLES, _INTEGER_EXAMPLES, _STRING_EXAMPLES, Arg
 from .lang_symb import LanguageSymbolMixin
 
 
@@ -32,6 +33,97 @@ class PayloadRole(Enum):
     METHOD_REQUEST = "method request"
     METHOD_RESPONSE = "method response"
     PROPERTY = "property"
+
+
+# protoc's FieldDescriptorProto.Type numbers, spelled the way the .proto file does.
+_FIELD_KINDS: dict[int, str] = {
+    1: "double",
+    2: "float",
+    3: "int64",
+    4: "uint64",
+    5: "int32",
+    6: "fixed64",
+    7: "fixed32",
+    8: "bool",
+    9: "string",
+    10: "group",
+    11: "message",
+    12: "bytes",
+    13: "uint32",
+    14: "enum",
+    15: "sfixed32",
+    16: "sfixed64",
+    17: "sint32",
+    18: "sint64",
+}
+
+_LABEL_REPEATED = 3
+
+# The field kinds an example value can be made up for.  A message, group or enum
+# field needs the shape of another declaration to fill in, which an example built
+# from one message's descriptor does not have.
+_EXAMPLE_KINDS = frozenset(_FIELD_KINDS.values()) - {"message", "group", "enum"}
+
+_INTEGER_KINDS = frozenset({"int32", "int64", "uint32", "uint64", "sint32", "sint64", "fixed32", "fixed64", "sfixed32", "sfixed64"})
+
+
+class ProtobufField(BaseModel):
+    """One field of a protobuf message, as its descriptor declares it."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
+
+    name: str = Field(..., description="The field's name, exactly as the .proto file spells it")
+    number: int = Field(..., description="The field's wire tag number")
+    kind: str = Field(..., description="The field's protobuf type, e.g. 'string', 'uint32' or 'message'")
+    repeated: bool = Field(default=False, description="True for a repeated field")
+    optional: bool = Field(default=False, description="True for a proto3 'optional' field, which tracks presence explicitly")
+    type_name: str = Field(default="", description="Fully-qualified name of the message or enum type, empty for a scalar")
+
+    @property
+    def is_scalar(self) -> bool:
+        """True when the field's type is one protobuf itself defines.
+
+        A message, group or enum field is not: naming its type is not enough to
+        know its shape, which is why such a field carries a :attr:`type_name`.
+        """
+        return self.kind not in ("message", "group", "enum")
+
+    def get_random_example_value(self, lang: str = "python", seed: int = 2) -> Optional[str]:
+        """Return an example value for this field as a snippet of ``lang``.
+
+        None for a field no example can be made up for -- a repeated field, or one
+        whose type is another message or an enum -- so callers filter on
+        :attr:`ProtobufMessageRef.example_fields` rather than on the result here.
+        """
+        if self.repeated or self.kind not in _EXAMPLE_KINDS:
+            return None
+        random_state = random.getstate()
+        random.seed(seed)
+        try:
+            if self.kind == "bool":
+                flag = random.choice(_BOOLEAN_EXAMPLES)
+                return str(flag) if lang == "python" else str(flag).lower()
+            if self.kind in ("float", "double"):
+                number = random.choice(_FLOAT_EXAMPLES)
+                # A C++ `float` setter takes a float, and an unsuffixed literal is a double.
+                return f"{number}f" if lang in ("cpp", "c++") and self.kind == "float" else str(number)
+            if self.kind in _INTEGER_KINDS:
+                return str(random.choice(_INTEGER_EXAMPLES))
+            text = random.choice(_STRING_EXAMPLES)
+            if self.kind == "bytes":
+                if lang == "python":
+                    return f'b"{text}"'
+                if lang == "rust":
+                    return f'b"{text}".to_vec()'
+                return f'"{text}"'
+            if lang == "rust":
+                return f'"{text}".to_string()'
+            return f'"{text}"'
+        finally:
+            random.setstate(random_state)
+
+    def __str__(self) -> str:
+        return f"ProtobufField<{self.name}: {'repeated ' if self.repeated else ''}{self.type_name or self.kind}>"
 
 
 class ProtobufMessageRef(BaseModel):
@@ -118,14 +210,53 @@ class ProtobufMessageRef(BaseModel):
         return self._proto_file
 
     @property
-    def fields(self) -> list[Any]:
-        """The message's fields.
+    def fields(self) -> list[ProtobufField]:
+        """The message's fields, in declaration order.
 
-        Always empty for now: stinger resolves protobuf messages by name only.
-        Reading the field list out of the descriptor is a later change, and
-        every caller of this property is written against the empty case first.
+        Empty until the reference has been resolved against the .proto sources,
+        since the field list comes off the descriptor that resolving fills in.
         """
-        return []
+        if self._descriptor is None:
+            return []
+        return [
+            ProtobufField(
+                name=field.name,
+                number=field.number,
+                kind=_FIELD_KINDS.get(field.type, "message"),
+                repeated=field.label == _LABEL_REPEATED,
+                optional=field.proto3_optional,
+                type_name=field.type_name.lstrip("."),
+            )
+            for field in self._descriptor.field
+        ]
+
+    @property
+    def example_fields(self) -> list[ProtobufField]:
+        """The fields an example instance of this message can fill in.
+
+        A message whose fields are all at their defaults encodes to zero bytes,
+        and a zero-byte retained publish tells the broker to drop the property's
+        retained value rather than to store an empty one, so a generated example
+        has to set something.  Only singular scalar fields qualify: a repeated
+        field or one whose type is another message or an enum would need a shape
+        this descriptor does not describe.  At most one member of any real
+        ``oneof`` is offered, since setting a second would silently clear the
+        first; a proto3 ``optional`` field is exempt, its one-member oneof being
+        protobuf's own bookkeeping rather than a choice the .proto file declared.
+        """
+        if self._descriptor is None:
+            return []
+        chosen: list[ProtobufField] = []
+        claimed_oneofs: set[int] = set()
+        for field, modeled in zip(self._descriptor.field, self.fields):
+            if not modeled.is_scalar or modeled.repeated:
+                continue
+            if field.HasField("oneof_index") and not field.proto3_optional:
+                if field.oneof_index in claimed_oneofs:
+                    continue
+                claimed_oneofs.add(field.oneof_index)
+            chosen.append(modeled)
+        return chosen
 
     def __str__(self) -> str:
         return f"ProtobufMessageRef<{self.full_name}>"
@@ -172,7 +303,9 @@ class Payload(BaseModel):
     @property
     def content_type(self) -> str:
         """The MQTT content type that messages carrying this payload are published with."""
-        return self._config.protobuf.mime_type if self.is_protobuf else "application/json"
+        if self.is_protobuf:
+            return self._config.protobuf.mime_type or "application/protobuf"
+        return "application/json"
 
     @property
     def value_schemas(self) -> list[Arg]:

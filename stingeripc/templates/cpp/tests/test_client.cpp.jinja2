@@ -1,4 +1,5 @@
 {% import 'partials/args.jinja2' as ar %}
+{%- import 'partials/properties.jinja2' as pr %}
 /*
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
@@ -181,13 +182,13 @@ TEST_F({{stinger.cpp.client_class_name}}Test, {{prop_name | UpperCamelCase}}Call
     const std::string valueTopic = stinger::utils::format("{{prop.value_topic()}}", topicParams());
     ASSERT_FALSE(_conn->IsSubscribed(valueTopic));
 
-    _client->register{{prop_name | UpperCamelCase}}PropertyCallback([]({{ar.declarationParams(prop.arg_list)}}) {});
+    _client->register{{prop_name | UpperCamelCase}}PropertyCallback([]({{pr.value_param_types(prop)}}) {});
 
     EXPECT_TRUE(_conn->IsSubscribed(valueTopic)) << "Registering a {{prop_name}} callback did not subscribe to the property";
 
     // A second callback reuses the one subscription.
     const std::size_t subscriptionCount = _conn->GetSubscriptions().size();
-    _client->register{{prop_name | UpperCamelCase}}PropertyCallback([]({{ar.declarationParams(prop.arg_list)}}) {});
+    _client->register{{prop_name | UpperCamelCase}}PropertyCallback([]({{pr.value_param_types(prop)}}) {});
     EXPECT_EQ(_conn->GetSubscriptions().size(), subscriptionCount) << "Registering a second {{prop_name}} callback subscribed again";
 }
 
@@ -197,7 +198,7 @@ TEST_F({{stinger.cpp.client_class_name}}Test, {{prop_name | UpperCamelCase}}Gett
 {
     // The getter blocks until a value arrives, so subscribe first (by registering a
     // callback), deliver the value, and only then read it.
-    _client->register{{prop_name | UpperCamelCase}}PropertyCallback([]({{ar.declarationParams(prop.arg_list)}}) {});
+    _client->register{{prop_name | UpperCamelCase}}PropertyCallback([]({{pr.value_param_types(prop)}}) {});
 
     {{prop.payload.cpp.class_name}} currentValue{ {%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
     const std::string valueTopic = stinger::utils::format("{{prop.value_topic()}}", topicParams());
@@ -217,14 +218,14 @@ TEST_F({{stinger.cpp.client_class_name}}Test, {{prop_name | UpperCamelCase}}Upda
     // An update request is only sent once the property's current value is known, so the
     // property has to have been received before it can be updated.
 {%- endif %}
-    _client->register{{prop_name | UpperCamelCase}}PropertyCallback([]({{ar.declarationParams(prop.arg_list)}}) {});
+    _client->register{{prop_name | UpperCamelCase}}PropertyCallback([]({{pr.value_param_types(prop)}}) {});
     {{prop.payload.cpp.class_name}} currentValue{ {%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
     const std::string valueTopic = stinger::utils::format("{{prop.value_topic()}}", topicParams());
     _conn->SimulateIncomingMessage(stinger::mqtt::Message::PropertyValue(valueTopic, serializeToString(currentValue), {%if config.properties.version_tracking%}3{%else%}std::nullopt{%endif%}));
 
     _conn->ClearPublishedMessages();
 
-    auto pending = _client->update{{prop.name | UpperCamelCase}}Property({%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+    auto pending = _client->update{{prop.name | UpperCamelCase}}Property({{pr.example_value(prop)}});
 
     auto published = _conn->GetPublishedMessages();
     ASSERT_EQ(published.size(), 1u);

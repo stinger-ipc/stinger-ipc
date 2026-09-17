@@ -388,11 +388,11 @@ void {{stinger.cpp.server_class_name}}::_receive{{command_name | UpperCamelCase}
 
 {{pr.callback_registration_definition(stinger.cpp.server_class_name, prop_name, prop)}}
 
-void {{stinger.cpp.server_class_name}}::update{{prop.name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}})
+void {{stinger.cpp.server_class_name}}::update{{prop.name | UpperCamelCase}}Property({{pr.value_params(prop)}})
 {
     { // Scope lock
     std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
-        _{{prop_name | lowerCamelCase}}Property = {{prop.payload.cpp.class_name}}{ {%for arg in prop.arg_list %}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+        _{{prop_name | lowerCamelCase}}Property = {{pr.payload_expr(prop)}};
 {%- if config.properties.version_tracking %}
         _last{{prop_name | UpperCamelCase}}PropertyVersion++;
 {%- endif %}
@@ -403,7 +403,7 @@ void {{stinger.cpp.server_class_name}}::update{{prop.name | UpperCamelCase}}Prop
         {
             try
             {
-                cb({{ar.callParams(prop.arg_list)}});
+                cb({{pr.value_args(prop)}});
             }
             catch (const std::exception& e)
             {

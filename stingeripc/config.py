@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 import tomllib
 from .topic_util import get_argument_position
 import re
@@ -135,8 +135,17 @@ class ProtobufConfig(BaseModel):
         default=None,
         description="The protoc executable to use; auto-detected when unset",
     )
-    mime_type: str = Field(default="application/protobuf", description="The mime type used in the MQTTv5 content-type property")
+    mime_type: Union[str, bool] = Field(default="application/protobuf", description="The mime type used in the MQTTv5 content-type property")
 
+    @field_validator("mime_type")
+    @classmethod
+    def validate_method_responses(cls, v: Union[str, bool]) -> Union[str, bool]:
+        if isinstance(v, str):
+            if "/" not in v:
+                raise ValueError("Protobuf mime type does not look like a valid mime type (missing '/')")
+        elif v is True:
+            raise ValueError("A TRUE value for protobuf mime type does not have a valid meaning")
+        return v
 
 class DiscoveryConfig(BaseModel):
     """Configuration options for service discovery."""
@@ -156,7 +165,7 @@ class StingerConfig(BaseModel):
     client: ClientConfig = Field(default_factory=ClientConfig, description="Client code generation options")
     topics: TopicConfig = Field(default_factory=TopicConfig, description="Topic schema configuration")
     discovery: DiscoveryConfig = Field(default_factory=DiscoveryConfig, description="Service discovery configuration")
-    protobuf: Optional[ProtobufConfig] = Field(default=None, description="Where to find hand-written .proto files; required only when an element declares 'protobuf:'")
+    protobuf: ProtobufConfig = Field(default_factory=ProtobufConfig, description="Protobuf related configuration")
     language: dict[str, LanguagePluginConfig] = Field(default_factory=dict, description="Language plugin configurations")
     model_config = ConfigDict(strict=True)
 

@@ -415,7 +415,7 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
             // Don't need a mutex since we're using tempValue.
             try
             {
-                cb({%for arg in prop.arg_list %}tempValue.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+                cb({{pr.value_from_payload(prop, 'tempValue')}});
             }
             catch (const std::exception& e)
             {
@@ -435,7 +435,7 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
 {{pr.callback_registration_definition(stinger.cpp.client_class_name, prop_name, prop, true)}}
 
 {% if not prop.read_only %}
-std::future<bool> {{stinger.cpp.client_class_name}}::update{{prop.name | UpperCamelCase}}Property({{ar.methodParams(prop.arg_list)}})
+std::future<bool> {{stinger.cpp.client_class_name}}::update{{prop.name | UpperCamelCase}}Property({{pr.value_params(prop)}})
 {
 {%- if config.properties.version_tracking %}
     // The server rejects an update request whose version does not match the version it
@@ -446,7 +446,7 @@ std::future<bool> {{stinger.cpp.client_class_name}}::update{{prop.name | UpperCa
 {%- endif %}
     _await{{prop_name | UpperCamelCase}}Property();
 
-    {{prop.payload.cpp.class_name}} propertyPayload{ {%for arg in prop.arg_list%}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    {{pr.payload_local(prop, 'propertyPayload')}}
     auto payloadStr = Wire<{{prop.payload.cpp.class_name}}>::ToString(propertyPayload);
 
     std::map<std::string, std::string> topicParams;

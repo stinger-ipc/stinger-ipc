@@ -209,15 +209,37 @@ let data = {{ payload.rust.struct_name }} {
 {%- endmacro -%}
 
 {#
+    An example instance of a protobuf message, spelled with the `type_name` the
+    calling code reaches the message by.
+
+    A message left at its defaults encodes to zero bytes, and a zero-byte retained
+    publish tells the broker to drop a property's retained value rather than store
+    an empty one, so the example fills in what it can and leaves the rest to
+    `Default`.  A message with nothing to fill in (`google.protobuf.Empty`, say)
+    gets its default instance.
+#}
+{%- macro example_message(payload, type_name) -%}
+{%- if payload.protobuf.example_fields -%}
+{{ type_name }} {
+{%- for field in payload.protobuf.example_fields %}
+            {{ field.name|snake_case }}: {% if field.optional %}Some({{ field.get_random_example_value(lang="rust") }}){% else %}{{ field.get_random_example_value(lang="rust") }}{% endif %},
+{%- endfor %}
+            ..Default::default()
+        }
+{%- else -%}
+<{{ type_name }} as Default>::default()
+{%- endif -%}
+{%- endmacro -%}
+
+{#
     An example value for a whole payload, for demos and generated tests.
 
-    A JSON payload is built from its arguments' example values.  A protobuf
-    message gets its default instance: stinger resolves protobuf messages by
-    name only, so there are no field values to invent yet.
+    A JSON payload is built from its arguments' example values; a protobuf payload
+    is the message itself, populated as `example_message` describes.
 #}
 {%- macro example_payload(payload, arg_list) -%}
 {%- if payload.is_protobuf -%}
-<{{ payload.protobuf.rust.external_name }} as Default>::default()
+{{ example_message(payload, payload.protobuf.rust.external_name) }}
 {%- else -%}
 {%- for arg in arg_list %}{{ arg.get_random_example_value(lang="rust") }}{% if not loop.last %}, {% endif %}{% endfor -%}
 {%- endif -%}
@@ -229,7 +251,7 @@ let data = {{ payload.rust.struct_name }} {
 #}
 {%- macro example_payload_local(payload, arg_list) -%}
 {%- if payload.is_protobuf -%}
-<{{ payload.rust.struct_name }} as Default>::default()
+{{ example_message(payload, payload.rust.struct_name) }}
 {%- else -%}
 {%- for arg in arg_list %}{{ arg.get_random_example_value(lang="rust") }}{% if not loop.last %}, {% endif %}{% endfor -%}
 {%- endif -%}
@@ -274,7 +296,7 @@ let data = {{ payload.rust.struct_name }} {
 #}
 {%- macro property_example(prop, seed=2) -%}
 {%- if prop.payload.is_protobuf -%}
-<{{ prop.payload.rust.struct_name }} as Default>::default()
+{{ example_message(prop.payload, prop.payload.rust.struct_name) }}
 {%- else -%}
 {{ prop.value.get_random_example_value(lang="rust", seed=seed) }}
 {%- endif -%}
@@ -283,7 +305,7 @@ let data = {{ payload.rust.struct_name }} {
 {# Like `property_example`, but for code outside the library (demos, integration tests). #}
 {%- macro property_example_external(prop, seed=2) -%}
 {%- if prop.payload.is_protobuf -%}
-<{{ prop.payload.protobuf.rust.external_name }} as Default>::default()
+{{ example_message(prop.payload, prop.payload.protobuf.rust.external_name) }}
 {%- else -%}
 {{ prop.value.get_random_example_value(lang="rust", seed=seed) }}
 {%- endif -%}

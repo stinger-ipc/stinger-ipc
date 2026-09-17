@@ -1,5 +1,61 @@
 {% import 'partials/args.jinja2' as ar %}
+{% import 'partials/codec.jinja2' as codec %}
 {%macro prop_value_type(prop) -%}{%if prop.cpp.is_optional and prop.value.arg_type.name.lower() != 'struct'%}{{prop.cpp.value_type}}{%else%}{{prop.payload.cpp.class_name}}{%endif%}{%endmacro%}
+{#
+    A property's value, as it crosses the generated C++ API.
+
+    A JSON property spreads into one parameter per declared value, which is the
+    API generated code has always had.  A protobuf property's value *is* the
+    message -- there is no wrapper struct with a single named field -- so the
+    API takes and hands back the message itself.  These macros are the only
+    place that distinction is made, so the property code in client.cpp,
+    server.cpp and the examples is written once.
+#}
+{%macro value_params(prop)-%}
+{%if prop.payload.is_protobuf%}const {{prop.payload.cpp.class_name}}& value{%else%}{{ar.methodParams(prop.arg_list)|trim}}{%endif%}
+{%-endmacro%}
+
+{# The same parameter list, types only, for a declaration or a std::function. #}
+{%macro value_param_types(prop)-%}
+{%if prop.payload.is_protobuf%}const {{prop.payload.cpp.class_name}}&{%else%}{{ar.declarationParams(prop.arg_list)|trim}}{%endif%}
+{%-endmacro%}
+
+{# The matching call arguments, for forwarding what `value_params` named. #}
+{%macro value_args(prop)-%}
+{%if prop.payload.is_protobuf%}value{%else%}{{ar.callParams(prop.arg_list)|trim}}{%endif%}
+{%-endmacro%}
+
+{#
+    The payload carrying the value `value_params` named.  A JSON property builds
+    its wrapper struct around the individual values; a protobuf property's
+    payload *is* the message it was handed.
+#}
+{%macro payload_expr(prop)-%}
+{%if prop.payload.is_protobuf%}value{%else%}{{prop.payload.cpp.class_name}}{ {{ar.callParams(prop.arg_list)|trim}} }{%endif%}
+{%-endmacro%}
+
+{#
+    The same payload, declared as a local named `name`.  The protobuf form binds
+    a reference rather than copying the message it was already handed.
+#}
+{%macro payload_local(prop, name)-%}
+{%if prop.payload.is_protobuf%}const {{prop.payload.cpp.class_name}}& {{name}} = value;{%else%}{{prop.payload.cpp.class_name}} {{name}}{ {{ar.callParams(prop.arg_list)|trim}} };{%endif%}
+{%-endmacro%}
+
+{# The value(s) read back off a payload object, ready to pass to a callback. #}
+{%macro value_from_payload(prop, obj_expr)-%}
+{%if prop.payload.is_protobuf%}{{obj_expr}}{%else%}{%for arg in prop.arg_list%}{{obj_expr}}.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}
+{%-endmacro%}
+
+{#
+    An example value for a property, for demos and generated tests.  A protobuf
+    payload's example is a populated message: see `example_message` in the codec
+    partial for why it cannot be left at its defaults.
+#}
+{%macro example_value(prop)-%}
+{%if prop.payload.is_protobuf%}{{codec.example_message(prop.payload)}}{%else%}{%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}
+{%-endmacro%}
+
 {%macro public_declarations(prop_name, prop, client, config)%}
 // ---{{prop_name}} Property---
 {%if client%}
@@ -24,7 +80,7 @@ std::optional<{{prop.cpp.value_type}}> get{{prop_name | UpperCamelCase}}Property
 // Registering a callback is what subscribes to the `{{prop_name}}` property, so the
 // callback is invoked with the server's current value shortly after this returns.
 {%- endif %}
-void register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void({{ar.declarationParams(prop.arg_list)}})>& cb);
+void register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void({{value_param_types(prop)}})>& cb);
 {% if not client or not prop.read_only %}
 {%- if client %}
 {%- if config.properties.version_tracking %}
@@ -37,7 +93,7 @@ void register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<
 // throwing `stinger::error::TimeoutException` if none arrives.
 {%- endif %}
 {%- endif %}
-{% if client %}std::future<bool>{%else%}void{%endif%} update{{prop_name | UpperCamelCase}}Property({{ar.declarationParams(prop.arg_list)}});
+{% if client %}std::future<bool>{%else%}void{%endif%} update{{prop_name | UpperCamelCase}}Property({{value_param_types(prop)}});
 {%endif%}
 {%endmacro%}
 
@@ -80,7 +136,7 @@ void _await{{prop_name | UpperCamelCase}}Property();
 void _receive{{prop_name | UpperCamelCase}}PropertyUpdate(const stinger::mqtt::Message& msg);
 
 // Callbacks registered for changes to the `{{prop_name}}` property.
-std::vector<std::function<void({{ar.declarationParams(prop.arg_list)}})>> _{{prop_name | lowerCamelCase}}PropertyCallbacks;
+std::vector<std::function<void({{value_param_types(prop)}})>> _{{prop_name | lowerCamelCase}}PropertyCallbacks;
 std::mutex _{{prop_name | lowerCamelCase}}PropertyCallbacksMutex;
 {%endmacro%}
 
@@ -114,7 +170,7 @@ std::optional<{{prop.cpp.value_type}}> {{class_name}}::get{{prop_name | UpperCam
 {%endmacro%}
 
 {%macro callback_registration_definition(class_name, prop_name, prop, client=false)%}
-void {{class_name}}::register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void({{ar.methodParams(prop.arg_list)}})>& cb)
+void {{class_name}}::register{{prop_name | UpperCamelCase}}PropertyCallback(const std::function<void({{value_params(prop)}})>& cb)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyCallbacksMutex);

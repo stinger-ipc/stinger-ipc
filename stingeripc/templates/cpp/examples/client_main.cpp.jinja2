@@ -1,4 +1,5 @@
 {% import 'partials/args.jinja2' as ar %}
+{%- import 'partials/codec.jinja2' as codec %}
 
 #include <iostream>
 #include <sstream>
@@ -86,6 +87,13 @@ int main(int argc, char** argv)
 
     // Register callbacks for property updates.
     {%- for prop_name, prop in stinger.properties.items() %}
+    {%- if prop.payload.is_protobuf %}
+    // A protobuf property's value is the message itself, so the callback is handed
+    // the message rather than a list of individual values.
+    client.register{{prop_name | UpperCamelCase}}PropertyCallback([](const {{prop.payload.cpp.class_name}}& value) {
+        std::cout << "Received update for {{prop_name}} property: " << value.ShortDebugString() << std::endl;
+    });
+    {%- else %}
     client.register{{prop_name | UpperCamelCase}}PropertyCallback([]({%for arg in prop.arg_list%}{{ arg.cpp.temp_type }} {{ arg.name |lowerCamelCase}}{% if not loop.last %}, {% endif %}{%endfor%}) {
         {%-for arg in prop.arg_list-%}{%if arg.arg_type.name.lower() == 'datetime'%}
         {%if arg.optional%}
@@ -127,6 +135,7 @@ int main(int argc, char** argv)
                         {%-endfor-%} 
                         std::endl;
     });
+    {%- endif %}
     {%endfor%}
 
     // Call each method with example values.
@@ -209,7 +218,7 @@ int main(int argc, char** argv)
         {%-for arg in command.arg_list%}{%if arg.arg_type.name.lower() == 'struct'%}
         {{arg.cpp.type}} {{arg.name|lowerCamelCase}}Arg = {{arg.get_random_example_value('c++')}};
         {%endif%}{%endfor-%}
-        client.send{{command_name | UpperCamelCase}}Command({%for arg in command.arg_list%}{%if arg.arg_type.name.lower() == 'struct'%}{{arg.name|lowerCamelCase}}Arg{%else%}{{arg.get_random_example_value('c++')}}{%endif%}{%if not loop.last%}, {%endif%}{%endfor%});
+        client.send{{command_name | UpperCamelCase}}Command{%if command.payload.is_protobuf%}Payload({{codec.example_message(command.payload)}}){%else%}({%for arg in command.arg_list%}{%if arg.arg_type.name.lower() == 'struct'%}{{arg.name|lowerCamelCase}}Arg{%else%}{{arg.get_random_example_value('c++')}}{%endif%}{%if not loop.last%}, {%endif%}{%endfor%}){%endif%};
     }
     {%-endfor%}
 

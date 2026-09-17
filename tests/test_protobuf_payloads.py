@@ -66,9 +66,51 @@ class TestProtobufMessageRef(unittest.TestCase):
         with self.assertRaises(ValueError):
             ref.proto_file
 
-    def test_fields_are_empty_pending_descriptor_support(self):
+    def test_fields_are_empty_until_resolved(self):
         ref = ProtobufMessageRef(full_name="weather.v1.CurrentConditions")
         self.assertEqual(ref.fields, [])
+        self.assertEqual(ref.example_fields, [])
+
+
+class TestFields(unittest.TestCase):
+    def _resolved(self, full_name: str) -> ProtobufMessageRef:
+        ref = ProtobufMessageRef(full_name=full_name)
+        _sources().resolve(ref)
+        return ref
+
+    def test_reads_fields_off_the_descriptor(self):
+        ref = self._resolved("weather.v1.CurrentConditions")
+        self.assertEqual([(f.name, f.number, f.kind) for f in ref.fields], [("temperature", 1, "float"), ("description", 2, "string")])
+
+    def test_marks_a_repeated_message_field(self):
+        (days,) = self._resolved("weather.v1.Forecast").fields
+        self.assertTrue(days.repeated)
+        self.assertFalse(days.is_scalar)
+        self.assertEqual(days.type_name, "weather.v1.CurrentConditions")
+
+    def test_example_fields_are_the_singular_scalars(self):
+        ref = self._resolved("weather.v1.CurrentConditions")
+        self.assertEqual([f.name for f in ref.example_fields], ["temperature", "description"])
+
+    def test_example_fields_skips_a_repeated_message(self):
+        self.assertEqual(self._resolved("weather.v1.Forecast").example_fields, [])
+
+    def test_example_values_are_spelled_per_language(self):
+        temperature, description = self._resolved("weather.v1.CurrentConditions").example_fields
+        # A C++ `float` setter takes a float, so the literal carries the suffix.
+        self.assertTrue(temperature.get_random_example_value("c++").endswith("f"))
+        self.assertEqual(temperature.get_random_example_value("python"), temperature.get_random_example_value("rust"))
+        self.assertTrue(description.get_random_example_value("rust").endswith(".to_string()"))
+        self.assertEqual(description.get_random_example_value("c++"), description.get_random_example_value("python"))
+
+    def test_no_example_value_for_a_field_that_needs_another_declaration(self):
+        (days,) = self._resolved("weather.v1.Forecast").fields
+        self.assertIsNone(days.get_random_example_value("c++"))
+
+    def test_a_message_with_nothing_to_fill_in_has_no_example_fields(self):
+        ref = ProtobufMessageRef(full_name="google.protobuf.Empty")
+        _sources().resolve(ref)
+        self.assertEqual(ref.example_fields, [])
 
 
 class TestResolution(unittest.TestCase):

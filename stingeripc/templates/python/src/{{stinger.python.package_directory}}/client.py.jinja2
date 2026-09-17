@@ -244,24 +244,26 @@ class {{stinger.python.client_class_name}}:
     
     {%for sig_name, sig in stinger.signals.items()%}
     def _receive_{{sig_name|snake_case}}_signal_message(self, message: Message):
+        {% if (not sig.payload.is_protobuf) or config.protobuf.mime_type is not false %}
         if message.content_type is None or message.content_type != '{{ codec.content_type(sig.payload) }}':
-            self._logger.warning("Received '{{sig_name}}' signal with unexpected content type")
+            self._logger.warning("Received '{{sig_name}}' signal with unexpected content type: %s", message.content_type)
             return
+        {% endif %}
 
         model = {{ codec.decode(sig.payload, "message.payload") }}
-        {%if sig.payload.is_protobuf-%}
+        {% if sig.payload.is_protobuf -%}
         # A protobuf signal has no named arguments to spread, so both callback lists are
         # called the same way: with the message itself.
         for handler in self._signal_recv_callbacks_for_{{sig_name | snake_case}}:
             handler(model) # type: ignore[call-arg]
-        {%else-%}
+        {% else -%}
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name | snake_case}}, **kwargs)
-        {%endif-%}
-    {%endfor%}{# end signal loop #}
+        {% endif -%}
+    {% endfor %}{# end signal loop #}
 
-    {%for sig_name, sig in stinger.signals.items()%}
+    {% for sig_name, sig in stinger.signals.items() %}
     def receive_{{sig_name | snake_case }}(self, handler: {{sig_name | UpperCamelCase}}SignalCallbackType):
         """ {{ docstrings.google_docstring(sig.documentation, 8, args=sig.arg_list, extra="Used as a decorator for methods which handle the '" ~ sig_name ~ "' signal; the handler receives the signal's arguments as keyword arguments.") }}
         """
@@ -385,9 +387,11 @@ class {{stinger.python.client_class_name}}:
     {%-for prop_name, prop_spec in stinger.properties.items()%}
     def _receive_{{prop_name | snake_case}}_property_update_message(self, message: Message):
         # Handle '{{prop_name}}' property change.
+        {% if (not prop_spec.payload.is_protobuf) or config.protobuf.mime_type is not false %}
         if message.content_type is None or message.content_type != '{{ codec.content_type(prop_spec.payload) }}':
-            self._logger.warning("Received '{{prop_name}}' property change with unexpected content type")
+            self._logger.warning("Received '{{prop_name}}' property change with unexpected content type: %s", message.content_type)
             return
+        {% endif %}
         try:
             prop_obj = {{ codec.decode(prop_spec.payload, "message.payload") }}
             {%if config.properties.version_tracking-%}

@@ -220,20 +220,31 @@ MessageCreator.property_response_message({{ topic_expr }}, {{ obj_expr }}, {{ ve
 {%- endmacro -%}
 
 {#
+    An example instance of a payload's protobuf message.
+
+    A message left at its defaults serializes to zero bytes, and a zero-byte
+    retained publish tells the broker to drop a property's retained value rather
+    than store an empty one, so the example fills in what it can.  A message with
+    nothing to fill in (`google.protobuf.Empty`, say) is simply default-constructed.
+#}
+{%- macro example_message(payload) -%}
+{{ payload.python.class_name }}({% for field in payload.protobuf.example_fields %}{{ field.name }}={{ field.get_random_example_value() }}{% if not loop.last %}, {% endif %}{% endfor %})
+{%- endmacro -%}
+
+{#
     The argument list of an example call, for demos and generated tests.
 
     A JSON payload spreads into the individual arguments the generated API takes,
     with example values.  A protobuf payload has no `arg_list` to spread -- the
-    generated API takes the message itself -- so the example is a default-
-    constructed message, matching what `property_example` does for a property and
-    what the Rust templates do with `::default()`.
+    generated API takes the message itself -- so the example is the message,
+    populated as `example_message` describes.
 
     `named` picks between `name=value` and bare positional values, since the demo
     templates call the generated API both ways.
 #}
 {%- macro example_payload(payload, arg_list, named=True) -%}
 {%- if payload.is_protobuf -%}
-{{ payload.python.class_name }}()
+{{ example_message(payload) }}
 {%- else -%}
 {%- for arg in arg_list %}{% if named %}{{ arg.name|snake_case }}={% endif %}{{ arg.get_random_example_value() }}{% if not loop.last %}, {% endif %}{% endfor -%}
 {%- endif -%}
@@ -260,7 +271,7 @@ MessageCreator.property_response_message({{ topic_expr }}, {{ obj_expr }}, {{ ve
 #}
 {%- macro property_example(prop, seed=2) -%}
 {%- if prop.payload.is_protobuf -%}
-{{ prop.payload.python.class_name }}()
+{{ example_message(prop.payload) }}
 {%- else -%}
 {{ prop.value.get_random_example_value(lang="python", seed=seed) }}
 {%- endif -%}

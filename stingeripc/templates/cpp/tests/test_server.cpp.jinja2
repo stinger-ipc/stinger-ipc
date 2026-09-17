@@ -1,3 +1,4 @@
+{% import 'partials/properties.jinja2' as pr -%}
 /*
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
@@ -189,7 +190,7 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{prop_name | UpperCamelCase}}Sett
     const std::string valueTopic = stinger::utils::format("{{prop.value_topic()}}", topicArgs());
     _conn->ClearPublishedMessages();
 
-    _server->update{{prop.name | UpperCamelCase}}Property({%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+    _server->update{{prop.name | UpperCamelCase}}Property({{pr.example_value(prop)}});
 
     auto published = _conn->GetPublishedMessages(valueTopic);
     ASSERT_EQ(published.size(), 1u);
