@@ -125,6 +125,20 @@ target_link_libraries({{project_name}}-discovery-publisher
 		Threads::Threads
 )
 
+add_executable({{project_name}}-client-integration-test examples/client_integration_test.cpp)
+target_link_libraries({{project_name}}-client-integration-test
+	PRIVATE
+		{{cmake_name}}::Client
+		Threads::Threads
+)
+
+add_executable({{project_name}}-server-integration-test examples/server_integration_test.cpp)
+target_link_libraries({{project_name}}-server-integration-test
+	PRIVATE
+		{{cmake_name}}::Server
+		Threads::Threads
+)
+
 set_target_properties(
 	{{project_name}}-client
 	{{project_name}}-server
@@ -132,6 +146,8 @@ set_target_properties(
 	{{project_name}}-server-demo
 	{{project_name}}-discovery-publisher
 	{{project_name}}-discovery-example
+	{{project_name}}-client-integration-test
+	{{project_name}}-server-integration-test
 	PROPERTIES
 		CXX_STANDARD 17 # use 17, if you can
 		CXX_STANDARD_REQUIRED ON # use 17, I insist

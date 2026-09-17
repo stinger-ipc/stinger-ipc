@@ -90,12 +90,19 @@ from {{ module_name }}.proto import {{ ref.python.module }}
     spread: the handler takes the message itself, since keeping the message
     whole is exactly what declaring a protobuf payload asks for.  `name` is the
     parameter the protobuf form uses.
+
+    Parameter names are snake_cased, matching the field names `model_dump()`
+    produces -- the client's signal dispatch calls a handler with
+    `**model.model_dump()`, whose keys are the model's (snake_case) Python
+    field names, not the arg's original (possibly camelCase) declared name.  A
+    handler declared with the raw name would raise a `TypeError` for any
+    argument whose declared name is not already snake_case.
 #}
 {%- macro handler_params(payload, arg_list, name="payload") -%}
 {%- if payload.is_protobuf -%}
 {{ name }}: {{ payload.python.class_name }}
 {%- else -%}
-{%- for arg in arg_list %}{{ arg.name }}: {{ arg.python.annotation }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- for arg in arg_list %}{{ arg.name|snake_case }}: {{ arg.python.annotation }}{% if not loop.last %}, {% endif %}{% endfor -%}
 {%- endif -%}
 {%- endmacro -%}
 
@@ -244,11 +251,17 @@ MessageCreator.property_response_message({{ topic_expr }}, {{ obj_expr }}, {{ ve
 {%- if payload.is_protobuf %}_payload{% endif -%}
 {%- endmacro -%}
 
-{# An example value for a property, for demos and generated tests. #}
-{%- macro property_example(prop) -%}
+{# An example value for a property, for demos and generated tests.
+
+    `seed` selects which example is picked; two calls with the same seed give the
+    same value (the default matches every existing call site), while a different
+    seed is how a generated integration test gets a second value guaranteed to
+    differ from the first, to prove a write actually changed something.
+#}
+{%- macro property_example(prop, seed=2) -%}
 {%- if prop.payload.is_protobuf -%}
 {{ prop.payload.python.class_name }}()
 {%- else -%}
-{{ prop.value.get_random_example_value(lang="python") }}
+{{ prop.value.get_random_example_value(lang="python", seed=seed) }}
 {%- endif -%}
 {%- endmacro -%}

@@ -264,20 +264,27 @@ let data = {{ payload.rust.struct_name }} {
 {%- endif -%}
 {%- endmacro -%}
 
-{# An example value for a property, for demos and generated tests. #}
-{%- macro property_example(prop) -%}
+{# An example value for a property, for demos and generated tests.
+
+    `seed` selects which example is picked; two calls with the same seed give
+    the same value (the default matches every existing call site), while a
+    different seed is how a generated integration test gets a second value
+    guaranteed to differ from the first, to prove a write actually changed
+    something.
+#}
+{%- macro property_example(prop, seed=2) -%}
 {%- if prop.payload.is_protobuf -%}
 <{{ prop.payload.rust.struct_name }} as Default>::default()
 {%- else -%}
-{{ prop.value.get_random_example_value(lang="rust") }}
+{{ prop.value.get_random_example_value(lang="rust", seed=seed) }}
 {%- endif -%}
 {%- endmacro -%}
 
 {# Like `property_example`, but for code outside the library (demos, integration tests). #}
-{%- macro property_example_external(prop) -%}
+{%- macro property_example_external(prop, seed=2) -%}
 {%- if prop.payload.is_protobuf -%}
 <{{ prop.payload.protobuf.rust.external_name }} as Default>::default()
 {%- else -%}
-{{ prop.value.get_random_example_value(lang="rust") }}
+{{ prop.value.get_random_example_value(lang="rust", seed=seed) }}
 {%- endif -%}
 {%- endmacro -%}

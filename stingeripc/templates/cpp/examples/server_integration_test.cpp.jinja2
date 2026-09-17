@@ -1,0 +1,192 @@
+{%- set comparable_types = ['PRIMITIVE', 'ENUM', 'DURATION', 'BINARY'] -%}
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+Integration test server for the {{stinger.name}} interface.
+
+Unlike server_main.cpp, this is not meant to run forever: it emits every
+signal on a short interval, validates every method call/command/property
+update it receives against the value client_integration_test is expected to
+send, prints one "[CHECK] <name> ... PASS|FAIL" line per thing it validates,
+then a final "RESULT: PASS|FAIL (n/m checks)" line, and exits - 0 if every
+check passed, 1 otherwise. It stops on its own once every expected check has
+come in, or after MAX_LIFETIME_SECONDS, whichever is first, so it never has
+to be killed by hand.
+
+Start this first, then run client_integration_test (same broker) in another
+process.
+*/
+
+#include <chrono>
+#include <cstdlib>
+#include <iostream>
+#include <mutex>
+#include <string>
+#include <syslog.h>
+#include <thread>
+#include <vector>
+
+#include "server.hpp"
+#include "{{stinger.cpp.enum_header_file}}"
+#include <stinger/error/return_codes.hpp>
+#include <stinger/mqtt/brokerconnection.hpp>
+
+using namespace stinger::gen::{{stinger.name|snake_case}};
+
+namespace {
+
+int EnvSeconds(const char* name, int defaultValue) {
+    const char* value = std::getenv(name);
+    if (value == nullptr) {
+        return defaultValue;
+    }
+    try {
+        return std::stoi(value);
+    } catch (...) {
+        return defaultValue;
+    }
+}
+
+// Collects every "[CHECK]" this server can itself verify (method calls,
+// commands, and writable-property updates - a signal is verified by the
+// client that receives it, not by the server that sends it).
+class ResultsTracker {
+public:
+    bool Check(const std::string& name, bool passed, const std::string& detail) {
+        std::string status = passed ? "PASS" : "FAIL";
+        if (detail.empty()) {
+            std::cout << "[CHECK] " << name << " ... " << status << std::endl;
+        } else {
+            std::cout << "[CHECK] " << name << " ... " << status << ": " << detail << std::endl;
+        }
+        std::lock_guard<std::mutex> lock(mutex_);
+        if (passed) {
+            passed_++;
+        }
+        return passed;
+    }
+
+    size_t PassedCount() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        return passed_;
+    }
+
+private:
+    std::mutex mutex_;
+    size_t passed_ = 0;
+};
+
+} // namespace
+
+int main(int argc, char** argv) {
+    int maxLifetime = EnvSeconds("MAX_LIFETIME_SECONDS", 15);
+    int signalEmitInterval = EnvSeconds("SIGNAL_EMIT_INTERVAL_SECONDS", 1);
+    // Only methods, commands, and writable properties are things this server can
+    // itself validate - a signal is validated by the client that receives it.
+    size_t expectedChecks = {{ stinger.methods|length + stinger.commands|length + stinger.properties_rw|length }};
+    ResultsTracker tracker;
+
+    auto conn = std::make_shared<stinger::mqtt::BrokerConnection>("localhost", 1883, "cpp-server-integration-test");
+    conn->SetLogLevel(LOG_WARNING);
+    conn->SetLogFunction([](int level, const char* msg) {
+        std::cout << "[" << level << "] " << msg << std::endl;
+    });
+
+    auto server = std::make_shared<{{stinger.cpp.server_class_name}}>(conn, "cpp-server-integration-test:1"{% for topic_param in config.topics.params %}, "example_{{topic_param}}"{% endfor %});
+
+    {%for prop_name, prop in stinger.properties.items()%}
+    server->update{{prop.name | UpperCamelCase}}Property({%-for arg in prop.arg_list %}{{arg.get_random_example_value('c++')}}{%if not loop.last%}, {%endif%}{%endfor%});
+    {%endfor%}
+
+    {%for method_name, method in stinger.methods.items()%}
+    server->register{{method_name | UpperCamelCase}}Handler([&tracker]({%for arg in method.arg_list%}{{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.cpp.return_value_class}}
+    {
+        {%- set comparable_args = method.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list -%}
+        {%if method.arg_list | length == 0%}
+        tracker.Check("method:{{method_name}}", true, "received request (no arguments)");
+        {%elif comparable_args | length > 0%}
+        bool matches = true;
+        {%for arg in comparable_args%}
+        auto expected{{loop.index}} = {{arg.get_random_example_value('c++')}};
+        if ({{arg.name|lowerCamelCase}} != expected{{loop.index}}) { matches = false; }
+        {%endfor%}
+        tracker.Check("method:{{method_name}}", matches, matches ? "matches expected arguments" : "does not match expected arguments");
+        {%else%}
+        tracker.Check("method:{{method_name}}", true, "received request (arguments not independently verifiable)");
+        {%endif%}
+        {%-if method.return_value_type is not false %}
+        return {{method.get_return_value_random_example_value('c++')}};
+        {%-endif%}
+    });
+    {%endfor%}
+
+    {%for command_name, command in stinger.commands.items()%}
+    server->receive{{command_name | UpperCamelCase}}Command([&tracker]({%for arg in command.arg_list%}{{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
+    {
+        {%- set comparable_args = command.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list -%}
+        {%if command.arg_list | length == 0%}
+        tracker.Check("command:{{command_name}}", true, "received (no arguments)");
+        {%elif comparable_args | length > 0%}
+        bool matches = true;
+        {%for arg in comparable_args%}
+        auto expected{{loop.index}} = {{arg.get_random_example_value('c++')}};
+        if ({{arg.name|lowerCamelCase}} != expected{{loop.index}}) { matches = false; }
+        {%endfor%}
+        tracker.Check("command:{{command_name}}", matches, matches ? "matches expected arguments" : "does not match expected arguments");
+        {%else%}
+        tracker.Check("command:{{command_name}}", true, "received (arguments not independently verifiable)");
+        {%endif%}
+    });
+    {%endfor%}
+
+    {%for prop_name, prop in stinger.properties_rw.items()%}
+    // Property: {{prop_name}} - registered after the initial value above is set, so
+    // this only fires for a genuine write request from client_integration_test.
+    server->register{{prop_name | UpperCamelCase}}PropertyCallback([&tracker]({%for arg in prop.arg_list%}{{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
+    {
+        {%- set comparable_args = prop.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list -%}
+        {%if comparable_args | length > 0%}
+        bool matches = true;
+        {%for arg in comparable_args%}
+        auto expected{{loop.index}} = {{arg.get_random_example_value('c++', seed=99)}};
+        if ({{arg.name|lowerCamelCase}} != expected{{loop.index}}) { matches = false; }
+        {%endfor%}
+        tracker.Check("property:{{prop_name}}:write", matches, matches ? "matches expected value" : "does not match expected value");
+        {%else%}
+        tracker.Check("property:{{prop_name}}:write", true, "received update (value not independently verifiable)");
+        {%endif%}
+    });
+    {%endfor%}
+
+    std::cout << "Listening for up to " << maxLifetime << "s, or until all " << expectedChecks << " server-verifiable check(s) come in..." << std::endl;
+
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(maxLifetime);
+    while (std::chrono::steady_clock::now() < deadline) {
+        if (expectedChecks > 0 && tracker.PassedCount() >= expectedChecks) {
+            break;
+        }
+        {%for sig_name, sig in stinger.signals.items()%}
+        {
+            auto future = server->emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.get_random_example_value('c++')}}{%if not loop.last%}, {%endif%}{%endfor%});
+            future.wait();
+        }
+        {%endfor%}
+        std::this_thread::sleep_for(std::chrono::seconds(signalEmitInterval));
+    }
+
+    // A hard exit, not `return`, because the broker connection's background
+    // thread(s) are not guaranteed to be daemonized - a plain `return` here can
+    // leave the process hanging past this point instead of actually exiting.
+    size_t passed = tracker.PassedCount();
+    if (expectedChecks == 0) {
+        std::cout << "RESULT: PASS (0/0 checks; {{stinger.name}} declares no methods/commands/writable properties for the server to verify)" << std::endl;
+        std::exit(0);
+    } else if (passed == expectedChecks) {
+        std::cout << "RESULT: PASS (" << passed << "/" << expectedChecks << " checks)" << std::endl;
+        std::exit(0);
+    } else {
+        std::cout << "RESULT: FAIL (" << passed << "/" << expectedChecks << " checks passed)" << std::endl;
+        std::exit(1);
+    }
+}

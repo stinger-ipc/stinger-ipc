@@ -65,6 +65,16 @@ path = "examples/client_demo.rs"
 required-features = ["client"]
 
 [[example]]
-name = "{{stinger.name|snake_case}}_server_demo" 
+name = "{{stinger.name|snake_case}}_server_demo"
 path = "examples/server_demo.rs"
+required-features = ["server"]
+
+[[example]]
+name = "{{stinger.name|snake_case}}_client_integration_test"
+path = "examples/client_integration_test.rs"
+required-features = ["client"]
+
+[[example]]
+name = "{{stinger.name|snake_case}}_server_integration_test"
+path = "examples/server_integration_test.rs"
 required-features = ["server"]

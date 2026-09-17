@@ -477,6 +477,26 @@ void {{stinger.cpp.server_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
         _last{{prop_name | UpperCamelCase}}PropertyVersion++;
 {%- endif %}
     }
+    { // Scope lock
+        // A client-driven update has to notify the same callbacks updateXProperty()
+        // does, or application code has no way to learn that this property changed.
+        std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyCallbacksMutex);
+        for (const auto& cb : _{{prop_name | lowerCamelCase}}PropertyCallbacks)
+        {
+            try
+            {
+                cb({%if prop.cpp.is_protobuf%}tempValue{%else%}tempValue.{{prop.value.name|lowerCamelCase}}{%endif%});
+            }
+            catch (const std::exception& e)
+            {
+                _broker->Log(LOG_ERR, "Exception in {{prop_name}} property callback [%s]: %s", typeid(e).name(), e.what());
+            }
+            catch (...)
+            {
+                _broker->Log(LOG_ERR, "Unknown exception in {{prop_name}} property callback");
+            }
+        }
+    }
     republish{{prop.name | UpperCamelCase}}Property();
 }
 {%endfor%}

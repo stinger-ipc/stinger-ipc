@@ -1,0 +1,272 @@
+{%- set comparable_types = ['PRIMITIVE', 'ENUM', 'DURATION', 'BINARY'] -%}
+/*
+DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
+on the next generation.
+
+Integration test client for the {{stinger.name}} interface.
+
+Unlike client_main.cpp, this is not meant to run forever: it discovers the
+server, exercises every signal/method/command/property exactly once with a
+bounded timeout on every wait, prints one "[CHECK] <name> ... PASS|FAIL" line
+per check, then a final "RESULT: PASS|FAIL (n/m checks)" line, and exits - 0
+if every check passed, 1 otherwise.
+
+Start server_integration_test first (same broker), then run this.
+*/
+
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
+#include <syslog.h>
+#include <cstdlib>
+#include <future>
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <vector>
+
+#include "client.hpp"
+#include "discovery.hpp"
+#include "enums.hpp"
+#include "structs.hpp"
+#include <stinger/error/return_codes.hpp>
+#include <stinger/mqtt/brokerconnection.hpp>
+
+using namespace stinger::gen::{{stinger.name|snake_case}};
+
+namespace {
+
+int EnvSeconds(const char* name, int defaultValue) {
+    const char* value = std::getenv(name);
+    if (value == nullptr) {
+        return defaultValue;
+    }
+    try {
+        return std::stoi(value);
+    } catch (...) {
+        return defaultValue;
+    }
+}
+
+// Collects every "[CHECK]" line printed and reports one final PASS/FAIL line.
+class ResultsTracker {
+public:
+    bool Check(const std::string& name, bool passed, const std::string& detail) {
+        std::string status = passed ? "PASS" : "FAIL";
+        if (detail.empty()) {
+            std::cout << "[CHECK] " << name << " ... " << status << std::endl;
+        } else {
+            std::cout << "[CHECK] " << name << " ... " << status << ": " << detail << std::endl;
+        }
+        std::lock_guard<std::mutex> lock(mutex_);
+        results_.push_back(passed);
+        return passed;
+    }
+
+    [[noreturn]] void Finish() {
+        size_t total;
+        size_t passed = 0;
+        {
+            std::lock_guard<std::mutex> lock(mutex_);
+            total = results_.size();
+            for (bool r : results_) {
+                if (r) {
+                    passed++;
+                }
+            }
+        }
+        if (total > 0 && passed == total) {
+            std::cout << "RESULT: PASS (" << passed << "/" << total << " checks)" << std::endl;
+            std::exit(0);
+        }
+        std::cout << "RESULT: FAIL (" << passed << "/" << total << " checks passed)" << std::endl;
+        std::exit(1);
+    }
+
+private:
+    std::mutex mutex_;
+    std::vector<bool> results_;
+};
+
+// A one-shot, timed signal: `Set()` wakes up whoever is blocked in `WaitFor()`.
+class WaitFlag {
+public:
+    void Set() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        ready_ = true;
+        cv_.notify_all();
+    }
+
+    void Clear() {
+        std::lock_guard<std::mutex> lock(mutex_);
+        ready_ = false;
+    }
+
+    bool WaitFor(std::chrono::seconds timeout) {
+        std::unique_lock<std::mutex> lock(mutex_);
+        return cv_.wait_for(lock, timeout, [this] { return ready_; });
+    }
+
+private:
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    bool ready_ = false;
+};
+
+} // namespace
+
+int main(int argc, char** argv) {
+    int discoveryTimeout = EnvSeconds("DISCOVERY_TIMEOUT_SECONDS", 10);
+    int checkTimeout = EnvSeconds("CHECK_TIMEOUT_SECONDS", 5);
+    ResultsTracker tracker;
+
+    auto conn = std::make_shared<stinger::mqtt::BrokerConnection>("localhost", 1883, "{{stinger.name|snake_case|replace('_', '-')}}-client-integration-test");
+    conn->SetLogLevel(LOG_WARNING);
+    conn->SetLogFunction([](int level, const char* msg) {
+        std::cout << "[" << level << "] " << msg << std::endl;
+    });
+
+    InstanceInfo serviceInfo;
+    {
+        {{stinger.name|UpperCamelCase}}Discovery discovery(conn);
+        auto serviceInfoFut = discovery.GetSingleton();
+        auto status = serviceInfoFut.wait_for(std::chrono::seconds(discoveryTimeout));
+        if (status == std::future_status::timeout) {
+            tracker.Check("discover_service", false, "no service appeared within timeout");
+            tracker.Finish();
+        }
+        serviceInfo = serviceInfoFut.get();
+        tracker.Check("discover_service", true, "discovered");
+    }
+
+    {{stinger.cpp.client_class_name}} client(conn, serviceInfo);
+
+    {%for sig_name, sig in stinger.signals.items()%}
+    // Signal: {{sig_name}}
+    auto {{sig_name|lowerCamelCase}}Flag = std::make_shared<WaitFlag>();
+    auto {{sig_name|lowerCamelCase}}Checked = std::make_shared<std::atomic<bool>>(false);
+    client.register{{sig_name | UpperCamelCase}}Callback([&tracker, {{sig_name|lowerCamelCase}}Flag, {{sig_name|lowerCamelCase}}Checked]({%for arg in sig.arg_list%}{{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+        // The server re-emits every signal on an interval; only the first
+        // delivery is checked, since this test exercises each signal once.
+        bool alreadyChecked = false;
+        if (!{{sig_name|lowerCamelCase}}Checked->compare_exchange_strong(alreadyChecked, true)) {
+            return;
+        }
+        {%- set comparable_args = sig.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list %}
+        {%if sig.arg_list | length == 0%}
+        tracker.Check("signal:{{sig_name}}", true, "received (no arguments)");
+        {%elif comparable_args | length > 0%}
+        bool matches = true;
+        {%for arg in comparable_args%}
+        auto expected{{loop.index}} = {{arg.get_random_example_value('c++')}};
+        if ({{arg.name|lowerCamelCase}} != expected{{loop.index}}) { matches = false; }
+        {%endfor%}
+        tracker.Check("signal:{{sig_name}}", matches, matches ? "matches expected arguments" : "does not match expected arguments");
+        {%else%}
+        tracker.Check("signal:{{sig_name}}", true, "received (arguments not independently verifiable)");
+        {%endif%}
+        {{sig_name|lowerCamelCase}}Flag->Set();
+    });
+    {%endfor%}
+
+    {%for sig_name, sig in stinger.signals.items()%}
+    if (!{{sig_name|lowerCamelCase}}Flag->WaitFor(std::chrono::seconds(checkTimeout))) {
+        tracker.Check("signal:{{sig_name}}", false, "not received within timeout");
+    }
+    {%endfor%}
+
+    {%for prop_name, prop in stinger.properties.items()%}
+    // Property: {{prop_name}} (read)
+    try {
+        auto value = client.get{{prop_name|UpperCamelCase}}Property();
+        {%if prop.value.arg_type.name in comparable_types%}
+        auto expected = {{ prop.value.get_random_example_value('c++') }};
+        tracker.Check("property:{{prop_name}}:read", value == expected, value == expected ? "matches expected value" : "does not match expected value");
+        {%else%}
+        tracker.Check("property:{{prop_name}}:read", true, "received (value not independently verifiable)");
+        {%endif%}
+    } catch (const stinger::error::TimeoutException&) {
+        tracker.Check("property:{{prop_name}}:read", false, "no value received within the property timeout");
+    }
+    {%endfor%}
+
+    {%for method_name, method in stinger.methods.items()%}
+    // Method: {{method_name}}
+    {
+        auto resultFuture = client.{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.get_random_example_value('c++')}}{%if not loop.last%}, {%endif%}{%endfor%});
+        auto status = resultFuture.wait_for(std::chrono::seconds(checkTimeout));
+        if (status == std::future_status::timeout) {
+            tracker.Check("method:{{method_name}}", false, "no response within timeout");
+        } else {
+            try {
+                {%if method.return_value is none%}
+                resultFuture.get();
+                tracker.Check("method:{{method_name}}", true, "call completed (no return value)");
+                {%else%}
+                auto result = resultFuture.get();
+                {%if method.return_value.arg_type.name in comparable_types%}
+                auto expected = {{ method.return_value.get_random_example_value('c++') }};
+                tracker.Check("method:{{method_name}}", result == expected, result == expected ? "matches expected value" : "does not match expected value");
+                {%else%}
+                tracker.Check("method:{{method_name}}", true, "received response (value not independently verifiable)");
+                {%endif%}
+                {%endif%}
+            } catch (const stinger::error::StingerMethodException& ex) {
+                tracker.Check("method:{{method_name}}", false, ex.what());
+            }
+        }
+    }
+    {%endfor%}
+
+    {%for command_name, command in stinger.commands.items()%}
+    // Command: {{command_name}} (fire-and-forget by design - see server's own log for receipt)
+    client.send{{command_name | UpperCamelCase}}Command({%for arg in command.arg_list%}{{arg.get_random_example_value('c++')}}{%if not loop.last%}, {%endif%}{%endfor%});
+    tracker.Check("command:{{command_name}}", true, "sent");
+    {%endfor%}
+
+    {%for prop_name, prop in stinger.properties_rw.items()%}
+    // Property: {{prop_name}} (write round-trip)
+    {
+        {%- set comparable_args = prop.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list %}
+        // A plain re-read right after the update future resolves would race the
+        // republished value actually reaching this client's subscription, so the
+        // write is confirmed via the change-notification callback instead - the
+        // same one a real caller would use to learn the property changed.
+        auto {{prop_name|lowerCamelCase}}WriteFlag = std::make_shared<WaitFlag>();
+        {%if comparable_args | length > 0%}
+        auto {{prop_name|lowerCamelCase}}Expected = {{ prop.value.get_random_example_value('c++', seed=99) }};
+        auto {{prop_name|lowerCamelCase}}Matched = std::make_shared<bool>(false);
+        client.register{{prop_name|UpperCamelCase}}PropertyCallback([{{prop_name|lowerCamelCase}}WriteFlag, {{prop_name|lowerCamelCase}}Matched, {{prop_name|lowerCamelCase}}Expected]({{prop.cpp.temp_type}} value) {
+            *{{prop_name|lowerCamelCase}}Matched = (value == {{prop_name|lowerCamelCase}}Expected);
+            {{prop_name|lowerCamelCase}}WriteFlag->Set();
+        });
+        {%else%}
+        client.register{{prop_name|UpperCamelCase}}PropertyCallback([{{prop_name|lowerCamelCase}}WriteFlag]({{prop.cpp.temp_type}}) {
+            {{prop_name|lowerCamelCase}}WriteFlag->Set();
+        });
+        {%endif%}
+        // Unlike the signal/property read paths above, registering a property
+        // callback does not itself trigger a replay of the cached value - it
+        // only fires for a genuinely new value - so there is nothing to discard
+        // before triggering the write below.
+        auto updateFuture = client.update{{prop_name | UpperCamelCase}}Property({{ prop.value.get_random_example_value('c++', seed=99) }});
+        auto status = updateFuture.wait_for(std::chrono::seconds(checkTimeout));
+        if (status == std::future_status::timeout) {
+            tracker.Check("property:{{prop_name}}:write", false, "no acknowledgment within timeout");
+        } else if (!updateFuture.get()) {
+            tracker.Check("property:{{prop_name}}:write", false, "server rejected update");
+        } else if (!{{prop_name|lowerCamelCase}}WriteFlag->WaitFor(std::chrono::seconds(checkTimeout))) {
+            tracker.Check("property:{{prop_name}}:write", false, "no update notification within timeout");
+        } else {
+            {%if comparable_args | length > 0%}
+            tracker.Check("property:{{prop_name}}:write", *{{prop_name|lowerCamelCase}}Matched, *{{prop_name|lowerCamelCase}}Matched ? "matches expected value" : "does not match expected value");
+            {%else%}
+            tracker.Check("property:{{prop_name}}:write", true, "update confirmed (value not independently verifiable)");
+            {%endif%}
+        }
+    }
+    {%endfor%}
+
+    tracker.Finish();
+}

@@ -1,0 +1,223 @@
+{%- from "partials/codec.jinja2" import example_payload, property_example_external -%}
+{%- set comparable_types = ['PRIMITIVE', 'ENUM', 'DURATION', 'BINARY'] -%}
+//! Integration test client for the {{stinger.name}} interface.
+//!
+//! Unlike client_demo.rs, this is not meant to run forever: it discovers the
+//! server, exercises every signal/method/command/property exactly once with a
+//! bounded timeout on every wait, prints one `[CHECK] <name> ... PASS|FAIL`
+//! line per check, then a final `RESULT: PASS|FAIL (n/m checks)` line, and
+//! exits - 0 if every check passed, 1 otherwise.
+//!
+//! Run server_integration_test first (same broker), then run this.
+
+/*
+DO NOT MODIFY THIS FILE {# unless you see this comment #}.  It is automatically generated and changes will be over-written
+on the next generation.
+{%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
+*/
+
+use {{stinger.rust.package_name}}::client::{{stinger.rust.client_struct_name}};
+use {{stinger.rust.package_name}}::discovery::{{stinger.name|UpperCamelCase}}Discovery;
+#[cfg(feature = "lwt")]
+use {{stinger.rust.package_name}}::lwt::StingerAvailability;
+use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection, TcpConnection};
+{%- if stinger.uses_protobuf() %}
+use {{stinger.rust.package_name}}::proto;
+{%- endif %}
+use tokio::time::{timeout, Duration};
+#[allow(unused_imports)]
+use {{stinger.rust.package_name}}::payloads::{MethodReturnCode, *};
+
+fn env_secs(name: &str, default: u64) -> Duration {
+    Duration::from_secs(std::env::var(name).ok().and_then(|v| v.parse().ok()).unwrap_or(default))
+}
+
+fn check(results: &mut Vec<bool>, name: &str, passed: bool, detail: &str) -> bool {
+    let status = if passed { "PASS" } else { "FAIL" };
+    if detail.is_empty() {
+        println!("[CHECK] {} ... {}", name, status);
+    } else {
+        println!("[CHECK] {} ... {}: {}", name, status, detail);
+    }
+    results.push(passed);
+    passed
+}
+
+fn finish(results: &[bool]) -> ! {
+    let total = results.len();
+    let passed = results.iter().filter(|p| **p).count();
+    if total > 0 && passed == total {
+        println!("RESULT: PASS ({}/{} checks)", passed, total);
+        std::process::exit(0);
+    }
+    println!("RESULT: FAIL ({}/{} checks passed)", passed, total);
+    std::process::exit(1);
+}
+
+#[tokio::main]
+async fn main() {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info"))
+        )
+        .init();
+
+    let discovery_timeout = env_secs("DISCOVERY_TIMEOUT_SECONDS", 10);
+    let check_timeout = env_secs("CHECK_TIMEOUT_SECONDS", 5);
+    let mut results: Vec<bool> = Vec::new();
+
+    #[cfg(feature = "lwt")]
+    let lwt = StingerAvailability::new({%for param in utils.get_topic_arguments(config.topics.lwt) %}"example", {% endfor %});
+    let mut mqttier_options_builder = MqttierOptionsBuilder::default();
+    mqttier_options_builder
+        .connection(Connection::Tcp(TcpConnection::from_env_with_defaults("localhost", 1883)))
+        .client_id("rust-client-integration-test".to_string());
+    #[cfg(feature = "lwt")]
+    let mqttier_options = mqttier_options_builder
+        .availability_helper(Some(lwt))
+        .build()
+        .unwrap();
+    #[cfg(not(feature = "lwt"))]
+    let mqttier_options = mqttier_options_builder.build().unwrap();
+    let mut mqttier_client = MqttierClient::new(mqttier_options).unwrap();
+    let _ = mqttier_client.start().await;
+
+    let service_discovery = {{stinger.name|UpperCamelCase}}Discovery::new(&mut mqttier_client).await.unwrap();
+    let discovered_singleton = match timeout(discovery_timeout, service_discovery.get_singleton_service()).await {
+        Ok(d) => {
+            check(&mut results, "discover_service", true, "discovered");
+            d
+        }
+        Err(_) => {
+            check(&mut results, "discover_service", false, &format!("no service appeared within {:?}", discovery_timeout));
+            finish(&results);
+        }
+    };
+    drop(service_discovery);
+
+    let {%if stinger.methods|length > 0 or stinger.properties|length > 0%}mut {%endif%}{{stinger.name|snake_case}}_client = {{stinger.rust.client_struct_name}}::new(mqttier_client.clone(), discovered_singleton).await;
+
+    let mut client_for_loop = {{stinger.name|snake_case}}_client.clone();
+    tokio::spawn(async move {
+        let _ = client_for_loop.run_loop().await;
+    });
+
+    {%for sig_name, sig in stinger.signals.items()%}
+    // Signal: {{sig_name}}
+    {
+        let mut rx = {{stinger.name|snake_case}}_client.get_{{sig_name|snake_case}}_receiver().await;
+        match timeout(check_timeout, rx.recv()).await {
+            Ok(Ok(payload)) => {
+                {%- set comparable_args = sig.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list %}
+                {%if sig.payload.is_protobuf%}
+                check(&mut results, "signal:{{sig_name}}", true, &format!("received: {:?}", payload));
+                {%elif sig.arg_list | length == 0%}
+                check(&mut results, "signal:{{sig_name}}", true, "received (no arguments)");
+                {%elif comparable_args | length > 0%}
+                let mut matches = true;
+                {%for arg in comparable_args%}
+                let expected_{{loop.index}} = {{arg.get_random_example_value(lang="rust")}};
+                if payload.{{arg.name|snake_case}} != expected_{{loop.index}} { matches = false; }
+                {%endfor%}
+                check(&mut results, "signal:{{sig_name}}", matches, &format!("actual={:?}{}", payload, if matches { "" } else { " (mismatch)" }));
+                {%else%}
+                check(&mut results, "signal:{{sig_name}}", true, &format!("received (arguments not independently verifiable): {:?}", payload));
+                {%endif%}
+            }
+            Ok(Err(e)) => {
+                check(&mut results, "signal:{{sig_name}}", false, &format!("channel error: {:?}", e));
+            }
+            Err(_) => {
+                check(&mut results, "signal:{{sig_name}}", false, &format!("not received within {:?}", check_timeout));
+            }
+        }
+    }
+    {%endfor%}
+
+    {%for prop_name, prop in stinger.properties.items()%}
+    // Property: {{prop_name}} (read)
+    match timeout(check_timeout, {{stinger.name|snake_case}}_client.get_{{prop_name|snake_case}}()).await {
+        Ok(Ok(value)) => {
+            {%if prop.value.arg_type.name in comparable_types%}
+            let expected = {{ property_example_external(prop) }};
+            let matches = value == expected;
+            check(&mut results, "property:{{prop_name}}:read", matches, &format!("expected={:?} actual={:?}", expected, value));
+            {%else%}
+            check(&mut results, "property:{{prop_name}}:read", true, &format!("received (value not independently verifiable): {:?}", value));
+            {%endif%}
+        }
+        Ok(Err(code)) => {
+            check(&mut results, "property:{{prop_name}}:read", false, &format!("{:?}", code));
+        }
+        Err(_) => {
+            check(&mut results, "property:{{prop_name}}:read", false, &format!("no value within {:?}", check_timeout));
+        }
+    }
+    {%endfor%}
+
+    {%for method_name, method in stinger.methods.items()%}
+    // Method: {{method_name}}
+    match timeout(check_timeout, {{stinger.name|snake_case}}_client.{{method_name|snake_case}}({{ example_payload(method.request_payload, method.arg_list) }})).await {
+        Ok(Ok(result)) => {
+            {%if method.response_payload.is_protobuf%}
+            check(&mut results, "method:{{method_name}}", true, &format!("received response: {:?}", result));
+            {%elif method.return_value is none%}
+            check(&mut results, "method:{{method_name}}", true, "call completed (no return value)");
+            {%elif method.return_value.arg_type.name in comparable_types%}
+            let expected = {{ method.return_value.get_random_example_value(lang="rust") }};
+            let matches = result == expected;
+            check(&mut results, "method:{{method_name}}", matches, &format!("expected={:?} actual={:?}", expected, result));
+            {%else%}
+            check(&mut results, "method:{{method_name}}", true, &format!("received response (value not independently verifiable): {:?}", result));
+            {%endif%}
+        }
+        Ok(Err(code)) => {
+            check(&mut results, "method:{{method_name}}", false, &format!("server returned: {:?}", code));
+        }
+        Err(_) => {
+            check(&mut results, "method:{{method_name}}", false, &format!("no response within {:?}", check_timeout));
+        }
+    }
+    {%endfor%}
+
+    {%for cmd_name, cmd in stinger.commands.items()%}
+    // Command: {{cmd_name}} (fire-and-forget by design - see server's own log for receipt)
+    {{stinger.name|snake_case}}_client.send_{{cmd_name|snake_case}}({{ example_payload(cmd.payload, cmd.arg_list) }}).await;
+    check(&mut results, "command:{{cmd_name}}", true, "sent");
+    {%endfor%}
+
+    {%for prop_name, prop in stinger.properties_rw.items()%}
+    // Property: {{prop_name}} (write round-trip)
+    match timeout(check_timeout, {{stinger.name|snake_case}}_client.set_{{prop_name|snake_case}}({{ property_example_external(prop, seed=99) }})).await {
+        Ok(code) => {
+            if matches!(code, MethodReturnCode::Success(_)) {
+                match timeout(check_timeout, {{stinger.name|snake_case}}_client.get_{{prop_name|snake_case}}()).await {
+                    Ok(Ok(confirmed)) => {
+                        {%if prop.value.arg_type.name in comparable_types%}
+                        let expected = {{ property_example_external(prop, seed=99) }};
+                        let matches = confirmed == expected;
+                        check(&mut results, "property:{{prop_name}}:write", matches, &format!("expected={:?} actual={:?}", expected, confirmed));
+                        {%else%}
+                        check(&mut results, "property:{{prop_name}}:write", true, &format!("update confirmed (value not independently verifiable): {:?}", confirmed));
+                        {%endif%}
+                    }
+                    Ok(Err(code)) => {
+                        check(&mut results, "property:{{prop_name}}:write", false, &format!("could not re-read after write: {:?}", code));
+                    }
+                    Err(_) => {
+                        check(&mut results, "property:{{prop_name}}:write", false, "timed out re-reading after write");
+                    }
+                }
+            } else {
+                check(&mut results, "property:{{prop_name}}:write", false, &format!("server rejected update: {:?}", code));
+            }
+        }
+        Err(_) => {
+            check(&mut results, "property:{{prop_name}}:write", false, &format!("no acknowledgment within {:?}", check_timeout));
+        }
+    }
+    {%endfor%}
+
+    finish(&results);
+}

@@ -1,0 +1,302 @@
+{%- from "partials/codec.jinja2" import example_payload, property_example_external -%}
+{%- set comparable_types = ['PRIMITIVE', 'ENUM', 'DURATION', 'BINARY'] -%}
+//! Integration test server for the {{stinger.name}} interface.
+//!
+//! Unlike server_demo.rs, this is not meant to run forever: it emits every
+//! signal on a short interval, validates every method call/command/property
+//! update it receives against the value client_integration_test is expected
+//! to send, prints one `[CHECK] <name> ... PASS|FAIL` line per thing it
+//! validates, then a final `RESULT: PASS|FAIL (n/m checks)` line, and exits -
+//! 0 if every check passed, 1 otherwise. It stops on its own once every
+//! expected check has come in, or after MAX_LIFETIME_SECONDS, whichever is
+//! first, so it never has to be killed by hand.
+//!
+//! Start this first, then run client_integration_test (same broker) in
+//! another process.
+
+/*
+DO NOT MODIFY THIS FILE {# unless you see this comment #}.  It is automatically generated and changes will be over-written
+on the next generation.
+{%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
+*/
+use std::sync::Arc;
+
+use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection, TcpConnection};
+{%- if stinger.uses_protobuf() %}
+use {{stinger.rust.package_name}}::proto;
+{%- endif %}
+use {{stinger.rust.package_name}}::server::{ {{stinger.rust.server_struct_name}}{%if stinger.methods|length>0%}, {{stinger.name | UpperCamelCase }}MethodHandlers{%endif%} };
+#[cfg(feature = "lwt")]
+use {{stinger.rust.package_name}}::lwt::StingerAvailability;
+{%-if stinger.properties|length > 0%}
+use {{stinger.rust.package_name}}::property::{{stinger.name | UpperCamelCase}}InitialPropertyValues;
+{%endif-%}
+use tokio::time::{sleep, Duration, Instant};
+{%if stinger.methods|length > 0%}
+use std::any::Any;
+use tokio::sync::Mutex;
+use tracing_subscriber;
+use async_trait::async_trait;
+{%endif%}
+#[allow(unused_imports)]
+use {{stinger.rust.package_name}}::payloads::{MethodReturnCode, *};
+
+fn env_secs(name: &str, default: u64) -> Duration {
+    Duration::from_secs(std::env::var(name).ok().and_then(|v| v.parse().ok()).unwrap_or(default))
+}
+
+/// Collects every `[CHECK]` this server can itself verify (method calls,
+/// commands, and writable-property updates - a signal is verified by the
+/// client that receives it, not by the server that sends it), shared across
+/// the method-handler trait object, the command receiver tasks, and the
+/// property-watcher tasks.
+///
+/// An interface with none of those (e.g. signals only) never calls `check`,
+/// which is fine - `EXPECTED_CHECKS` is 0 and the server reports a trivial
+/// pass without ever constructing a check.
+#[allow(dead_code)]
+struct ResultsTracker {
+    passed: std::sync::Mutex<usize>,
+}
+
+impl ResultsTracker {
+    fn new() -> Self {
+        Self { passed: std::sync::Mutex::new(0) }
+    }
+
+    #[allow(dead_code)]
+    fn check(&self, name: &str, passed: bool, detail: &str) -> bool {
+        let status = if passed { "PASS" } else { "FAIL" };
+        if detail.is_empty() {
+            println!("[CHECK] {} ... {}", name, status);
+        } else {
+            println!("[CHECK] {} ... {}: {}", name, status, detail);
+        }
+        if passed {
+            *self.passed.lock().unwrap() += 1;
+        }
+        passed
+    }
+
+    fn passed_count(&self) -> usize {
+        *self.passed.lock().unwrap()
+    }
+}
+
+{%if stinger.methods|length > 0%}
+struct {{stinger.name | UpperCamelCase }}MethodImpl {
+    server: Option<{{stinger.rust.server_struct_name}}<MqttierClient>>,
+    tracker: Arc<ResultsTracker>,
+}
+
+impl {{stinger.name | UpperCamelCase }}MethodImpl {
+    fn new(tracker: Arc<ResultsTracker>) -> Self {
+        Self {
+            server: None,
+            tracker,
+        }
+    }
+}
+
+#[async_trait]
+impl {{stinger.name | UpperCamelCase }}MethodHandlers<MqttierClient> for {{stinger.name | UpperCamelCase }}MethodImpl {
+
+    async fn initialize(&mut self, server: {{stinger.rust.server_struct_name}}<MqttierClient>) -> Result<(), MethodReturnCode> {
+        self.server = Some(server.clone());
+        Ok(())
+    }
+
+    {%for method_name, method in stinger.methods.items()%}
+    async fn handle_{{method_name|snake_case}}(&self, {%if method.request_payload.is_protobuf%}payload: {{method.request_payload.protobuf.rust.external_name}}{%else%}{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}) -> Result<{%if method.response_payload.is_protobuf%}{{method.response_payload.protobuf.rust.external_name}}{%else%}{{method.rust.return_value_type}}{%endif%}, MethodReturnCode> {
+        {%if method.request_payload.is_protobuf%}
+        self.tracker.check("method:{{method_name}}", true, &format!("received request: {:?}", payload));
+        {%else%}
+        {%- set comparable_args = method.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list -%}
+        {%if method.arg_list | length == 0%}
+        self.tracker.check("method:{{method_name}}", true, "received request (no arguments)");
+        {%elif comparable_args | length > 0%}
+        let mut matches = true;
+        {%for arg in comparable_args%}
+        let expected_{{loop.index}} = {{arg.get_random_example_value(lang="rust")}};
+        if {{arg.name|snake_case}} != expected_{{loop.index}} { matches = false; }
+        {%endfor%}
+        self.tracker.check("method:{{method_name}}", matches, "checked against the arguments client_integration_test is expected to send");
+        {%else%}
+        self.tracker.check("method:{{method_name}}", true, "received request (arguments not independently verifiable)");
+        {%endif%}
+        {%endif%}
+        {%- if method.response_payload.is_protobuf %}
+        Ok(<{{method.response_payload.protobuf.rust.external_name}} as Default>::default())
+        {%- elif method.return_value_type == 'struct'%}
+        let rv = {{method.return_value.rust.temp_type}} {
+            {%for arg in method.return_value.values-%}
+            {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
+            {%endfor%}
+        };
+        {%if method.return_value.optional %}
+        Ok(Some(rv))
+        {%else%}
+        Ok(rv)
+        {%endif%}
+        {%elif method.return_value_type is not false %}
+        Ok({{method.return_value.get_random_example_value(lang="rust")}})
+        {%else%}
+        Ok(())
+        {%-endif%}
+    }
+    {%endfor%}
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+{%endif%}
+
+#[tokio::main]
+async fn main() {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info"))
+        )
+        .init();
+
+    let max_lifetime = env_secs("MAX_LIFETIME_SECONDS", 15);
+    let signal_emit_interval = env_secs("SIGNAL_EMIT_INTERVAL_SECONDS", 1);
+    // Only methods, commands, and writable properties are things this server can
+    // itself validate - a signal is validated by the client that receives it.
+    let expected_checks: usize = {{ stinger.methods|length + stinger.commands|length + stinger.properties_rw|length }};
+    let tracker = Arc::new(ResultsTracker::new());
+
+    #[cfg(feature = "lwt")]
+    let lwt = StingerAvailability::new({%for param in utils.get_topic_arguments(config.topics.lwt) %}"example", {% endfor %});
+    let mut mqttier_options_builder = MqttierOptionsBuilder::default();
+    mqttier_options_builder
+        .connection(Connection::Tcp(TcpConnection::from_env_with_defaults("localhost", 1883)))
+        .client_id("rust-server-integration-test".to_string());
+    #[cfg(feature = "lwt")]
+    let mqttier_options = mqttier_options_builder
+        .availability_helper(Some(lwt))
+        .build()
+        .unwrap();
+    #[cfg(not(feature = "lwt"))]
+    let mqttier_options = mqttier_options_builder.build().unwrap();
+    let mut connection = MqttierClient::new(mqttier_options).unwrap();
+    let _ = connection.start().await.unwrap();
+
+    {%if stinger.properties|length > 0%}
+    let initial_property_values = {{stinger.name | UpperCamelCase}}InitialPropertyValues {
+        {%for prop_name, prop in stinger.properties.items()%}
+        {{prop_name | snake_case}}: {{ property_example_external(prop) }},
+        {%-if config.properties.version_tracking%}
+        {{prop_name | snake_case}}_version: 1,
+        {%-endif%}
+        {%endfor%}
+    };
+    {%endif%}
+    {%if stinger.methods|length > 0%}
+    let handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers<MqttierClient>>>> = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl::new(tracker.clone()))));
+
+    let mut server = {{stinger.rust.server_struct_name}}::new(connection, handlers.clone(), "rust-server-integration-test:1".to_string(),{%if stinger.properties|length > 0 %} initial_property_values, {%endif%}
+            {%- for topic_param in config.topics.params %} "example".to_string(), {% endfor %}).await;
+    {%else%}
+    let mut server = {{stinger.rust.server_struct_name}}::new(connection, "rust-server-integration-test:1".to_string(),{%if stinger.properties|length > 0 %} initial_property_values, {%endif%}
+            {%- for topic_param in config.topics.params %} "example".to_string(), {% endfor %}).await;
+    {%endif%}
+
+    {%for cmd_name, cmd in stinger.commands.items()%}
+    // Command: {{cmd_name}} - a command is fire-and-forget, so this only ever
+    // gets one shot at seeing it; the client sends each command exactly once.
+    {
+        let mut rx = server.get_{{cmd_name|snake_case}}_receiver();
+        let tracker = tracker.clone();
+        tokio::spawn(async move {
+            match rx.recv().await {
+                Ok({%if not cmd.payload.is_protobuf and cmd.arg_list | length == 0%}_payload{%else%}payload{%endif%}) => {
+                    {%if cmd.payload.is_protobuf%}
+                    tracker.check("command:{{cmd_name}}", true, &format!("received: {:?}", payload));
+                    {%else%}
+                    {%- set comparable_args = cmd.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list -%}
+                    {%if cmd.arg_list | length == 0%}
+                    tracker.check("command:{{cmd_name}}", true, "received (no arguments)");
+                    {%elif comparable_args | length > 0%}
+                    let mut matches = true;
+                    {%for arg in comparable_args%}
+                    let expected_{{loop.index}} = {{arg.get_random_example_value(lang="rust")}};
+                    if payload.{{arg.name|snake_case}} != expected_{{loop.index}} { matches = false; }
+                    {%endfor%}
+                    tracker.check("command:{{cmd_name}}", matches, &format!("actual={:?}{}", payload, if matches { "" } else { " (mismatch)" }));
+                    {%else%}
+                    tracker.check("command:{{cmd_name}}", true, &format!("received (arguments not independently verifiable): {:?}", payload));
+                    {%endif%}
+                    {%endif%}
+                }
+                Err(e) => {
+                    eprintln!("Error receiving '{{cmd_name}}' command: {:?}", e);
+                }
+            }
+        });
+    }
+    {%endfor%}
+
+    {%for prop_name, prop in stinger.properties_rw.items()%}
+    // Property: {{prop_name}} - waits for one change away from its initial
+    // value, which is what client_integration_test's write round-trip causes.
+    {
+        let mut rx = server.watch_{{prop_name|snake_case}}();
+        rx.borrow_and_update(); // Consume the value the channel already holds; only a later change is a "write".
+        let tracker = tracker.clone();
+        tokio::spawn(async move {
+            match rx.changed().await {
+                Ok(_) => {
+                    let value = rx.borrow_and_update();
+                    {%if prop.value.arg_type.name in comparable_types%}
+                    let expected = {{ property_example_external(prop, seed=99) }};
+                    let matches = *value == expected;
+                    tracker.check("property:{{prop_name}}:write", matches, &format!("expected={:?} actual={:?}", expected, *value));
+                    {%else%}
+                    tracker.check("property:{{prop_name}}:write", true, &format!("received update (value not independently verifiable): {:?}", *value));
+                    {%endif%}
+                }
+                Err(_) => {
+                    eprintln!("Property '{{prop_name}}' watch channel closed before a write arrived");
+                }
+            }
+        });
+    }
+    {%endfor%}
+
+    let mut looping_server = server.clone();
+    let _loop_join_handle = tokio::spawn(async move {
+        let _conn_loop = looping_server.run_loop().await;
+    });
+
+    println!("Listening for up to {:?}, or until all {} server-verifiable check(s) come in...", max_lifetime, expected_checks);
+
+    let deadline = Instant::now() + max_lifetime;
+    let mut server_for_signals = server.clone();
+    loop {
+        if Instant::now() >= deadline {
+            break;
+        }
+        if expected_checks > 0 && tracker.passed_count() >= expected_checks {
+            break;
+        }
+        {%for sig_name, sig in stinger.signals.items()-%}
+        let _ = server_for_signals.emit_{{sig_name|snake_case}}({{ example_payload(sig.payload, sig.arg_list) }}).await;
+        {%endfor%}
+        sleep(signal_emit_interval).await;
+    }
+
+    let passed = tracker.passed_count();
+    if expected_checks == 0 {
+        println!("RESULT: PASS (0/0 checks; {{stinger.name}} declares no methods/commands/writable properties for the server to verify)");
+        std::process::exit(0);
+    } else if passed == expected_checks {
+        println!("RESULT: PASS ({}/{} checks)", passed, expected_checks);
+        std::process::exit(0);
+    } else {
+        println!("RESULT: FAIL ({}/{} checks passed)", passed, expected_checks);
+        std::process::exit(1);
+    }
+}
