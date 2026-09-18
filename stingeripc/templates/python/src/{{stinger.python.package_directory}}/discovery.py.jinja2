@@ -34,7 +34,7 @@ class {{stinger.python.client_class_name}}Discoverer:
         topic_params = {
             "client_id": '+',
             "service_id": '+',
-            {%- for topic_param in config.topics.params %}
+            {%- for topic_param in stinger.topics.params %}
             "{{topic_param}}": '+',
             {%- endfor %}
         }
@@ -160,7 +160,7 @@ class {{stinger.python.client_class_name}}Discoverer:
                 self._logger.error("Failure setting 'service_info'")
 
         else: # Empty payload means the service is going away
-            instance_id_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, "service_id")}}
+            instance_id_expected_index = {{utils.topic_template_placeholder_index(stinger.topics.property_values, "service_id")}}
             instance_id = message.topic.split('/')[instance_id_expected_index]
             with self._mutex:
                 if instance_id in self._discovered_services:

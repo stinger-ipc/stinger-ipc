@@ -308,6 +308,20 @@ class Payload(BaseModel):
         return "application/json"
 
     @property
+    def enforce_content_type(self) -> bool:
+        """Whether a receiver checks the content type of a message carrying this payload.
+
+        Normally it does, in every target language: the content type has to be present
+        and has to match, or the message is rejected.  A protobuf payload is exempt when
+        ``[protobuf] mime_type`` is ``false``, which says that messages of this interface
+        are not labelled with a protobuf media type at all -- so a receiver assumes the
+        body is the declared message rather than rejecting it for carrying no label.
+        """
+        if self.is_protobuf:
+            return self._config.protobuf.mime_type is not False
+        return True
+
+    @property
     def value_schemas(self) -> list[Arg]:
         """The arguments that declare a JSON schema constraint."""
         return [arg for arg in self.args if arg.value_schema]

@@ -264,12 +264,18 @@ pub fn stable_error_response(topic: &str, correlation_data: Option<Bytes>, retur
 {%endif%}{# end if has any methods#}
 {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
 #[cfg(feature = "server")]
-pub fn error_response(topic: &str, correlation_data: Option<Bytes>, return_code: MethodReturnCode) -> Result<MqttMessage, MethodReturnCode> {
+/// An error carries no data -- the return code and debug info travel in user properties --
+/// but the message still has to be labelled with the content type the caller expects, or
+/// the caller's own check rejects it.  `T` is the response payload that would have been
+/// sent on success, and a protobuf response gets an empty body rather than `{}`, which a
+/// protobuf consumer would refuse to parse.
+pub fn error_response<T: WirePayload>(topic: &str, correlation_data: Option<Bytes>, return_code: MethodReturnCode) -> Result<MqttMessage, MethodReturnCode> {
     let (code_num, debug_info) = return_code.to_code();
     let mut builder = MqttMessageBuilder::default();
     builder
         .topic(topic)
-        .payload("{}")
+        .payload(if T::content_type() == "application/json" { "{}".as_bytes() } else { b"" })
+        .content_type(Some(T::content_type().to_string()))
         .qos(QoS::AtLeastOnce)
         .retain(false)
         .correlation_data(correlation_data)

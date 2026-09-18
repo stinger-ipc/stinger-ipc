@@ -1,4 +1,6 @@
 {%- set comparable_types = ['PRIMITIVE', 'ENUM', 'DURATION', 'BINARY'] -%}
+{%- import 'partials/properties.jinja2' as pr -%}
+{%- import 'partials/codec.jinja2' as codec -%}
 /*
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
@@ -180,8 +182,12 @@ int main(int argc, char** argv) {
     // Property: {{prop_name}} (read)
     try {
         auto value = client.get{{prop_name|UpperCamelCase}}Property();
-        {%if prop.value.arg_type.name in comparable_types%}
-        auto expected = {{ prop.value.get_random_example_value('c++') }};
+        {%if prop.payload.is_protobuf%}
+        auto expected = {{ pr.example_value(prop) }};
+        bool matches = (value.SerializeAsString() == expected.SerializeAsString());
+        tracker.Check("property:{{prop_name}}:read", matches, matches ? "matches expected value" : "does not match expected value");
+        {%elif prop.value.arg_type.name in comparable_types%}
+        auto expected = {{ pr.example_value(prop) }};
         tracker.Check("property:{{prop_name}}:read", value == expected, value == expected ? "matches expected value" : "does not match expected value");
         {%else%}
         tracker.Check("property:{{prop_name}}:read", true, "received (value not independently verifiable)");
@@ -221,28 +227,28 @@ int main(int argc, char** argv) {
 
     {%for command_name, command in stinger.commands.items()%}
     // Command: {{command_name}} (fire-and-forget by design - see server's own log for receipt)
-    client.send{{command_name | UpperCamelCase}}Command({%for arg in command.arg_list%}{{arg.get_random_example_value('c++')}}{%if not loop.last%}, {%endif%}{%endfor%});
+    client.send{{command_name | UpperCamelCase}}Command{%if command.payload.is_protobuf%}Payload({{ codec.example_message(command.payload) }}){%else%}({%for arg in command.arg_list%}{{arg.get_random_example_value('c++')}}{%if not loop.last%}, {%endif%}{%endfor%}){%endif%};
     tracker.Check("command:{{command_name}}", true, "sent");
     {%endfor%}
 
     {%for prop_name, prop in stinger.properties_rw.items()%}
     // Property: {{prop_name}} (write round-trip)
     {
-        {%- set comparable_args = prop.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list %}
+        {%- set comparable = pr.value_is_comparable(prop, comparable_types) | trim %}
         // A plain re-read right after the update future resolves would race the
         // republished value actually reaching this client's subscription, so the
         // write is confirmed via the change-notification callback instead - the
         // same one a real caller would use to learn the property changed.
         auto {{prop_name|lowerCamelCase}}WriteFlag = std::make_shared<WaitFlag>();
-        {%if comparable_args | length > 0%}
-        auto {{prop_name|lowerCamelCase}}Expected = {{ prop.value.get_random_example_value('c++', seed=99) }};
+        {%if comparable%}
+        auto {{prop_name|lowerCamelCase}}Expected = {{ pr.example_value(prop, seed=99) }};
         auto {{prop_name|lowerCamelCase}}Matched = std::make_shared<bool>(false);
-        client.register{{prop_name|UpperCamelCase}}PropertyCallback([{{prop_name|lowerCamelCase}}WriteFlag, {{prop_name|lowerCamelCase}}Matched, {{prop_name|lowerCamelCase}}Expected]({{prop.cpp.temp_type}} value) {
-            *{{prop_name|lowerCamelCase}}Matched = (value == {{prop_name|lowerCamelCase}}Expected);
+        client.register{{prop_name|UpperCamelCase}}PropertyCallback([{{prop_name|lowerCamelCase}}WriteFlag, {{prop_name|lowerCamelCase}}Matched, {{prop_name|lowerCamelCase}}Expected]({{ pr.callback_value_type(prop) }} value) {
+            *{{prop_name|lowerCamelCase}}Matched = ({%if prop.payload.is_protobuf%}value.SerializeAsString() == {{prop_name|lowerCamelCase}}Expected.SerializeAsString(){%else%}value == {{prop_name|lowerCamelCase}}Expected{%endif%});
             {{prop_name|lowerCamelCase}}WriteFlag->Set();
         });
         {%else%}
-        client.register{{prop_name|UpperCamelCase}}PropertyCallback([{{prop_name|lowerCamelCase}}WriteFlag]({{prop.cpp.temp_type}}) {
+        client.register{{prop_name|UpperCamelCase}}PropertyCallback([{{prop_name|lowerCamelCase}}WriteFlag]({{ pr.callback_value_type(prop) }}) {
             {{prop_name|lowerCamelCase}}WriteFlag->Set();
         });
         {%endif%}
@@ -250,7 +256,7 @@ int main(int argc, char** argv) {
         // callback does not itself trigger a replay of the cached value - it
         // only fires for a genuinely new value - so there is nothing to discard
         // before triggering the write below.
-        auto updateFuture = client.update{{prop_name | UpperCamelCase}}Property({{ prop.value.get_random_example_value('c++', seed=99) }});
+        auto updateFuture = client.update{{prop_name | UpperCamelCase}}Property({{ pr.example_value(prop, seed=99) }});
         auto status = updateFuture.wait_for(std::chrono::seconds(checkTimeout));
         if (status == std::future_status::timeout) {
             tracker.Check("property:{{prop_name}}:write", false, "no acknowledgment within timeout");
@@ -259,7 +265,7 @@ int main(int argc, char** argv) {
         } else if (!{{prop_name|lowerCamelCase}}WriteFlag->WaitFor(std::chrono::seconds(checkTimeout))) {
             tracker.Check("property:{{prop_name}}:write", false, "no update notification within timeout");
         } else {
-            {%if comparable_args | length > 0%}
+            {%if comparable%}
             tracker.Check("property:{{prop_name}}:write", *{{prop_name|lowerCamelCase}}Matched, *{{prop_name|lowerCamelCase}}Matched ? "matches expected value" : "does not match expected value");
             {%else%}
             tracker.Check("property:{{prop_name}}:write", true, "update confirmed (value not independently verifiable)");

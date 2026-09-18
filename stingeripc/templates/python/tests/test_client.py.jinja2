@@ -41,7 +41,7 @@ def client(mock_connection):
             instance="x",
             connection_topic="{{stinger.interface_info_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
             timestamp="2024-01-01T00:00:00Z",
-            {%-for topic_param in config.topics.params %}
+            {%-for topic_param in stinger.topics.params %}
             {{topic_param|snake_case}}="x",
             {%-endfor%}
         ),

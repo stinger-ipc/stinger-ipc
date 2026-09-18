@@ -41,7 +41,7 @@ async fn main() {
     // Create an MQTT client that implements the MqttPubSub trait.
     // Application code is responsible for managing the client object.
     #[cfg(feature = "lwt")]
-    let lwt = StingerAvailability::new({%for param in utils.get_topic_arguments(config.topics.lwt) %}"example", {% endfor %});
+    let lwt = StingerAvailability::new({%for param in utils.get_topic_arguments(stinger.topics.lwt) %}"example", {% endfor %});
     let mut mqttier_options_builder = MqttierOptionsBuilder::default();
     mqttier_options_builder
         .connection(Connection::Tcp(TcpConnection::from_env_with_defaults("localhost", 1883)))

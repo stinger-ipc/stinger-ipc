@@ -31,8 +31,8 @@ namespace {{stinger.name|snake_case}} {
 constexpr const char {{stinger.cpp.server_class_name}}::NAME[];
 constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
 
-{{stinger.cpp.server_class_name}}::{{stinger.cpp.server_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId{%for topic_param in config.topics.params %}, const std::string& {{topic_param|lowerCamelCase}}{%endfor%})
-        : _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false){%-for topic_param in config.topics.params %}, _{{topic_param | lowerCamelCase}}TopicParam( {{topic_param|lowerCamelCase}} ){%endfor%}
+{{stinger.cpp.server_class_name}}::{{stinger.cpp.server_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId{%for topic_param in stinger.topics.params %}, const std::string& {{topic_param|lowerCamelCase}}{%endfor%})
+        : _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false){%-for topic_param in stinger.topics.params %}, _{{topic_param | lowerCamelCase}}TopicParam( {{topic_param|lowerCamelCase}} ){%endfor%}
         
 {
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
@@ -45,7 +45,7 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
     topicArgs["service_id"] = _instanceId;
     topicArgs["interface_name"] = NAME;
     topicArgs["client_id"] = _broker->GetClientId();
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     topicArgs["{{topic_param}}"] = _{{topic_param|lowerCamelCase}}TopicParam;
     {%-endfor%}
 
@@ -84,7 +84,7 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
     topicArgs["service_id"] = _instanceId;
     topicArgs["interface_name"] = NAME;
     topicArgs["client_id"] = _broker->GetClientId();
-    {%- for topic_param in config.topics.params %}
+    {%- for topic_param in stinger.topics.params %}
     topicArgs["{{topic_param}}"] = _{{topic_param|lowerCamelCase}}TopicParam;
     {%-endfor%}
 
@@ -118,7 +118,7 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(const stinger::mqtt::Mes
         try {
             if (_{{method_name | camelCase}}Handler)
             {
-                _call{{method_name | UpperCamelCase}}Handler(msg.topic, msg.payload, msg.properties.correlationData, msg.properties.responseTopic);
+                _call{{method_name | UpperCamelCase}}Handler(msg.topic, msg.payload, msg.properties.contentType, msg.properties.correlationData, msg.properties.responseTopic);
             }
         }
         catch (const std::exception&)
@@ -170,11 +170,12 @@ std::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamel
     topicArgs["interface_name"] = NAME;
     topicArgs["client_id"] = _broker->GetClientId();
     topicArgs["signal_name"] = "{{sig_name}}";
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     topicArgs["{{topic_param}}"] = _{{topic_param|lowerCamelCase}}TopicParam;
     {%-endfor%}
     auto topic = stinger::utils::format("{{sig.topic()}}", topicArgs);
     auto msg = stinger::mqtt::Message::Signal(topic, payloadStr);
+    {{ codec.stamp_content_type(sig.payload) }}
     {%-if sig.version%}
     msg.properties.version = "{{sig.version}}";
     {%-endif%}
@@ -194,10 +195,26 @@ void {{stinger.cpp.server_class_name}}::register{{method_name | UpperCamelCase}}
 void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Handler(
         const std::string& topic, 
         const std::string& payload, 
+        const std::optional<std::string>& optContentType,
         const std::optional<std::vector<std::byte>>& optCorrelationData,
         const std::optional<std::string>& optResponseTopic) const
 {
     _broker->Log(LOG_INFO, "Handling call to {{method_name}}");
+{%- if method.request_payload.enforce_content_type %}
+    if (!optContentType.has_value() || optContentType.value() != "{{ codec.content_type(method.request_payload) }}")
+    {
+        _broker->Log(LOG_WARNING, "Received '{{method_name}}' request with content type '%s'; expected '{{ codec.content_type(method.request_payload) }}'.",
+                     optContentType.value_or("(none)").c_str());
+        if (optResponseTopic)
+        {
+            auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, {{ codec.error_body(method.response_payload) }}, optCorrelationData, stinger::error::MethodReturnCode::SERVER_DESERIALIZATION_ERROR,
+                                                                 "Unsupported content type '" + optContentType.value_or("(none)") + "' for the '{{method_name}}' request; expected '{{ codec.content_type(method.request_payload) }}'");
+            {{ codec.stamp_content_type(method.response_payload, "errMsg") }}
+            _broker->Publish(errMsg);
+        }
+        return;
+    }
+{%- endif %}
     if (!_{{method_name | camelCase}}Handler) {
         // TODO: publish an error response because we don't have a method handler.
         return;
@@ -208,7 +225,8 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
     if (!requestArgs.ValidateSchema()) {
         _broker->Log(LOG_WARNING, "Request payload for {{method_name}} failed schema validation.");
         if (optResponseTopic) {
-            auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, "{}", optCorrelationData, stinger::error::MethodReturnCode::CLIENT_DESERIALIZATION_ERROR, "Request payload for {{method_name}} failed schema validation.");
+            auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, {{ codec.error_body(method.response_payload) }}, optCorrelationData, stinger::error::MethodReturnCode::CLIENT_DESERIALIZATION_ERROR, "Request payload for {{method_name}} failed schema validation.");
+            {{ codec.stamp_content_type(method.response_payload, "errMsg") }}
             {%-if method.version%}
             errMsg.properties.version = "{{method.version}}";
             {%-endif%}
@@ -232,7 +250,8 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
 {%- if not method.response_payload.is_protobuf %}
         if (!returnPayload.ValidateSchema()) {
             _broker->Log(LOG_WARNING, "Response payload for {{method_name}} failed schema validation.");
-            auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, "{}", optCorrelationData, stinger::error::MethodReturnCode::SERVER_SERIALIZATION_ERROR, "Response payload for {{method_name}} failed schema validation.");
+            auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, {{ codec.error_body(method.response_payload) }}, optCorrelationData, stinger::error::MethodReturnCode::SERVER_SERIALIZATION_ERROR, "Response payload for {{method_name}} failed schema validation.");
+            {{ codec.stamp_content_type(method.response_payload, "errMsg") }}
             {%-if method.version%}
             errMsg.properties.version = "{{method.version}}";
             {%-endif%}
@@ -246,6 +265,7 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
             auto payloadStr = Wire<{{method.response_payload.cpp.class_name}}>::ToString(returnPayload);
 
             auto msg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, payloadStr, optCorrelationData, stinger::error::MethodReturnCode::SUCCESS);
+            {{ codec.stamp_content_type(method.response_payload) }}
             {%-if method.version%}
             msg.properties.version = "{{method.version}}";
             {%-endif%}
@@ -256,7 +276,8 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
     {
         _broker->Log(LOG_ERR, "Exception in {{method_name}} method handler [%s]: %s", typeid(e).name(), e.what());
         if (optResponseTopic) {
-            auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, "{}", optCorrelationData, e.code(), e.what());
+            auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, {{ codec.error_body(method.response_payload) }}, optCorrelationData, e.code(), e.what());
+            {{ codec.stamp_content_type(method.response_payload, "errMsg") }}
             {%-if method.version%}
             errMsg.properties.version = "{{method.version}}";
             {%-endif%}
@@ -267,7 +288,8 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
     {
         _broker->Log(LOG_ERR, "Exception in {{method_name}} method handler [%s]: %s", typeid(e).name(), e.what());
         if (optResponseTopic) {
-            auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, "{}", optCorrelationData, stinger::error::MethodReturnCode::SERVER_ERROR, e.what());
+            auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, {{ codec.error_body(method.response_payload) }}, optCorrelationData, stinger::error::MethodReturnCode::SERVER_ERROR, e.what());
+            {{ codec.stamp_content_type(method.response_payload, "errMsg") }}
             {%-if method.version%}
             errMsg.properties.version = "{{method.version}}";
             {%-endif%}
@@ -278,7 +300,8 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
     {
         _broker->Log(LOG_ERR, "Unknown exception in {{method_name}} method handler");
         if (optResponseTopic) {
-            auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, "{}", optCorrelationData, stinger::error::MethodReturnCode::UNKNOWN_ERROR, "Unknown exception in {{method_name}} method handler");
+            auto errMsg = stinger::mqtt::Message::MethodResponse(*optResponseTopic, {{ codec.error_body(method.response_payload) }}, optCorrelationData, stinger::error::MethodReturnCode::UNKNOWN_ERROR, "Unknown exception in {{method_name}} method handler");
+            {{ codec.stamp_content_type(method.response_payload, "errMsg") }}
             {%-if method.version%}
             errMsg.properties.version = "{{method.version}}";
             {%-endif%}
@@ -312,11 +335,7 @@ void {{stinger.cpp.server_class_name}}::_receive{{command_name | UpperCamelCase}
         _broker->Log(LOG_INFO, "Received DebugInfo on topic %s: %s", msg.topic.c_str(), msg.properties.debugInfo->c_str());
     }
 
-    if (!msg.properties.contentType.has_value() || msg.properties.contentType.value() != "{{ codec.content_type(command.payload) }}")
-    {
-        _broker->Log(LOG_WARNING, "Received '{{command_name}}' command with an unexpected content type; dropping it.");
-        return;
-    }
+    {{ codec.expect_content_type(command.payload, command_name ~ " command") }}
 
     // Copy the handler list so the lock isn't held while the handlers run: a handler is
     // then free to register another one, and the list cannot change mid-iteration.
@@ -438,12 +457,13 @@ void {{stinger.cpp.server_class_name}}::republish{{prop.name | UpperCamelCase}}P
     topicArgs["interface_name"] = NAME;
     topicArgs["client_id"] = _broker->GetClientId();
     topicArgs["property_name"] = "{{prop_name}}";
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     topicArgs["{{topic_param}}"] = _{{topic_param|lowerCamelCase}}TopicParam;
     {%-endfor%}
 
     auto topic = stinger::utils::format("{{prop.value_topic()}}", topicArgs);
     auto msg = stinger::mqtt::Message::PropertyValue(topic, payloadStr, {%if config.properties.version_tracking%}_last{{prop_name | UpperCamelCase}}PropertyVersion{%else%}std::nullopt{%endif%});
+    {{ codec.stamp_content_type(prop.payload) }}
     {%-if prop.version%}
     msg.properties.version = "{{prop.version}}";
     {%-endif%}
@@ -456,48 +476,139 @@ void {{stinger.cpp.server_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
     {
         _broker->Log(LOG_INFO, "Received DebugInfo on topic %s: %s", msg.topic.c_str(), msg.properties.debugInfo->c_str());
     }
-{%- if config.properties.version_tracking %}
-    // TODO: Check _last{{prop_name | UpperCamelCase}}PropertyVersion against optPropertyVersion and
-    // reject the update if it's older than what we have.
-{%- endif %}
 
-    // Deserialize the '{{prop_name}}' property value.
-    {{prop.payload.cpp.class_name}} tempValue = Wire<{{prop.payload.cpp.class_name}}>::FromString(msg.payload);
-{%- if not prop.payload.is_protobuf %}
-    if (!tempValue.ValidateSchema()) {
-        _broker->Log(LOG_WARNING, "Received '{{prop_name}}' property update failed schema validation; ignoring.");
-        return;
-    }
-{%- endif %}
-
-    { // Scope lock
-        std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
-        _{{prop_name | lowerCamelCase}}Property = tempValue;
-{%- if config.properties.version_tracking %}
-        _last{{prop_name | UpperCamelCase}}PropertyVersion++;
-{%- endif %}
-    }
-    { // Scope lock
-        // A client-driven update has to notify the same callbacks updateXProperty()
-        // does, or application code has no way to learn that this property changed.
-        std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyCallbacksMutex);
-        for (const auto& cb : _{{prop_name | lowerCamelCase}}PropertyCallbacks)
+    // An update request names a topic to answer on, and the client that sent it is
+    // waiting there, so every way out of this function reports what happened.  The
+    // response carries the property's current value either way, so a client whose
+    // request was rejected learns the value{%if config.properties.version_tracking%} and version{%endif%} it should have used.
+    const std::optional<std::string>& optResponseTopic = msg.properties.responseTopic;
+    const std::optional<std::vector<std::byte>>& optCorrelationData = msg.properties.correlationData;
+    auto respond = [&](stinger::error::MethodReturnCode returnCode, const std::string& debugMessage)
+    {
+        if (!optResponseTopic)
         {
-            try
-            {
-                cb({%if prop.cpp.is_protobuf%}tempValue{%else%}tempValue.{{prop.value.name|lowerCamelCase}}{%endif%});
+            _broker->Log(LOG_DEBUG, "No response topic on the '{{prop_name}}' property update request; not responding.");
+            return;
+        }
+        try
+        {
+            std::string payloadStr = "null";
+            {%if config.properties.version_tracking%}int currentVersion = -1;{%endif%}
+            { // Scope lock
+                std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
+                if (_{{prop_name | lowerCamelCase}}Property)
+                {
+                    payloadStr = Wire<{{prop.payload.cpp.class_name}}>::ToString(*_{{prop_name | lowerCamelCase}}Property);
+                }
+                {%-if config.properties.version_tracking%}
+                currentVersion = _last{{prop_name | UpperCamelCase}}PropertyVersion;
+                {%-endif%}
             }
-            catch (const std::exception& e)
+            auto respMsg = debugMessage.empty()
+                               ? stinger::mqtt::Message::PropertyUpdateResponse(*optResponseTopic, payloadStr, {%if config.properties.version_tracking%}currentVersion{%else%}std::nullopt{%endif%}, optCorrelationData, returnCode)
+                               : stinger::mqtt::Message::PropertyUpdateResponse(*optResponseTopic, payloadStr, {%if config.properties.version_tracking%}currentVersion{%else%}std::nullopt{%endif%}, optCorrelationData, returnCode, debugMessage);
+            {{ codec.stamp_content_type(prop.payload, "respMsg") }}
+            {%-if prop.version%}
+            respMsg.properties.version = "{{prop.version}}";
+            {%-endif%}
+            _broker->Publish(respMsg);
+        }
+        catch (const std::exception& e)
+        {
+            _broker->Log(LOG_ERR, "Could not publish the '{{prop_name}}' property update response [%s]: %s", typeid(e).name(), e.what());
+        }
+    };
+
+    try
+    {
+{%- if prop.payload.enforce_content_type %}
+        // Unlike the drop-on-arrival sites, this one has a response channel, so a bad
+        // content type is reported to the client rather than silently ignored.
+        if (!msg.properties.contentType.has_value() || msg.properties.contentType.value() != "{{ codec.content_type(prop.payload) }}")
+        {
+            throw stinger::error::ServerDeserializationErrorException(
+                "Unsupported content type '" + msg.properties.contentType.value_or("(none)") + "' for an update of the '{{prop_name}}' property; expected '{{ codec.content_type(prop.payload) }}'");
+        }
+{%- else %}
+        // `[protobuf] mime_type = false`: a '{{prop_name}}' update carries no content type,
+        // so the body is assumed to be the declared protobuf message.
+{%- endif %}
+
+        // Deserialize the '{{prop_name}}' property value.
+        {{prop.payload.cpp.class_name}} tempValue;
+        try
+        {
+            tempValue = Wire<{{prop.payload.cpp.class_name}}>::FromString(msg.payload);
+        }
+        catch (const std::exception& e)
+        {
+            throw stinger::error::ServerDeserializationErrorException(
+                std::string("Could not deserialize an update of the '{{prop_name}}' property: ") + e.what());
+        }
+{%- if not prop.payload.is_protobuf %}
+        if (!tempValue.ValidateSchema())
+        {
+            throw stinger::error::ServerDeserializationErrorException("An update of the '{{prop_name}}' property failed schema validation");
+        }
+{%- endif %}
+
+        { // Scope lock
+            std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyMutex);
+{%- if config.properties.version_tracking %}
+            // Checked under the same lock as the assignment, so a request that raced
+            // another update is rejected rather than silently overwriting it.  The
+            // lock is released as the exception unwinds, before `respond` retakes it.
+            const int requestVersion = msg.properties.propertyVersion.value_or(-1);
+            if (requestVersion != _last{{prop_name | UpperCamelCase}}PropertyVersion)
             {
-                _broker->Log(LOG_ERR, "Exception in {{prop_name}} property callback [%s]: %s", typeid(e).name(), e.what());
+                throw stinger::error::OutOfSyncException(
+                    "Update request for the '{{prop_name}}' property carries version " + std::to_string(requestVersion) + ", but its current version is " +
+                    std::to_string(_last{{prop_name | UpperCamelCase}}PropertyVersion));
             }
-            catch (...)
+{%- endif %}
+            _{{prop_name | lowerCamelCase}}Property = tempValue;
+{%- if config.properties.version_tracking %}
+            _last{{prop_name | UpperCamelCase}}PropertyVersion++;
+{%- endif %}
+        }
+        { // Scope lock
+            // A client-driven update has to notify the same callbacks updateXProperty()
+            // does, or application code has no way to learn that this property changed.
+            std::lock_guard<std::mutex> lock(_{{prop_name | lowerCamelCase}}PropertyCallbacksMutex);
+            for (const auto& cb : _{{prop_name | lowerCamelCase}}PropertyCallbacks)
             {
-                _broker->Log(LOG_ERR, "Unknown exception in {{prop_name}} property callback");
+                try
+                {
+                    cb({{pr.value_from_payload(prop, 'tempValue')}});
+                }
+                catch (const std::exception& e)
+                {
+                    _broker->Log(LOG_ERR, "Exception in {{prop_name}} property callback [%s]: %s", typeid(e).name(), e.what());
+                }
+                catch (...)
+                {
+                    _broker->Log(LOG_ERR, "Unknown exception in {{prop_name}} property callback");
+                }
             }
         }
+        republish{{prop.name | UpperCamelCase}}Property();
+        respond(stinger::error::MethodReturnCode::SUCCESS, "");
     }
-    republish{{prop.name | UpperCamelCase}}Property();
+    catch (const stinger::error::StingerMethodException& e)
+    {
+        _broker->Log(LOG_WARNING, "Rejected an update of the '{{prop_name}}' property: %s", e.what());
+        respond(e.code(), e.what());
+    }
+    catch (const std::exception& e)
+    {
+        _broker->Log(LOG_ERR, "Error while updating the '{{prop_name}}' property [%s]: %s", typeid(e).name(), e.what());
+        respond(stinger::error::MethodReturnCode::SERVER_ERROR, e.what());
+    }
+    catch (...)
+    {
+        _broker->Log(LOG_ERR, "Unknown error while updating the '{{prop_name}}' property");
+        respond(stinger::error::MethodReturnCode::UNKNOWN_ERROR, "Unknown error while updating the '{{prop_name}}' property");
+    }
 }
 {%endfor%}
 
@@ -520,7 +631,7 @@ void {{stinger.cpp.server_class_name}}::_advertisementThreadLoop()
         doc.AddMember("version", rapidjson::Value("{{stinger.version}}", allocator), allocator);
         doc.AddMember("connection_topic", rapidjson::Value(_broker->GetOnlineTopic().c_str(), allocator), allocator);
         doc.AddMember("timestamp", rapidjson::Value(timestamp.c_str(), allocator), allocator);
-        {%for topic_param in config.topics.params %}
+        {%for topic_param in stinger.topics.params %}
         doc.AddMember("{{topic_param}}", rapidjson::Value(_{{topic_param|lowerCamelCase}}TopicParam.c_str(), allocator), allocator);
         {%endfor%}
         {
@@ -547,7 +658,7 @@ void {{stinger.cpp.server_class_name}}::_advertisementThreadLoop()
         topicArgs["service_id"] = _instanceId;
         topicArgs["interface_name"] = NAME;
         topicArgs["client_id"] = _broker->GetClientId();
-        {%-for topic_param in config.topics.params %}
+        {%-for topic_param in stinger.topics.params %}
         topicArgs["{{topic_param}}"] = _{{topic_param|lowerCamelCase}}TopicParam;
         {%-endfor%}
 

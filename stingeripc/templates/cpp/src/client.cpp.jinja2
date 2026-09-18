@@ -47,7 +47,7 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
     topicParams["client_id"] = _broker->GetClientId();
     topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
     topicParams["interface_name"] = NAME;
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     topicParams["{{topic_param}}"] = _instanceInfo.{{topic_param|lowerCamelCase}}.value_or("error_{{topic_param}}_not_found");
     {%-endfor%}
     {%endif%}
@@ -71,6 +71,9 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
     // value is read -- so a client never receives properties it was never asked about.
     auto anyPropertyUpdateResponseTopic = stinger::utils::format("{{stinger.all_properties_response_topic()}}", topicParams);
     _anyPropertyUpdateResponseSubscriptionId = _broker->Subscribe(anyPropertyUpdateResponseTopic, 1);
+    {%-for prop_name, prop in stinger.properties.items() %}
+    _{{prop_name | lowerCamelCase}}PropertyResponseTopic = stinger::utils::format("{{prop.response_topic()}}", topicParams);
+    {%-endfor%}
     {%endif%}{# end if properties #}
 }
 
@@ -96,6 +99,7 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Mes
         {
             _broker->Log(LOG_INFO, "{{sig_name}} signal debug from server: %s", msg.properties.debugInfo->c_str());
         }
+        {{ codec.expect_content_type(sig.payload, sig_name ~ " signal") }}
         rapidjson::Document doc;
         try {
             if (_{{sig_name | camelCase}}SignalCallbacks.size() > 0)
@@ -193,6 +197,14 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Mes
     {%if stinger.properties|length > 0 %}else if (subscriptionId == _anyPropertyUpdateResponseSubscriptionId)
     {
         _broker->Log(LOG_DEBUG, "Matched topic for any property update response");
+        {%-for prop_name, prop in stinger.properties.items() %}
+        {%- if prop.payload.enforce_content_type %}
+        if (msg.topic == _{{prop_name | lowerCamelCase}}PropertyResponseTopic)
+        {
+            {{ codec.expect_content_type(prop.payload, prop_name ~ " property update response") }}
+        }
+        {%- endif %}
+        {%-endfor%}
     }
     {%endif%}{# end if properties #}
 }
@@ -211,7 +223,7 @@ void {{stinger.cpp.client_class_name}}::_subscribeTo{{sig_name | UpperCamelCase}
     topicParams["client_id"] = _broker->GetClientId();
     topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
     topicParams["interface_name"] = NAME;
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     topicParams["{{topic_param}}"] = _instanceInfo.{{topic_param|lowerCamelCase}}.value_or("error_{{topic_param}}_not_found");
     {%-endfor%}
 
@@ -253,13 +265,14 @@ std::future<{{method.cpp.return_value_class}}> {{stinger.cpp.client_class_name}}
     topicParams["client_id"] = _broker->GetClientId();
     topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
     topicParams["interface_name"] = NAME;
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     topicParams["{{topic_param}}"] = _instanceInfo.{{topic_param|lowerCamelCase}}.value_or("error_{{topic_param}}_not_found");
     {%-endfor%}
 
     auto responseTopic = stinger::utils::format("{{method.response_topic()}}", topicParams);
     auto requestTopic = stinger::utils::format("{{method.request_topic()}}", topicParams);
     auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, payloadStr, correlationData, responseTopic);
+    {{ codec.stamp_content_type(method.request_payload) }}
 
     _broker->Publish(msg);
 
@@ -274,6 +287,7 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
     {
         _broker->Log(LOG_INFO, "{{method_name}} response debug from server: %s", msg.topic.c_str(), msg.properties.debugInfo->c_str());
     }
+    {{ codec.expect_content_type(method.response_payload, method_name ~ " method response") }}
     
     auto correlationData = msg.properties.correlationData.value_or(std::vector<std::byte>{});
     auto promiseItr = _pending{{method_name|UpperCamelCase}}MethodCalls.find(correlationData);
@@ -330,7 +344,7 @@ void {{stinger.cpp.client_class_name}}::send{{command_name | UpperCamelCase}}Com
     topicParams["client_id"] = _broker->GetClientId();
     topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
     topicParams["interface_name"] = NAME;
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     topicParams["{{topic_param}}"] = _instanceInfo.{{topic_param|lowerCamelCase}}.value_or("error_{{topic_param}}_not_found");
     {%-endfor%}
 
@@ -361,7 +375,7 @@ void {{stinger.cpp.client_class_name}}::_subscribeTo{{prop_name | UpperCamelCase
     topicParams["client_id"] = _broker->GetClientId();
     topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
     topicParams["interface_name"] = NAME;
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     topicParams["{{topic_param}}"] = _instanceInfo.{{topic_param|lowerCamelCase}}.value_or("error_{{topic_param}}_not_found");
     {%-endfor%}
 
@@ -389,6 +403,7 @@ void {{stinger.cpp.client_class_name}}::_receive{{prop_name | UpperCamelCase}}Pr
     {
         _broker->Log(LOG_INFO, "{{prop_name}} property update debug from server: %s",  msg.properties.debugInfo->c_str());
     }
+    {{ codec.expect_content_type(prop.payload, prop_name ~ " property value") }}
     auto tempValue = Wire<{{prop.payload.cpp.class_name}}>::FromString(msg.payload);
 {%- if not prop.payload.is_protobuf %}
     if (!tempValue.ValidateSchema()) {
@@ -453,7 +468,7 @@ std::future<bool> {{stinger.cpp.client_class_name}}::update{{prop.name | UpperCa
     topicParams["client_id"] = _broker->GetClientId();
     topicParams["service_id"] = _instanceInfo.serviceId.value_or("error_service_id_not_found");
     topicParams["interface_name"] = NAME;
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     topicParams["{{topic_param}}"] = _instanceInfo.{{topic_param|lowerCamelCase}}.value_or("error_{{topic_param}}_not_found");
     {%-endfor%}
 
@@ -461,6 +476,7 @@ std::future<bool> {{stinger.cpp.client_class_name}}::update{{prop.name | UpperCa
     std::string response_topic = stinger::utils::format("{{prop.response_topic()}}", topicParams);
     auto correlationData = stinger::utils::generate_uuid_bytes();
     auto msg = stinger::mqtt::Message::PropertyUpdateRequest(update_topic, payloadStr, {%if config.properties.version_tracking%}_last{{prop_name | UpperCamelCase}}PropertyVersion{%else%}std::nullopt{%endif%}, correlationData, response_topic);
+    {{ codec.stamp_content_type(prop.payload) }}
     return _broker->Publish(msg);
 
 }

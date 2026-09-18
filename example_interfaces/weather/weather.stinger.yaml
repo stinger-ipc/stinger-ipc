@@ -7,6 +7,17 @@ interface:
   title: NWS weather forecast
   summary: Current conditions, daily and hourly forecasts from the NWS API
 
+configuration:
+
+  topics:
+    params: ["prefix"]
+    signals: "{prefix}/{interface_name}/{service_id}/signal/{signal_name}"
+    propertyValues: "{prefix}/{interface_name}/{service_id}/property/{property_name}/value"
+    propertyUpdates: "{prefix}/{interface_name}/{service_id}/property/{property_name}/update"
+    commands: "{prefix}/{interface_name}/{service_id}/command/{command_name}"
+    methodRequests: "{prefix}/{interface_name}/{service_id}/method/{method_name}/request"
+    interfaceDiscovery: "{prefix}/{interface_name}/{service_id}/interface"
+
 enums:
 
   weather_condition:

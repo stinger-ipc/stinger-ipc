@@ -48,5 +48,8 @@ Configuration and loading
 .. automodule:: stingeripc.config
    :members:
 
+.. automodule:: stingeripc.topics
+   :members:
+
 .. automodule:: stingeripc.loading
    :members:

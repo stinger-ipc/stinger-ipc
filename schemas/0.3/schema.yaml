@@ -55,6 +55,75 @@ properties:
       - name
       - version
 
+  configuration:
+    type: object
+    properties:
+      mimeType:
+        type: string
+        default: "application/json"
+        enum: ["application/json", "application/protobuf", "application/x-fory"]
+      topics:
+        type: object
+        description: >
+          The broker topic templates this interface's messages travel on.  Both sides of
+          the interface must agree on them, so they are declared here rather than in the
+          code generator's own configuration files.  Each template is a topic string in
+          which "{placeholder}" segments are filled in at runtime.  Every key is optional;
+          an omitted key keeps its default.
+        properties:
+          params:
+            type: array
+            uniqueItems: true
+            description: >
+              Extra topic placeholders -- beyond the ones StingerIPC fills in itself -- that the
+              templates below may use.  A value for each is supplied when a client or server is
+              constructed, which is how one interface can be hosted under several topic trees.
+            items:
+              type: string
+              pattern: "^[a-zA-Z0-9]+(_[a-zA-Z0-9]+)*$"
+              not:
+                $ref: "#/$defs/reservedTopicParams"
+          signals:
+            type: string
+            default: "{interface_name}/{service_id}/signal/{signal_name}"
+            description: "Topic template for signals."
+          propertyValues:
+            type: string
+            default: "{interface_name}/{service_id}/property/{property_name}/value"
+            description: "Topic template for published property values.  Must contain {property_name} and {service_id}."
+          propertyUpdates:
+            type: string
+            default: "{interface_name}/{service_id}/property/{property_name}/update"
+            description: "Topic template for property update requests."
+          propertyUpdateResponses:
+            type: string
+            default: "client/{client_id}/{interface_name}/property/{property_name}/update/response"
+            description: "Topic template for property update responses.  Must contain {property_name}."
+          commands:
+            type: string
+            default: "{interface_name}/{service_id}/command/{command_name}"
+            description: "Topic template for commands.  Must contain {command_name} and {service_id}."
+          methodRequests:
+            type: string
+            default: "{interface_name}/{service_id}/method/{method_name}/request"
+            description: "Topic template for method requests."
+          methodResponses:
+            type: string
+            default: "client/{client_id}/{interface_name}/method/{method_name}/response"
+            description: "Topic template for method responses.  Must contain {method_name}, and must differ from propertyUpdateResponses."
+          interfaceDiscovery:
+            type: string
+            default: "{interface_name}/{service_id}/interface"
+            description: "Topic template on which a server advertises this interface."
+          lwt:
+            type: string
+            default: "client/{client_id}/online"
+            description: "Topic template for Last Will and Testament (online/offline) messages."
+        additionalProperties: false
+
+  topics: false # Topic templates belong under 'configuration'
+  topic: false # Topic templates belong under 'configuration'
+
   enums:
     type: object
     propertyNames:
@@ -225,6 +294,11 @@ $defs:
   reservedKeywords:
     type: string
     enum: ["type", "class", "struct", "enum", "list", "map", "set", "optional", "bool", "int", "float", "string", "datetime", "duration", "binary"]
+
+  reservedTopicParams:
+    type: string
+    description: "Topic placeholders StingerIPC fills in itself; an interface may not redeclare them as its own params."
+    enum: ["interface_name", "service_id", "signal_name", "property_name", "method_name", "command_name", "client_id", "instance_id"]
 
   documentation:
     type: string

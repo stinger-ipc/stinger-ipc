@@ -93,7 +93,7 @@ class PropertyControls(Generic[T]):
 
 class {{stinger.python.server_class_name}}:
 
-    def __init__(self, connection: IBrokerConnection, instance_id: str{%if stinger.properties | length > 0 %}, {%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess{%endif%}{%endif%}{%for topic_param in config.topics.params %}, {{topic_param|snake_case}}: str{% endfor %}):
+    def __init__(self, connection: IBrokerConnection, instance_id: str{%if stinger.properties | length > 0 %}, {%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess{%endif%}{%endif%}{%for topic_param in stinger.topics.params %}, {{topic_param|snake_case}}: str{% endfor %}):
         self._logger = logging.getLogger(f'{{stinger.python.server_class_name}}:{instance_id}')
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing {{stinger.python.server_class_name}} instance %s", instance_id)
@@ -103,7 +103,7 @@ class {{stinger.python.server_class_name}}:
         self._topic_template_kwargs = {
             "client_id": self._conn.client_id,
             "service_id": instance_id,
-            {%- for topic_param in config.topics.params %}
+            {%- for topic_param in stinger.topics.params %}
             "{{topic_param|snake_case}}": {{topic_param|snake_case}},
             {%-endfor%}
         }
@@ -201,7 +201,7 @@ class {{stinger.python.server_class_name}}:
                 {%- endif %}
                 {%- endfor %}
             },
-            {%- for topic_param in config.topics.params %}
+            {%- for topic_param in stinger.topics.params %}
             {{topic_param|snake_case}}=self._topic_template_kwargs["{{topic_param|snake_case}}"],
             {%- endfor %}
         )
@@ -272,12 +272,10 @@ class {{stinger.python.server_class_name}}:
                 raise OutOfSyncStingerMethodException(f"Request version '{prop_version}'' does not match current version '{self._property_{{prop_name|snake_case}}.version}' of the '{{prop_name}}' property")
 
             {%endif-%}
-            if content_type is None:
-                self._logger.error("No content type provided in property update for %s.  Assuming {{ codec.content_type(prop.payload) }}.  content-type will be enforced in the future.", message.topic)
-                content_type = "{{ codec.content_type(prop.payload) }}"
-
+            {% if prop.payload.enforce_content_type -%}
             if content_type != "{{ codec.content_type(prop.payload) }}":
-                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{{prop_name}}' property")
+                raise ServerDeserializationErrorStingerMethodException(f"Unsupported content type '{content_type}' for property update of '{{prop_name}}' property; expected '{{ codec.content_type(prop.payload) }}'")
+            {%- endif %}
 
             recv_prop_obj = {{ codec.decode(prop.payload, "message.payload") }}
 
@@ -371,7 +369,7 @@ class {{stinger.python.server_class_name}}:
         A command has no response, so a payload we cannot make sense of can only be logged
         and dropped; there is nowhere to report the error to.
         """
-        {% if (not command.payload.is_protobuf) or config.protobuf.mime_type is not false %}
+        {% if command.payload.enforce_content_type %}
         if message.content_type is None or message.content_type != '{{ codec.content_type(command.payload) }}':
             self._logger.warning("Received '{{command_name}}' command with unexpected content type: %s", message.content_type)
             return
@@ -415,6 +413,20 @@ class {{stinger.python.server_class_name}}:
         """ This processes a call to the '{{method_name}}' method.  It deserializes the payload to find the method arguments,
         then calls the method handler with those arguments.  It then builds and serializes a response and publishes it to the response topic.
         """
+        {% if method.request_payload.enforce_content_type -%}
+        if message.content_type != "{{ codec.content_type(method.request_payload) }}":
+            self._logger.warning("Received '{{method_name}}' request with unexpected content type: %s", message.content_type)
+            if message.response_topic:
+                err_msg = MessageCreator.error_response_message(
+                    message.response_topic,
+                    MethodReturnCode.SERVER_DESERIALIZATION_ERROR.value,
+                    message.correlation_data,
+                    content_type="{{ codec.content_type(method.response_payload) }}",
+                    debug_info=f"Unsupported content type '{message.content_type}' for the '{{method_name}}' request; expected '{{ codec.content_type(method.request_payload) }}'",
+                )
+                self._conn.publish(err_msg)
+            return
+        {%- endif %}
         try:
             payload = {{ codec.decode(method.request_payload, "message.payload") }}
         except (json.JSONDecodeError, ValidationError) as e:
@@ -423,7 +435,7 @@ class {{stinger.python.server_class_name}}:
             response_topic = message.response_topic
             return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
             if response_topic:
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, content_type="{{ codec.content_type(method.response_payload) }}", debug_info=str(e))
                 self._conn.publish(err_msg)
             return
         correlation_id = message.correlation_data
@@ -458,19 +470,19 @@ class {{stinger.python.server_class_name}}:
                 self._logger.warning("Deserialization error while handling {{method_name}}: %s", e)
                 if response_topic is not None:
                     return_code = MethodReturnCode.SERVER_DESERIALIZATION_ERROR
-                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, content_type="{{ codec.content_type(method.response_payload) }}", debug_info=str(e))
                     self._conn.publish(err_msg)
             except StingerMethodException as sme:
                 self._logger.warning("StingerMethodException while handling {{method_name}}: %s", sme)
                 if response_topic is not None:
                     return_code = sme.return_code
-                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(sme))
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, content_type="{{ codec.content_type(method.response_payload) }}", debug_info=str(sme))
                     self._conn.publish(err_msg)
             except Exception as e:
                 self._logger.exception("Exception while handling {{method_name}}", exc_info=e)
                 if response_topic is not None:
                     return_code = MethodReturnCode.SERVER_ERROR
-                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info=str(e))
+                    err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, content_type="{{ codec.content_type(method.response_payload) }}", debug_info=str(e))
                     self._conn.publish(err_msg)
             else:
                 if response_topic is not None:
@@ -480,7 +492,7 @@ class {{stinger.python.server_class_name}}:
             self._logger.warning("No handler registered for method {{method_name}}")
             if response_topic is not None:
                 return_code = MethodReturnCode.METHOD_NOT_IMPLEMENTED
-                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, debug_info="No handler registered for '{{method_name}}' method")
+                err_msg = MessageCreator.error_response_message(response_topic, return_code.value, correlation_id, content_type="{{ codec.content_type(method.response_payload) }}", debug_info="No handler registered for '{{method_name}}' method")
                 self._conn.publish(err_msg)
 
     {%endfor%}
@@ -592,8 +604,8 @@ class {{stinger.python.server_class_name}}Builder:
     {%endif%} {# read/write properties #}
     {%endfor%} {# for each property loop #}
     {%endif%}{# only when stinger owned values #}
-    def build(self, connection: IBrokerConnection, instance_id: str, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues, {%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{%endif%}{%for topic_param in config.topics.params %}{{topic_param|snake_case}}: str, {% endfor %}binding: Optional[Any]=None) -> {{stinger.python.server_class_name}}:
-        new_server = {{stinger.python.server_class_name}}(connection, instance_id, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values{%else%}property_access{%endif%},{%endif%} {%for topic_param in config.topics.params %}{{topic_param|snake_case}}, {% endfor %})
+    def build(self, connection: IBrokerConnection, instance_id: str, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues, {%else%}property_access: {{stinger.name|UpperCamelCase}}PropertyAccess, {%endif%}{%endif%}{%for topic_param in stinger.topics.params %}{{topic_param|snake_case}}: str, {% endfor %}binding: Optional[Any]=None) -> {{stinger.python.server_class_name}}:
+        new_server = {{stinger.python.server_class_name}}(connection, instance_id, {%if stinger.properties | length > 0 %}{%if config.properties.stinger_owned_values%}initial_property_values{%else%}property_access{%endif%},{%endif%} {%for topic_param in stinger.topics.params %}{{topic_param|snake_case}}, {% endfor %})
         {%for method_name, method in stinger.methods.items()%}
         if self._{{method_name|snake_case}}_method_handler is not None:
             if binding:

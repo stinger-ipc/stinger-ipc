@@ -437,15 +437,19 @@ from typing import ClassVar as _ClassVar
 
 
 class TestProtobufConfig(unittest.TestCase):
-    def test_absent_by_default(self):
-        self.assertIsNone(StingerConfig().protobuf)
+    def test_present_with_defaults_even_when_unconfigured(self):
+        """Every payload can be asked for its content type, protobuf or not, so the
+        protobuf config is always there rather than optional."""
+        protobuf = StingerConfig().protobuf
+        self.assertIsNotNone(protobuf)
+        self.assertEqual(protobuf.path, "protos")
+        self.assertEqual(protobuf.mime_type, "application/protobuf")
 
     def test_path_defaults_to_protos(self):
         self.assertEqual(ProtobufConfig().path, "protos")
 
     def test_accepts_a_plain_string_path_under_strict_mode(self):
         config = StingerConfig(protobuf={"path": "my_protos"})
-        assert config.protobuf is not None
         self.assertEqual(config.protobuf.path, "my_protos")
 
 

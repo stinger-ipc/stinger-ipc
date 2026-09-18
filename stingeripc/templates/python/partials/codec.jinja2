@@ -227,8 +227,8 @@ MessageCreator.property_response_message({{ topic_expr }}, {{ obj_expr }}, {{ ve
     than store an empty one, so the example fills in what it can.  A message with
     nothing to fill in (`google.protobuf.Empty`, say) is simply default-constructed.
 #}
-{%- macro example_message(payload) -%}
-{{ payload.python.class_name }}({% for field in payload.protobuf.example_fields %}{{ field.name }}={{ field.get_random_example_value() }}{% if not loop.last %}, {% endif %}{% endfor %})
+{%- macro example_message(payload, seed=2) -%}
+{{ payload.python.class_name }}({% for field in payload.protobuf.example_fields %}{{ field.name }}={{ field.get_random_example_value(seed=seed) }}{% if not loop.last %}, {% endif %}{% endfor %})
 {%- endmacro -%}
 
 {#
@@ -271,7 +271,7 @@ MessageCreator.property_response_message({{ topic_expr }}, {{ obj_expr }}, {{ ve
 #}
 {%- macro property_example(prop, seed=2) -%}
 {%- if prop.payload.is_protobuf -%}
-{{ example_message(prop.payload) }}
+{{ example_message(prop.payload, seed=seed) }}
 {%- else -%}
 {{ prop.value.get_random_example_value(lang="python", seed=seed) }}
 {%- endif -%}

@@ -3,7 +3,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Optional, TYPE_CHECKING
 
-from stingeripc.config import StingerConfig, TopicConfig
+from stingeripc.config import StingerConfig
+from stingeripc.topics import InterfaceTopics
 
 if TYPE_CHECKING:
     from stingeripc.ipc_signal import IpcSignal
@@ -59,6 +60,11 @@ class InterfaceComponent(BaseModel):
         self._config = root._config
         self._root = root
 
+    @property
+    def topics(self) -> InterfaceTopics:
+        """The topic templates declared by the interface this component belongs to."""
+        return self._root.topics
+
     def set_documentation(self, documentation: str) -> "InterfaceComponent":
         """Set the documentation string for this component and return self.
 
@@ -90,9 +96,11 @@ class StingerSpec:
     schema constraints).
     """
 
-    def __init__(self, interface: dict[str, Any], config: StingerConfig):
+    def __init__(self, stinger: dict[str, Any], config: StingerConfig):
         LanguageSymbolMixin.enhance(self, config)
         self._config = config
+        self.topics = self.new_topics_from_stinger(stinger)
+        interface = stinger.get("interface")
         try:
             self._name: str = interface["name"]
             self._version: str = interface["version"]
@@ -102,10 +110,9 @@ class StingerSpec:
             raise InvalidStingerStructure(f"Interface didn't appear to have a correct type")
 
         assert isinstance(config, StingerConfig), f"Config must be a StingerConfig object. Got {type(config)}"
-        assert isinstance(config.topics, TopicConfig), f"Config must have a TopicConfig object in its 'topics' property. Got {type(config.topics)}"
 
-        if not topic_util.is_valid_topic_template(self._config.topics.interface_discovery, self._config.topics.params):
-            raise InvalidConfiguration(f"Interface discovery topic template '{self._config.topics.interface_discovery}' is not valid. ")
+        if not topic_util.is_valid_topic_template(self.topics.interface_discovery, self.topics.params):
+            raise InvalidConfiguration(f"Interface discovery topic template '{self.topics.interface_discovery}' is not valid. ")
 
         self._summary = interface.get("summary")
         self._title = interface.get("title")
@@ -153,7 +160,7 @@ class StingerSpec:
         The topic is derived from the configured ``interface_discovery`` topic
         template, with the interface name filled in.
         """
-        topic_template = self._config.topics.interface_discovery
+        topic_template = self.topics.interface_discovery
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name)
         return topic_template
 
@@ -256,6 +263,15 @@ class StingerSpec:
     def uses_protobuf(self) -> bool:
         """True if any payload in the interface is a protobuf message."""
         return any(payload.is_protobuf for payload in self.all_payloads())
+
+    def protobuf_content_type(self) -> str:
+        """The media type this interface's protobuf messages are published with.
+
+        The same value every protobuf ``Payload`` reports, since it comes from
+        ``[protobuf] mime_type`` rather than from the individual message.  Languages
+        that emit one blanket encoder for all protobuf payloads read it from here.
+        """
+        return self._config.protobuf.mime_type or "application/protobuf"
 
     def uses_well_known_protobuf(self) -> bool:
         """True if any payload is one of protobuf's well-known types.
@@ -380,7 +396,7 @@ class StingerSpec:
         The `method_name` placeholder is replaced with the MQTT wildcard `+`
         so a single subscription receives responses for all methods.
         """
-        topic_template = self._config.topics.method_responses
+        topic_template = self.topics.method_responses
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, method_name="+")
         return topic_template
 
@@ -405,7 +421,7 @@ class StingerSpec:
         The `property_name` placeholder is replaced with the MQTT wildcard
         `+` so a single subscription receives responses for all properties.
         """
-        topic_template = self._config.topics.property_update_responses
+        topic_template = self.topics.property_update_responses
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, property_name="+")
         return topic_template
 
@@ -420,7 +436,7 @@ class StingerSpec:
         The ``property_name`` placeholder is replaced with the MQTT wildcard
         ``+`` so a single subscription receives values for all properties.
         """
-        topic_template = self._config.topics.property_values
+        topic_template = self.topics.property_values
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, property_name="+")
         return topic_template
 
@@ -430,7 +446,7 @@ class StingerSpec:
         The ``signal_name`` placeholder is replaced with the MQTT wildcard ``+``
         so a single subscription receives all signals.
         """
-        topic_template = self._config.topics.signals
+        topic_template = self.topics.signals
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, signal_name="+")
         return topic_template
 
@@ -440,9 +456,27 @@ class StingerSpec:
         The ``command_name`` placeholder is replaced with the MQTT wildcard
         ``+`` so a single subscription receives all commands.
         """
-        topic_template = self._config.topics.commands
+        topic_template = self.topics.commands
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, command_name="+")
         return topic_template
+
+    @staticmethod
+    def new_topics_from_stinger(stinger: dict[str, Any]) -> InterfaceTopics:
+        """Build the interface's topic templates from a parsed Stinger YAML dict.
+
+        The templates live under ``configuration.topics``.  An interface that declares
+        none of them gets the default templates.
+        """
+        configuration = stinger.get("configuration") or {}
+        if not isinstance(configuration, dict):
+            raise InvalidStingerStructure(f"'configuration' must be a mapping, got {type(configuration)}")
+        topics_spec = configuration.get("topics") or {}
+        if not isinstance(topics_spec, dict):
+            raise InvalidStingerStructure(f"'configuration.topics' must be a mapping of topic templates, got {type(topics_spec)}")
+        try:
+            return InterfaceTopics(**topics_spec)
+        except ValueError as e:
+            raise InvalidStingerStructure(f"Invalid 'configuration.topics' section: {e}")
 
     @classmethod
     def new_spec_from_stinger(cls, stinger: dict[str, Any], config: StingerConfig) -> StingerSpec:
@@ -460,7 +494,7 @@ class StingerSpec:
         if stinger["stingeripc"]["version"] not in ["0.3.0"]:
             raise InvalidStingerStructure(f"Unsupported stinger spec version {stinger['stingeripc']['version']}")
 
-        stinger_spec = StingerSpec(stinger["interface"], config)
+        stinger_spec = StingerSpec(stinger, config)
         stinger_spec._spec_version = stinger["stingeripc"]["version"]
 
         from stingeripc.ipc_signal import IpcSignal

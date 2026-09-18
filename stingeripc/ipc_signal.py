@@ -57,7 +57,7 @@ class IpcSignal(InterfaceComponent):
         The topic is derived from the configured ``signals`` topic template,
         with the interface name and signal name filled in.
         """
-        template_topic = self._config.topics.signals
+        template_topic = self.topics.signals
         template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, signal_name=self.name, **kwargs)
         return template_topic
 

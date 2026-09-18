@@ -31,7 +31,7 @@ message InterfaceInfo {
     string instance = 4;
     string connection_topic = 5;
     string timestamp = 6;  // ISO 8601 format
-    {%-for topic_param in config.topics.params%}
+    {%-for topic_param in stinger.topics.params%}
     {%-set ns.idx = ns.idx + 1%}
     string {{topic_param}} = {{ns.idx}};
     {%-endfor%}

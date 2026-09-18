@@ -70,7 +70,7 @@ macro_rules! protobuf_wire_payload {
         $(
             impl WirePayload for $payload_type {
                 fn content_type() -> &'static str {
-                    "application/x-protobuf"
+                    "{{ stinger.protobuf_content_type() }}"
                 }
 
                 fn to_bytes(&self) -> Result<Bytes, String> {
@@ -121,7 +121,15 @@ protobuf_wire_payload!(
     when it does not.  A command or signal has no response channel, so a message
     that cannot be understood is logged and dropped.
 #}
+{#
+    The content type of a received message has to be present and has to match, or the
+    message is dropped.  The one exception is a protobuf payload under
+    `[protobuf] mime_type = false`, which says this interface's protobuf messages are
+    not labelled at all -- `enforce_content_type` carries that decision for every
+    language, so this renders nothing rather than a check that could never pass.
+#}
 {%- macro expect_content_type(payload, msg_expr, label, bail) %}
+{%- if payload.enforce_content_type %}
 let expected_content_type = <{{ payload.rust.struct_name }} as WirePayload>::content_type();
         match {{ msg_expr }}.content_type.as_deref() {
             Some(ct) if ct == expected_content_type => { /* OK */ }
@@ -134,6 +142,10 @@ let expected_content_type = <{{ payload.rust.struct_name }} as WirePayload>::con
                 {{ bail }};
             }
         }
+{%- else %}
+// `[protobuf] mime_type = false`: '{{ label }}' messages carry no content type, so
+        // the body is assumed to be the declared protobuf message.
+{%- endif %}
 {%- endmacro %}
 
 {#

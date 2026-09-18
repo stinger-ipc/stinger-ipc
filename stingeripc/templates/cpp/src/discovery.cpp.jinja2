@@ -19,7 +19,7 @@ bool InstanceInfo::isComplete() const
     if (!serviceId.has_value()) {
         return false;
     }
-    {%for topic_param in config.topics.params %}
+    {%for topic_param in stinger.topics.params %}
     if (!{{topic_param | lowerCamelCase}}.has_value()) {
         return false;
     }
@@ -33,7 +33,7 @@ void InstanceInfo::UpdateFromRapidJsonObject(const rapidjson::Value& jsonObj)
     {
         serviceId = jsonObj["instance"].GetString();
     }
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     if (jsonObj.HasMember("{{topic_param}}") && jsonObj["{{topic_param}}"].IsString())
     {
         {{topic_param|lowerCamelCase}} = jsonObj["{{topic_param}}"].GetString();
@@ -71,7 +71,7 @@ void InstanceInfo::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Doc
     {
         parent.AddMember("service_id", rapidjson::Value(serviceId.value().c_str(), allocator), allocator);
     }
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     if ({{topic_param|lowerCamelCase}}.has_value())
     {
         parent.AddMember("{{topic_param}}", rapidjson::Value({{topic_param|lowerCamelCase}}.value().c_str(), allocator), allocator);
@@ -105,7 +105,7 @@ void InstanceInfo::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Doc
     topicArgs["service_id"] = "+";
     topicArgs["interface_name"] = "{{stinger.name}}";
     topicArgs["client_id"] = "+";
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     topicArgs["{{topic_param}}"] = "+";
     {%-endfor%}
 
@@ -190,9 +190,9 @@ void {{stinger.name|UpperCamelCase}}Discovery::_onMessage(const stinger::mqtt::M
     if (msg.properties.subscriptionId == _discoverySubscriptionId)
     {
         std::vector<std::string> hashableIdentifiers;
-        const uint8_t instance_id_expected_index = {{utils.topic_template_placeholder_index(config.topics.interface_discovery, "service_id")}};
-        {%-for topic_param in config.topics.params %}
-        const uint8_t {{topic_param}}_expected_index = {{utils.topic_template_placeholder_index(config.topics.interface_discovery, topic_param)}};
+        const uint8_t instance_id_expected_index = {{utils.topic_template_placeholder_index(stinger.topics.interface_discovery, "service_id")}};
+        {%-for topic_param in stinger.topics.params %}
+        const uint8_t {{topic_param}}_expected_index = {{utils.topic_template_placeholder_index(stinger.topics.interface_discovery, topic_param)}};
         {%endfor%}
 
         // Split topic by '/' into vector of strings
@@ -203,7 +203,7 @@ void {{stinger.name|UpperCamelCase}}Discovery::_onMessage(const stinger::mqtt::M
         while (std::getline(ss, part, '/'))
         {
             topicParts.push_back(part);
-            if ((index == instance_id_expected_index){%-for topic_param in config.topics.params %} || (index == {{topic_param}}_expected_index){%endfor%})
+            if ((index == instance_id_expected_index){%-for topic_param in stinger.topics.params %} || (index == {{topic_param}}_expected_index){%endfor%})
             {
                 hashableIdentifiers.push_back(part);
             }

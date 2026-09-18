@@ -86,7 +86,7 @@ tasks:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/python/**"
     cmds:
       - mkdir -p {{.GENERATED_DIR}}/{{.IFACE}}/python/
-      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/topic_prefix.toml --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python/
+      - uv run stinger generate {{.CLI_ARGS}} --language python --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python/
       - uv run black --target-version py312 --exclude '.venv|/proto/' {{.GENERATED_DIR}}/{{.IFACE}}/python/
     vars:
       IFACE: '{{index .MATCH 0}}'
@@ -105,7 +105,7 @@ tasks:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/python37/**"
     cmds:
       - mkdir -p {{.GENERATED_DIR}}/{{.IFACE}}/python37/
-      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/python37.toml --config ./example_interfaces/topic_prefix.toml --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python37/
+      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/python37.toml --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python37/
       - uv run black --target-version py37 --exclude '.venv' {{.GENERATED_DIR}}/{{.IFACE}}/python37/
     vars:
       IFACE: '{{index .MATCH 0}}'
@@ -145,7 +145,7 @@ tasks:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/**"
     cmds:
       - mkdir -p {{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/
-      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/app-owned-props.toml --config ./example_interfaces/topic_prefix.toml --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/
+      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/app-owned-props.toml --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/
       - uv run black --target-version py312 {{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/
     vars:
       IFACE: '{{index .MATCH 0}}'
@@ -288,7 +288,7 @@ tasks:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/cmake/**"
       - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/tests/**"
     cmds:
-      - uv run stinger generate {{.CLI_ARGS}} --language cpp --config ./example_interfaces/topic_prefix.toml --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/"
+      - uv run stinger generate {{.CLI_ARGS}} --language cpp --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/"
       - clang-format --style=file:clang-format-config.yaml {{.GENERATED_DIR}}/{{.IFACE}}/cpp/include/*.hpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/src/*.cpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/examples/*.cpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/tests/*.cpp -i
     vars:
       IFACE: '{{index .MATCH 0}}'
@@ -371,7 +371,7 @@ tasks:
     generates:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/rust/**"
     cmds:
-      - uv run stinger generate {{.CLI_ARGS}} --language rust --config ./example_interfaces/topic_prefix.toml --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/rust/"
+      - uv run stinger generate {{.CLI_ARGS}} --language rust --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/rust/"
       # Run twice: rustfmt does not always reach a fixed point in one pass on deeply
       # nested match expressions, so a single run can leave the tree not fully formatted.
       - cd "{{.GENERATED_DIR}}/{{.IFACE}}/rust/" && cargo fmt && cargo fmt
@@ -459,13 +459,12 @@ tasks:
       - task: validate:{{index .MATCH 0}}
     sources:
       - stingeripc/**/*.py
-      - example_interfaces/topic_prefix.toml
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
     generates:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/asyncapi/**"
     cmds:
       - mkdir -p "{{.GENERATED_DIR}}/{{.IFACE}}/asyncapi/"
-      - uv run stinger asyncapi {{.CLI_ARGS}} --config ./example_interfaces/topic_prefix.toml --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/asyncapi/"
+      - uv run stinger asyncapi {{.CLI_ARGS}} --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/asyncapi/"
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -484,7 +483,7 @@ tasks:
     generates:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/markdown/*"
     cmds:
-      - uv run stinger generate {{.CLI_ARGS}} --language markdown --config ./example_interfaces/topic_prefix.toml --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/markdown/"
+      - uv run stinger generate {{.CLI_ARGS}} --language markdown --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/markdown/"
     vars:
       IFACE: '{{index .MATCH 0}}'
   
@@ -505,7 +504,7 @@ tasks:
     generates:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/web/**"
     cmds:
-      - uv run stinger generate {{.CLI_ARGS}} --language web --config ./example_interfaces/topic_prefix.toml --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/web/"
+      - uv run stinger generate {{.CLI_ARGS}} --language web --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/web/"
     vars:
       IFACE: '{{index .MATCH 0}}'
   

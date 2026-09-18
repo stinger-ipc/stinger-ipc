@@ -72,7 +72,7 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
             "received": null,
             "received_time": null,
             "flash": false,
-            "mqtt_topic": `{{ utils.topic_template_to_js(signal.topic(), config.topics.params) }}`
+            "mqtt_topic": `{{ utils.topic_template_to_js(signal.topic(), stinger.topics.params) }}`
         }{%if not loop.last%},{%endif%}
     {%endfor-%} };
 
@@ -85,9 +85,9 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
                     "{{member.name}}": null{%if not loop.last%},{%endif%}
                 {%endfor%} }{%else%}null{%endif%}{%if not loop.last%},{%endif%}
             {%endfor%} },
-            "mqtt_topic": `{{ utils.topic_template_to_js(prop.value_topic(), config.topics.params) }}`,{% if not prop.read_only %}
-            "update_topic": `{{ utils.topic_template_to_js(prop.update_topic(), config.topics.params) }}`,
-            "response_topic": `{{ utils.topic_template_to_js(prop.response_topic(), config.topics.params) }}`,{%endif%}
+            "mqtt_topic": `{{ utils.topic_template_to_js(prop.value_topic(), stinger.topics.params) }}`,{% if not prop.read_only %}
+            "update_topic": `{{ utils.topic_template_to_js(prop.update_topic(), stinger.topics.params) }}`,
+            "response_topic": `{{ utils.topic_template_to_js(prop.response_topic(), stinger.topics.params) }}`,{%endif%}
             "flash": false{%if config.properties.version_tracking%},
             "property_version": -1{%endif%}
         }{%if not loop.last%},{%endif%}
@@ -101,8 +101,8 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
         {%-for method_name, method in stinger.methods.items() %}
         "{{method_name | lowerCamelCase}}": {
             "name": "{{method_name}}",
-            "mqtt_topic": `{{ utils.topic_template_to_js(method.request_topic(), config.topics.params) }}`,
-            "response_topic": `{{ utils.topic_template_to_js(method.response_topic(), config.topics.params) }}`,
+            "mqtt_topic": `{{ utils.topic_template_to_js(method.request_topic(), stinger.topics.params) }}`,
+            "response_topic": `{{ utils.topic_template_to_js(method.response_topic(), stinger.topics.params) }}`,
             "pending_correlation_id": null,
             "args": { {%-for arg in method.arg_list %}
                 "{{arg.name}}": null{%if not loop.last%},{%endif%}
@@ -117,7 +117,7 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
         {%-for command_name, command in stinger.commands.items() %}
         "{{command_name | lowerCamelCase}}": {
             "name": "{{command_name}}",
-            "mqtt_topic": `{{ utils.topic_template_to_js(command.topic(), config.topics.params) }}`,
+            "mqtt_topic": `{{ utils.topic_template_to_js(command.topic(), stinger.topics.params) }}`,
             "args": { {%-for arg in command.arg_list %}
                 "{{arg.name}}": null{%if not loop.last%},{%endif%}
             {%endfor-%} },
@@ -250,7 +250,7 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
         var subscription_count = 10;
         console.log("Connected with ", client);
 
-        const methodResponseSubscriptionTopic = `{{ utils.topic_template_to_js(stinger.all_methods_response_topic(), config.topics.params) }}`;
+        const methodResponseSubscriptionTopic = `{{ utils.topic_template_to_js(stinger.all_methods_response_topic(), stinger.topics.params) }}`;
         var methodResponseSubscriptionId = subscription_count++;
         const methodResponseSubOpts = {
             "qos": 1,
@@ -262,7 +262,7 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
         console.log("Subscribing to response topic " + methodResponseSubscriptionTopic + " with id " + methodResponseSubscriptionId);
         
 
-        const propertyResponseSubscriptionTopic = `{{ utils.topic_template_to_js(stinger.all_properties_response_topic(), config.topics.params) }}`;
+        const propertyResponseSubscriptionTopic = `{{ utils.topic_template_to_js(stinger.all_properties_response_topic(), stinger.topics.params) }}`;
         var propertyResponseSubscriptionId = subscription_count++;
         const propertyResponseSubOpts = {
             "qos": 1,
@@ -282,7 +282,7 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
         };
 
         $scope.signals["{{signal_name | lowerCamelCase}}"].subscription_id = subscription_count;
-        var resolvedTopic = resolveTopic(`{{ utils.topic_template_to_js(signal.topic(), config.topics.params) }}`);
+        var resolvedTopic = resolveTopic(`{{ utils.topic_template_to_js(signal.topic(), stinger.topics.params) }}`);
         client.subscribe(resolvedTopic, {{signal_name|snake_case}}_sub_opts);
         console.log("Subscribing to signal " + resolvedTopic + " with id ", subscription_count);
         subscription_count++;

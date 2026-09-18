@@ -133,7 +133,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
             ("service_id".to_string(), "+".to_string()),
             ("client_id".to_string(), "+".to_string()),
             ("property_name".to_string(), "+".to_string()),
-            {%-for topic_param in config.topics.params%}
+            {%-for topic_param in stinger.topics.params%}
             ("{{topic_param}}".to_string(), "+".to_string()),
             {%-endfor%}
         ]);
@@ -272,7 +272,7 @@ impl<C: Mqtt5PubSub + Clone + Send + Sync + 'static> {{stinger.name|UpperCamelCa
             info!("Service represented by {} is now offline", message.topic);
             // Parse instance_id from topic (format: {{stinger.interface_info_topic()}})
             let topic_parts: Vec<&str> = message.topic.split('/').collect();
-            let instance_id_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, "service_id")}};
+            let instance_id_expected_index = {{utils.topic_template_placeholder_index(stinger.topics.property_values, "service_id")}};
             if topic_parts.len() > instance_id_expected_index {
                 let instance_id = topic_parts[instance_id_expected_index].to_string();
                 let mut interfaces_guard = instances_in_discovery
@@ -343,7 +343,7 @@ mod tests {
             ("service_id".to_string(), service_id),
             ("client_id".to_string(), "client_abc".to_string()),
             ("property_name".to_string(), "prop_xyz".to_string()),
-            {%-for topic_param in config.topics.params%}
+            {%-for topic_param in stinger.topics.params%}
             ("{{topic_param}}".to_string(), "{{topic_param}}".to_string()),
             {%-endfor%}
         ])
@@ -364,7 +364,7 @@ mod tests {
             instance: service_id.clone(),
             connection_topic: format!("sample/{}", service_id),
             timestamp: "2024-01-01T00:00:00Z".into(),
-            {%-for topic_param in config.topics.params %}
+            {%-for topic_param in stinger.topics.params %}
             {{topic_param}}: "{{topic_param}}".into(),
             {%-endfor%}
         };

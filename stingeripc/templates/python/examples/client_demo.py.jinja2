@@ -51,7 +51,7 @@ if __name__ == '__main__':
         sys.exit(0)
 
     transport = MqttTransport(MqttTransportType.TCP, os.environ.get("MQTT_HOSTNAME", "localhost"), int(os.environ.get("MQTT_PORT", 1883)))
-    lwt = StingerPresence({%for param in utils.get_topic_arguments(config.topics.lwt) %}{% if param == 'client_id' %}client_id="py-client-demo", {%else%}{{param}}=os.environ.get("TOPIC_PARAM_{{param|CONST_CASE}}", "example"), {% endif %}{% endfor %})
+    lwt = StingerPresence({%for param in utils.get_topic_arguments(stinger.topics.lwt) %}{% if param == 'client_id' %}client_id="py-client-demo", {%else%}{{param}}=os.environ.get("TOPIC_PARAM_{{param|CONST_CASE}}", "example"), {% endif %}{% endfor %})
     conn = Mqtt5Connection(transport, client_id=os.environ.get("CLIENT_ID", "py-client-demo"), lwt=lwt)
 
     client_builder = {{stinger.python.client_class_name}}Builder()

@@ -4,6 +4,8 @@ from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel as PydanticBaseModel, Field
 
+from .topics import InterfaceTopics
+
 
 class BaseModel(PydanticBaseModel):
     @property
@@ -163,3 +165,4 @@ class StingerSpec(BaseModel):
     methods: Optional[Dict[str, InterfaceMethod]] = Field(None, description="A dictionary of methods in the interface")
     commands: Optional[Dict[str, InterfaceCommand]] = Field(None, description="A dictionary of commands in the interface")
     properties: Optional[Dict[str, InterfaceProperty]] = Field(None, description="A dictionary of properties in the interface")
+    topics: Optional[InterfaceTopics] = Field(None, description="The broker topic templates this interface's messages travel on")

@@ -9,7 +9,7 @@ use std::sync::Arc;
 
 
 /// A Stinger implementation of [`AvailabilityHelper`] that configures the publishing of JSON online/offline
-/// availability messages to `{{config.topics.lwt}}`.
+/// availability messages to `{{stinger.topics.lwt}}`.
 ///
 /// # Example
 ///
@@ -17,8 +17,8 @@ use std::sync::Arc;
 /// use {{stinger.rust.package_name}}::lwt::StingerAvailability;
 /// use stinger_mqtt_trait::availability_trait::AvailabilityHelper;
 ///
-/// let helper = StingerAvailability::new({%for param in utils.get_topic_arguments(config.topics.lwt) %}"example", {% endfor %});
-/// assert_eq!(helper.get_client_online_message().topic, "{{ config.topics.lwt | regex_replace("\{[A-Za-z_]+\}", "example") }}");
+/// let helper = StingerAvailability::new({%for param in utils.get_topic_arguments(stinger.topics.lwt) %}"example", {% endfor %});
+/// assert_eq!(helper.get_client_online_message().topic, "{{ stinger.topics.lwt | regex_replace("\{[A-Za-z_]+\}", "example") }}");
 /// assert_eq!(helper.get_republish_interval(), None);
 /// ```
 pub struct StingerAvailability {
@@ -30,16 +30,16 @@ pub struct StingerAvailability {
 impl StingerAvailability {
     /// Create a new `StingerAvailability` for the given client ID.
     ///
-    /// The topic will be `{{config.topics.lwt}}`. Online and offline payloads are
+    /// The topic will be `{{stinger.topics.lwt}}`. Online and offline payloads are
     /// `{"online":true}` and `{"online":false}` respectively,
     /// published at QoS 1
     /// with retain enabled and no periodic republish interval.
     #[allow(clippy::new_ret_no_self)]
-    pub fn new({%for param in utils.get_topic_arguments(config.topics.lwt) %}{{param}}: impl Into<String>, {% endfor %}) -> Arc<dyn AvailabilityHelper + Send + Sync> {
-        {% for param in utils.get_topic_arguments(config.topics.lwt) %}
+    pub fn new({%for param in utils.get_topic_arguments(stinger.topics.lwt) %}{{param}}: impl Into<String>, {% endfor %}) -> Arc<dyn AvailabilityHelper + Send + Sync> {
+        {% for param in utils.get_topic_arguments(stinger.topics.lwt) %}
         let {{param}} = {{param}}.into();
         {% endfor %}
-        let topic = format!("{{ config.topics.lwt | regex_replace('\{[A-Za-z_]+\}', 'placeholder') | replace('placeholder', '{}') }}", {%for param in utils.get_topic_arguments(config.topics.lwt) %}{{param}}, {% endfor %});
+        let topic = format!("{{ stinger.topics.lwt | regex_replace('\{[A-Za-z_]+\}', 'placeholder') | replace('placeholder', '{}') }}", {%for param in utils.get_topic_arguments(stinger.topics.lwt) %}{{param}}, {% endfor %});
         let online_message = MqttMessage::simple(
             topic.clone(),
             QoS::AtLeastOnce,
@@ -92,9 +92,9 @@ mod tests {
 
     #[test]
     fn test_online_message() {
-        let helper = StingerAvailability::new({%for param in utils.get_topic_arguments(config.topics.lwt) %}"example", {% endfor %});
+        let helper = StingerAvailability::new({%for param in utils.get_topic_arguments(stinger.topics.lwt) %}"example", {% endfor %});
         let msg = helper.get_client_online_message();
-        assert_eq!(msg.topic, "{{ config.topics.lwt | regex_replace('\{[A-Za-z_]+\}', 'example') }}");
+        assert_eq!(msg.topic, "{{ stinger.topics.lwt | regex_replace('\{[A-Za-z_]+\}', 'example') }}");
         assert_eq!(msg.payload, Bytes::from_static(b"{\"online\":true}"));
         assert_eq!(msg.qos, QoS::AtLeastOnce);
         assert!(msg.retain);
@@ -102,9 +102,9 @@ mod tests {
 
     #[test]
     fn test_offline_message() {
-        let helper = StingerAvailability::new({%for param in utils.get_topic_arguments(config.topics.lwt) %}"example", {% endfor %});
+        let helper = StingerAvailability::new({%for param in utils.get_topic_arguments(stinger.topics.lwt) %}"example", {% endfor %});
         let msg = helper.get_client_offline_message();
-        assert_eq!(msg.topic, "{{ config.topics.lwt | regex_replace('\{[A-Za-z_]+\}', 'example') }}");
+        assert_eq!(msg.topic, "{{ stinger.topics.lwt | regex_replace('\{[A-Za-z_]+\}', 'example') }}");
         assert_eq!(msg.payload, Bytes::from_static(b"{\"online\":false}"));
         assert_eq!(msg.qos, QoS::AtLeastOnce);
         assert!(msg.retain);
@@ -112,7 +112,7 @@ mod tests {
 
     #[test]
     fn test_online_json_path_returns_expected_path() {
-        let helper = StingerAvailability::new({%for param in utils.get_topic_arguments(config.topics.lwt) %}"example", {% endfor %});
+        let helper = StingerAvailability::new({%for param in utils.get_topic_arguments(stinger.topics.lwt) %}"example", {% endfor %});
         let expected = JsonPath::from_str("$.online").unwrap();
         assert_eq!(helper.get_online_json_path(), expected);
     }
@@ -121,7 +121,7 @@ mod tests {
     fn test_online_json_path_matches_online_payload() {
         use jsonpath_rust::JsonPathValue;
 
-        let helper = StingerAvailability::new({%for param in utils.get_topic_arguments(config.topics.lwt) %}"example", {% endfor %});
+        let helper = StingerAvailability::new({%for param in utils.get_topic_arguments(stinger.topics.lwt) %}"example", {% endfor %});
         let path = helper.get_online_json_path();
         let payload: serde_json::Value =
             serde_json::from_slice(&helper.get_client_online_message().payload)
@@ -135,7 +135,7 @@ mod tests {
     fn test_online_json_path_matches_offline_payload() {
         use jsonpath_rust::JsonPathValue;
 
-        let helper = StingerAvailability::new({%for param in utils.get_topic_arguments(config.topics.lwt) %}"example", {% endfor %});
+        let helper = StingerAvailability::new({%for param in utils.get_topic_arguments(stinger.topics.lwt) %}"example", {% endfor %});
         let path = helper.get_online_json_path();
         let payload: serde_json::Value =
             serde_json::from_slice(&helper.get_client_offline_message().payload)

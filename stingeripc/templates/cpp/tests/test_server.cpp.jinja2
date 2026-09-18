@@ -1,4 +1,5 @@
 {% import 'partials/properties.jinja2' as pr -%}
+{%- import 'partials/codec.jinja2' as codec -%}
 /*
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
@@ -71,7 +72,7 @@ protected:
     static void SetUpTestSuite()
     {
         _conn = std::make_shared<stinger::utils::MockConnection>(kClientId);
-        _server = std::make_unique<{{stinger.cpp.server_class_name}}>(_conn, kServiceId{%for topic_param in config.topics.params %}, "test-{{topic_param}}"{%endfor%});
+        _server = std::make_unique<{{stinger.cpp.server_class_name}}>(_conn, kServiceId{%for topic_param in stinger.topics.params %}, "test-{{topic_param}}"{%endfor%});
     }
 
     static void TearDownTestSuite()
@@ -94,7 +95,7 @@ protected:
         params["service_id"] = kServiceId;
         params["interface_name"] = {{stinger.cpp.server_class_name}}::NAME;
         params["client_id"] = _conn->GetClientId();
-        {%-for topic_param in config.topics.params %}
+        {%-for topic_param in stinger.topics.params %}
         params["{{topic_param}}"] = "test-{{topic_param}}";
         {%-endfor%}
         return params;
@@ -206,16 +207,59 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{prop_name | UpperCamelCase}}Upda
     const std::string updateTopic = stinger::utils::format("{{prop.update_topic()}}", topicArgs());
     const std::string valueTopic = stinger::utils::format("{{prop.value_topic()}}", topicArgs());
 
-    {{prop.payload.cpp.class_name}} newValue{ {%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
+{%- if config.properties.version_tracking %}
+    // A request carries the version the client last saw, and the server rejects one that
+    // does not match, so give the property a value first and request against that version.
+    _server->update{{prop.name | UpperCamelCase}}Property({{pr.example_value(prop)}});
+{%- endif %}
+
+    {{prop.payload.cpp.class_name}} newValue{ {%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++", seed=99)}}{%if not loop.last%}, {%endif%}{%endfor%} };
     const std::string payload = serializeToString(newValue);
     const std::vector<std::byte> correlationData{ std::byte{0x01} };
-    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(updateTopic, payload, {%if config.properties.version_tracking%}1{%else%}std::nullopt{%endif%}, correlationData, "test/response");
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(updateTopic, payload, {%if config.properties.version_tracking%}{{ pr.first_property_version() }}{%else%}std::nullopt{%endif%}, correlationData, "test/response");
+    msg.properties.contentType = "{{ codec.content_type(prop.payload) }}";
 
     _conn->ClearPublishedMessages();
     _conn->SimulateIncomingMessage(msg);
 
     EXPECT_EQ(_conn->GetPublishedMessages(valueTopic).size(), 1u);
+
+    // The client that sent the request is waiting on the response topic it named.
+    auto responses = _conn->GetPublishedMessages("test/response");
+    ASSERT_EQ(responses.size(), 1u) << "No update response was published for '{{prop_name}}'";
+    ASSERT_TRUE(responses[0].properties.returnCode.has_value());
+    EXPECT_EQ(*responses[0].properties.returnCode, static_cast<int>(stinger::error::MethodReturnCode::SUCCESS));
+    EXPECT_EQ(responses[0].properties.correlationData, correlationData);
+    EXPECT_EQ(responses[0].payload, serializeToString(newValue)) << "The response should carry the property's new value";
 }
+{%- if config.properties.version_tracking %}
+
+// An update request carrying a version the server has moved past is rejected, and the
+// rejection is reported on the response topic rather than silently dropped.
+TEST_F({{stinger.cpp.server_class_name}}Test, {{prop_name | UpperCamelCase}}UpdateRequestWithStaleVersionIsRejected)
+{
+    const std::string updateTopic = stinger::utils::format("{{prop.update_topic()}}", topicArgs());
+    const std::string valueTopic = stinger::utils::format("{{prop.value_topic()}}", topicArgs());
+
+    _server->update{{prop.name | UpperCamelCase}}Property({{pr.example_value(prop)}});
+
+    {{prop.payload.cpp.class_name}} newValue{ {%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++", seed=99)}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    const std::vector<std::byte> correlationData{ std::byte{0x02} };
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(updateTopic, serializeToString(newValue), {{ pr.first_property_version() }} - 1, correlationData, "test/response");
+    msg.properties.contentType = "{{ codec.content_type(prop.payload) }}";
+
+    _conn->ClearPublishedMessages();
+    _conn->SimulateIncomingMessage(msg);
+
+    EXPECT_EQ(_conn->GetPublishedMessages(valueTopic).size(), 0u) << "A stale update should not change the property";
+
+    auto responses = _conn->GetPublishedMessages("test/response");
+    ASSERT_EQ(responses.size(), 1u) << "A rejected update was not reported to the client";
+    ASSERT_TRUE(responses[0].properties.returnCode.has_value());
+    EXPECT_EQ(*responses[0].properties.returnCode, static_cast<int>(stinger::error::MethodReturnCode::OUT_OF_SYNC));
+    EXPECT_TRUE(responses[0].properties.debugInfo.has_value()) << "A rejection should say why";
+}
+{%- endif %}
 {%endif%}
 {%- endif %}
 {%endfor%}

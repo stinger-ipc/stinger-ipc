@@ -35,6 +35,7 @@ from stingeripc.ipc_signal import IpcSignal
 from stingeripc.components import StingerSpec
 from stingeripc.args import ArgType
 from stingeripc.config import StingerConfig
+from stingeripc.topics import InterfaceTopics
 from jacobsjinjatoo.stringmanip import lower_camel_case, upper_camel_case
 
 
@@ -167,13 +168,13 @@ def _arg_schema(arg: Arg) -> dict:
     return _other_arg_to_schema(arg)
 
 
-def _parameters_for_address(address: str, config: StingerConfig) -> models.channel.Parameters:
+def _parameters_for_address(address: str, topics: InterfaceTopics) -> models.channel.Parameters:
     params: dict = {}
     if "{service_id}" in address:
         params["service_id"] = {"$ref": "#/components/parameters/service_id"}
     if "{client_id}" in address:
         params["client_id"] = {"$ref": "#/components/parameters/client_id"}
-    for topic_param in config.topics.params:
+    for topic_param in topics.params:
         if f"{{{topic_param}}}" in address:
             params[topic_param] = {"$ref": f"#/components/parameters/{topic_param}"}
     return models.channel.Parameters(root=params)
@@ -228,7 +229,7 @@ class AsyncApiSignalHelper:
             address=address,
             description=self.signal.documentation,
             messages=models.message.Messages(root={self.signal.name: message}),
-            parameters=_parameters_for_address(address, self.config),
+            parameters=_parameters_for_address(address, self.signal.topics),
         )
 
     def to_operation(self) -> models.Operation:
@@ -302,7 +303,7 @@ class AsyncApiMethodHelper:
             address=address,
             description=self.method.documentation,
             messages=models.message.Messages(root={self.request_message_key(): message}),
-            parameters=_parameters_for_address(address, self.config),
+            parameters=_parameters_for_address(address, self.method.topics),
         )
 
     def request_to_operation(self) -> models.Operation:
@@ -352,7 +353,7 @@ class AsyncApiMethodHelper:
             address=address,
             description=self.method.documentation,
             messages=models.message.Messages(root={response_key: message}),
-            parameters=_parameters_for_address(address, self.config),
+            parameters=_parameters_for_address(address, self.method.topics),
         )
 
     def response_to_operation(self) -> models.Operation:
@@ -410,7 +411,7 @@ class AsyncApiCommandHelper:
             address=address,
             description=self.command.documentation,
             messages=models.message.Messages(root={self.command.name: message}),
-            parameters=_parameters_for_address(address, self.config),
+            parameters=_parameters_for_address(address, self.command.topics),
         )
 
     def to_operation(self) -> models.Operation:
@@ -614,7 +615,7 @@ class AsyncApiPropertyHelper:
             address=address,
             description=self.prop.documentation,
             messages=models.message.Messages(root={self.prop.name: self.get_value_message()}),
-            parameters=_parameters_for_address(address, self.config),
+            parameters=_parameters_for_address(address, self.prop.topics),
             tags=[models.base.Tag(name="property"), models.base.Tag(name="value")],
         )
 
@@ -649,7 +650,7 @@ class AsyncApiPropertyHelper:
             description=self.prop.documentation,
             address=address,
             messages=models.message.Messages(root={self.prop.name: self.get_request_message()}),
-            parameters=_parameters_for_address(address, self.config),
+            parameters=_parameters_for_address(address, self.prop.topics),
         )
 
     def update_request_to_operation(self) -> models.Operation:
@@ -688,7 +689,7 @@ class AsyncApiPropertyHelper:
             address=address,
             description=self.prop.documentation,
             messages=models.message.Messages(root={self.prop.name: self.get_response_message()}),
-            parameters=_parameters_for_address(address, self.config),
+            parameters=_parameters_for_address(address, self.prop.topics),
         )
 
     def update_response_to_operation(self) -> models.Operation:
@@ -723,7 +724,7 @@ class AsyncApiPropertyHelper:
         )
 
 
-def _interface_info_schema(config: StingerConfig) -> Schema:
+def _interface_info_schema(topics: InterfaceTopics) -> Schema:
     properties: dict[str, Any] = {
         "interface_name": {"type": "string"},
         "title": {"type": "string"},
@@ -743,7 +744,7 @@ def _interface_info_schema(config: StingerConfig) -> Schema:
         },
     }
     required = ["interface_name", "title", "version", "instance", "connection_topic", "timestamp"]
-    for topic_param in config.topics.params:
+    for topic_param in topics.params:
         properties[topic_param] = {"type": "string"}
         required.append(topic_param)
     return Schema(type="object", properties=properties, required=required)
@@ -758,7 +759,7 @@ class AsyncApiInterfaceInfoHelper:
         return "interface_info"
 
     def get_payload_schema(self) -> Schema:
-        return _interface_info_schema(self.config)
+        return _interface_info_schema(self.spec.topics)
 
     def get_message(self) -> models.Message:
         return models.Message(
@@ -777,7 +778,7 @@ class AsyncApiInterfaceInfoHelper:
             address=address,
             description=f"Advertisement/discovery channel for the '{self.spec.name}' interface.",
             messages=models.message.Messages(root={self.channel_name(): message}),
-            parameters=_parameters_for_address(address, self.config),
+            parameters=_parameters_for_address(address, self.spec.topics),
         )
 
     def to_operation(self) -> models.Operation:
@@ -865,7 +866,7 @@ def stinger_to_asyncapi(spec: StingerSpec, config: StingerConfig | None = None) 
         "service_id": models.Parameter(description="The ID of the service/instance"),
         "client_id": models.Parameter(description="The MQTT Client ID"),
     }
-    for topic_param in config_obj.topics.params:
+    for topic_param in spec.topics.params:
         if topic_param not in component_parameters:
             component_parameters[topic_param] = models.Parameter(description=f"Topic parameter '{topic_param}'")
 

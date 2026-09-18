@@ -1,4 +1,6 @@
 {%- set comparable_types = ['PRIMITIVE', 'ENUM', 'DURATION', 'BINARY'] -%}
+{%- import 'partials/properties.jinja2' as pr -%}
+{%- import 'partials/codec.jinja2' as codec -%}
 /*
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
@@ -93,10 +95,10 @@ int main(int argc, char** argv) {
         std::cout << "[" << level << "] " << msg << std::endl;
     });
 
-    auto server = std::make_shared<{{stinger.cpp.server_class_name}}>(conn, "cpp-server-integration-test:1"{% for topic_param in config.topics.params %}, "example_{{topic_param}}"{% endfor %});
+    auto server = std::make_shared<{{stinger.cpp.server_class_name}}>(conn, "cpp-server-integration-test:1"{% for topic_param in stinger.topics.params %}, "example_{{topic_param}}"{% endfor %});
 
     {%for prop_name, prop in stinger.properties.items()%}
-    server->update{{prop.name | UpperCamelCase}}Property({%-for arg in prop.arg_list %}{{arg.get_random_example_value('c++')}}{%if not loop.last%}, {%endif%}{%endfor%});
+    server->update{{prop.name | UpperCamelCase}}Property({{ pr.example_value(prop) }});
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
@@ -143,6 +145,14 @@ int main(int argc, char** argv) {
     {%for prop_name, prop in stinger.properties_rw.items()%}
     // Property: {{prop_name}} - registered after the initial value above is set, so
     // this only fires for a genuine write request from client_integration_test.
+{%- if prop.payload.is_protobuf %}
+    server->register{{prop_name | UpperCamelCase}}PropertyCallback([&tracker](const {{prop.payload.cpp.class_name}}& value)
+    {
+        auto expected = {{ pr.example_value(prop, seed=99) }};
+        bool matches = (value.SerializeAsString() == expected.SerializeAsString());
+        tracker.Check("property:{{prop_name}}:write", matches, matches ? "matches expected value" : "does not match expected value");
+    });
+{%- else %}
     server->register{{prop_name | UpperCamelCase}}PropertyCallback([&tracker]({%for arg in prop.arg_list%}{{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
     {
         {%- set comparable_args = prop.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list -%}
@@ -157,6 +167,7 @@ int main(int argc, char** argv) {
         tracker.Check("property:{{prop_name}}:write", true, "received update (value not independently verifiable)");
         {%endif%}
     });
+{%- endif %}
     {%endfor%}
 
     std::cout << "Listening for up to " << maxLifetime << "s, or until all " << expectedChecks << " server-verifiable check(s) come in..." << std::endl;
@@ -168,7 +179,7 @@ int main(int argc, char** argv) {
         }
         {%for sig_name, sig in stinger.signals.items()%}
         {
-            auto future = server->emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.get_random_example_value('c++')}}{%if not loop.last%}, {%endif%}{%endfor%});
+            auto future = server->emit{{sig_name | UpperCamelCase}}Signal{%if sig.payload.is_protobuf%}Payload({{ codec.example_message(sig.payload) }}){%else%}({%for arg in sig.arg_list%}{{arg.get_random_example_value('c++')}}{%if not loop.last%}, {%endif%}{%endfor%}){%endif%};
             future.wait();
         }
         {%endfor%}

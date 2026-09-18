@@ -63,7 +63,7 @@ class IpcCommand(InterfaceComponent):
         The topic is derived from the configured ``commands`` topic template,
         with the interface name and command name filled in.
         """
-        template_topic = self._config.topics.commands
+        template_topic = self.topics.commands
         template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, command_name=self.name, **kwargs)
         return template_topic
 

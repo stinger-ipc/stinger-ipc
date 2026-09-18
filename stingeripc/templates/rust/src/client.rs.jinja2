@@ -1,4 +1,4 @@
-{%- from "partials/codec.jinja2" import decode_or, empty_payload_bytes, payload_params, build_payload, example_payload_local, property_wrap, property_unwrap, property_example -%}
+{%- from "partials/codec.jinja2" import expect_content_type, decode_or, empty_payload_bytes, payload_params, build_payload, example_payload_local, property_wrap, property_unwrap, property_example -%}
 //! Client module for {{stinger.name}} IPC
 //!
 //! This module is only available when the "client" feature is enabled.
@@ -56,6 +56,15 @@ struct {{stinger.name | UpperCamelCase }}SubscriptionIds {
     {%if stinger.methods | length > 0 %}
     any_method_response: u32,
     {%endif%}
+    {%- for method_name, method in stinger.methods.items() %}
+    /// The '{{method_name}}' response topic.  Responses all arrive on one shared
+    /// subscription, so the topic is what says which method a response belongs to.
+    {{method_name | snake_case}}_response_topic: String,
+    {%- endfor %}
+    {%- for prop_name, prop in stinger.properties.items() %}
+    /// The '{{prop_name}}' update-response topic, for the same reason.
+    {{prop_name | snake_case}}_response_topic: String,
+    {%- endfor %}
     {%for sig_name, sig in stinger.signals.items()-%}
     /// Set when the '{{sig_name}}' signal is first subscribed to, which happens when the
     /// first receiver is handed out rather than at construction;
@@ -148,7 +157,7 @@ pub struct {{stinger.rust.client_struct_name}}<C: Mqtt5PubSub> {
 
     /// Instance ID of the server
     service_instance_id: String,
-    {% for topic_param in config.topics.params %}
+    {% for topic_param in stinger.topics.params %}
     /// The config indicates that topic templates may include a `{{topic_param}}` parameter, so we store it so we can create topics in code.
     topic_param_{{topic_param | snake_case}}: String,
     {% endfor %}
@@ -174,7 +183,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
             ("interface_name".to_string(), "{{stinger.name}}".to_string()),
             ("service_id".to_string(), discovery_info.interface_info.instance.clone()),
             ("client_id".to_string(), client_id.as_str().to_string()),
-            {%-for topic_param in config.topics.params%}
+            {%-for topic_param in stinger.topics.params%}
             ("{{topic_param}}".to_string(), discovery_info.interface_info.{{topic_param | snake_case}}.as_str().to_string()),
             {%-endfor%}
         ]);
@@ -219,18 +228,24 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         {%endif%}
         // Create structure for subscription ids.
         let sub_ids = {{stinger.name | UpperCamelCase }}SubscriptionIds {
-            {%if stinger.methods|length > 0 -%}
+            {%- if stinger.methods|length > 0 %}
             any_method_response: subscription_id_any_method_response,
-            {%endif%}
-            {%-for sig_name, sig in stinger.signals.items()-%}
+            {%- endif %}
+            {%- for method_name, method in stinger.methods.items() %}
+            {{method_name | snake_case}}_response_topic: strfmt("{{method.response_topic()}}", &topic_map).unwrap(),
+            {%- endfor %}
+            {%- for prop_name, prop in stinger.properties.items() %}
+            {{prop_name | snake_case}}_response_topic: strfmt("{{prop.response_topic()}}", &topic_map).unwrap(),
+            {%- endfor %}
+            {%- for sig_name, sig in stinger.signals.items() %}
             {{sig_name | snake_case}}_signal: Arc::new(AtomicU32::new(UNSUBSCRIBED_SUBSCRIPTION_ID)),
-            {%endfor%}
-            {%-for prop_name, prop in stinger.properties.items()-%}
+            {%- endfor %}
+            {%- for prop_name, prop in stinger.properties.items() %}
             {{prop_name | snake_case}}_property_value: Arc::new(AtomicU32::new(UNSUBSCRIBED_SUBSCRIPTION_ID)),
-            {%endfor%}
-            {%if stinger.properties | length > 0 %}
+            {%- endfor %}
+            {%- if stinger.properties | length > 0 %}
             any_property_update_response: subscription_id_any_property_update_response,
-            {%endif%}
+            {%- endif %}
         };
 
         {%if stinger.signals | length > 0 %}// Create structure for the tx side of broadcast channels for signals.
@@ -253,7 +268,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
             {%if stinger.signals | length > 0 %}signal_channels,{%endif%}
             client_id,
             service_instance_id: discovery_info.interface_info.instance,
-            {%- for topic_param in config.topics.params %}
+            {%- for topic_param in stinger.topics.params %}
             topic_param_{{topic_param | snake_case}}: discovery_info.interface_info.{{topic_param | snake_case}},
             {%- endfor %}
         }
@@ -323,7 +338,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
             ("interface_name".to_string(), "{{stinger.name}}".to_string()),
             ("service_id".to_string(), self.service_instance_id.clone()),
             ("client_id".to_string(), self.client_id.clone()),
-            {%-for topic_param in config.topics.params%}
+            {%-for topic_param in stinger.topics.params%}
             ("{{topic_param}}".to_string(), self.topic_param_{{topic_param | snake_case}}.clone()),
             {%-endfor%}
         ])
@@ -748,6 +763,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                         {%if stinger.methods|length > 0%}
                         _i if _i == sub_ids.any_method_response => {
                             debug!("Received method response message");
+                            {%-for method_name, method in stinger.methods.items()%}
+                            if msg.topic == sub_ids.{{method_name | snake_case}}_response_topic {
+                                {{ expect_content_type(method.response_payload, "msg", method_name ~ " method response", "continue") | indent(32) }}
+                            }
+                            {%-endfor%}
                             if opt_corr_id.is_some() {
                                 let opt_sender = opt_corr_id
                                     .and_then(|uuid| {
@@ -768,6 +788,11 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                         {%if stinger.properties|length > 0%}
                         _i if _i == sub_ids.any_property_update_response => {
                             debug!("Received property update response message");
+                            {%-for prop_name, prop in stinger.properties.items()%}
+                            if msg.topic == sub_ids.{{prop_name | snake_case}}_response_topic {
+                                {{ expect_content_type(prop.payload, "msg", prop_name ~ " property update response", "continue") | indent(32) }}
+                            }
+                            {%-endfor%}
                             if opt_corr_id.is_some() {
                                 // Find the oneshot::sender channel for the provided correlation id.
                                 let opt_sender = opt_corr_id
@@ -794,6 +819,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                             debug!("Received {{signal_name}} signal message");
                             // Find broadcast channel.
                             let chan = sig_chans.{{signal_name | snake_case}}_sender.clone();
+                            {{ expect_content_type(signal.payload, "msg", signal_name ~ " signal", "continue") | indent(28) }}
                             {{ decode_or(signal.payload, "msg", "payload", signal_name, "continue") | indent(24) }}
                             let _send_result = chan.send(payload);
                         },
@@ -801,6 +827,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                         {%-for prop_name, prop in stinger.properties.items()%}
                         _i if _i == sub_ids.{{prop_name | snake_case}}_property_value.load(Ordering::Relaxed) => {
                             debug!("Received '{{prop_name}}' property value");
+                            {{ expect_content_type(prop.payload, "msg", prop_name ~ " property value", "continue") | indent(28) }}
                             let props_copy = props.clone();
                             tokio::spawn(async move {
                                 // JSON deserialize into {{prop.payload.rust.class_name}} struct
@@ -865,7 +892,7 @@ mod tests {
             ("interface_name".to_string(), "{{stinger.name}}".to_string()),
             ("service_id".to_string(), "singleton".to_string()),
             ("client_id".to_string(), "server".to_string()),
-            {%-for topic_param in config.topics.params%}
+            {%-for topic_param in stinger.topics.params%}
             ("{{topic_param}}".to_string(), "x_{{topic_param}}_y".to_string()),
             {%-endfor%}
         ]);
@@ -877,7 +904,7 @@ mod tests {
             .version("{{stinger.version}}".to_string())
             .instance(server_topic_param_map.get("service_id").unwrap().to_string())
             .connection_topic(topic.clone())
-            {%-for topic_param in config.topics.params%}
+            {%-for topic_param in stinger.topics.params%}
             .{{topic_param}}(server_topic_param_map.get("{{topic_param}}").unwrap().to_string())
             {%-endfor%}
             .build().unwrap();
@@ -947,7 +974,7 @@ mod tests {
                     assert!(sent_message.response_topic.is_none(), "A command has no response, so it must not carry a response topic");
                     assert!(sent_message.correlation_data.is_none(), "A command has no response, so it must not carry correlation data");
                     assert_eq!(sent_message.content_type.as_deref(), Some(<{{cmd.payload.rust.struct_name}} as WirePayload>::content_type()));
-                    {%for topic_param in config.topics.params%}
+                    {%for topic_param in stinger.topics.params%}
                     {%if '{' + topic_param + '}' in cmd.topic() %}
                     assert!(sent_message.topic.contains(server_topic_param_map.get("{{topic_param}}").unwrap()), "Expected the '{{cmd_name}}' command topic to contain the topic parameter '{{topic_param}}'");
                     {%endif%}
@@ -1002,7 +1029,7 @@ mod tests {
             let response_topic = sent_message.response_topic.as_ref().unwrap();
             assert!(!response_topic.contains('+'), "In the property update message for '{{prop_name}}', the response_topic should not contain '+'");
             assert!(!response_topic.contains('#'), "In the property update message for '{{prop_name}}', the response_topic should not contain '#'");
-            {%for topic_param in config.topics.params%}
+            {%for topic_param in stinger.topics.params%}
             {%if '{' + topic_param + '}' in prop.update_topic() %}
             assert!(sent_message.topic.contains(server_topic_param_map.get("{{topic_param}}").unwrap()), "Expected the property update for '{{prop_name}}' to contain the topic parameter '{{topic_param}}'");
             {%endif%}

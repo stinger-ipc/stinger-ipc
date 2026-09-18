@@ -60,7 +60,7 @@ implementation follows from that:
 
 - Modeled by `IpcCommand` in [ipc_command.py](stingeripc/ipc_command.py), which mirrors
   `IpcMethod` minus the return value. Published on the `commands` topic template
-  (`config.topics.commands`, default `{interface_name}/{service_id}/command/{command_name}`).
+  (`configuration.topics.commands` in the .stinger.yaml, default `{interface_name}/{service_id}/command/{command_name}`).
 - The **server** may consume a command from **any number of places, all optional**, the
   way a *client* consumes signals. A command that arrives with nothing consuming it is
   logged and dropped. Each language uses its own idiom for this, mirroring however that

@@ -55,7 +55,7 @@ class IpcMethod(InterfaceComponent):
         The topic is derived from the configured ``method_requests`` topic
         template, with the interface name and method name filled in.
         """
-        template_topic = self._config.topics.method_requests
+        template_topic = self.topics.method_requests
         template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, method_name=self.name, **kwargs)
         return template_topic
 
@@ -65,7 +65,7 @@ class IpcMethod(InterfaceComponent):
         The topic is derived from the configured ``method_responses`` topic
         template, with the interface name and method name filled in.
         """
-        template_topic = self._config.topics.method_responses
+        template_topic = self.topics.method_responses
         template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, method_name=self.name, **kwargs)
         return template_topic
 

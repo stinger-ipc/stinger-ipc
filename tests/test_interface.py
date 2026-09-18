@@ -10,7 +10,7 @@ class TestSpecCreateManually(unittest.TestCase):
             "name": "test_interface",
             "version": "1.2.3",
         }
-        self.spec = StingerSpec(self.interface, StingerConfig())
+        self.spec = StingerSpec({"interface": self.interface}, StingerConfig())
         signal = IpcSignal("mySignal", self.spec)
         self.spec.add_signal(signal)
 

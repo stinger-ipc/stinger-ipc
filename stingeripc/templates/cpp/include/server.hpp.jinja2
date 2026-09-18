@@ -50,7 +50,7 @@ public:
     static constexpr const char NAME[] = "{{stinger.name}}";
     static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
 
-    {{stinger.cpp.server_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId{%for topic_param in config.topics.params %}, const std::string& {{topic_param | lowerCamelCase}}{%endfor%});
+    {{stinger.cpp.server_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const std::string& instanceId{%for topic_param in stinger.topics.params %}, const std::string& {{topic_param | lowerCamelCase}}{%endfor%});
 
     virtual ~{{stinger.cpp.server_class_name}}();
 
@@ -85,14 +85,14 @@ public:
 private: 
     std::shared_ptr<stinger::utils::IConnection> _broker;
     std::string _instanceId;
-    {%for topic_param in config.topics.params %}
+    {%for topic_param in stinger.topics.params %}
     std::string _{{topic_param | lowerCamelCase}}TopicParam;
     {%endfor%}
     stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
     void _receiveMessage(const stinger::mqtt::Message& msg);
 
     {%for method_name, method in stinger.methods.items()%}
-    void _call{{method_name | UpperCamelCase}}Handler(const std::string& topic, const std::string& payload, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
+    void _call{{method_name | UpperCamelCase}}Handler(const std::string& topic, const std::string& payload, const std::optional<std::string>& optContentType, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
     std::function<{{method.cpp.return_value_class}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{method_name | camelCase}}Handler;
     int _{{method_name | camelCase}}MethodSubscriptionId;
     {%endfor%}

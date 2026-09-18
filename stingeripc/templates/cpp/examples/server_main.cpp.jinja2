@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
         std::cout << "[" << level << "] " << msg << std::endl;
     });
 
-    auto server = std::make_shared<{{stinger.cpp.server_class_name}}>(conn, "cpp-server-demo:1"{% for topic_param in config.topics.params %}, "example_{{topic_param}}"{% endfor %});
+    auto server = std::make_shared<{{stinger.cpp.server_class_name}}>(conn, "cpp-server-demo:1"{% for topic_param in stinger.topics.params %}, "example_{{topic_param}}"{% endfor %});
 
     {%for prop_name, prop in stinger.properties.items()%}
     std::cout << "Setting initial value for property '{{prop_name}}'.\n";

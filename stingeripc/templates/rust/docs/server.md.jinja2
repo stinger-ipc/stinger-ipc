@@ -57,7 +57,7 @@ let mut server = {{stinger.rust.server_struct_name}}::new(
 {%- if stinger.properties|length > 0 %}
     initial_property_values,
 {%- endif %}
-{%- for topic_param in config.topics.params %}
+{%- for topic_param in stinger.topics.params %}
     {{topic_param|snake_case}},   // topic parameter
 {%- endfor %}
 ).await;

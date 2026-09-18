@@ -43,3 +43,6 @@ generator_version = "{{generator.version}}"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+# Only the unit tests under tests/.  The integration scripts in examples/ match
+# pytest's `*_test.py` pattern but are standalone programs that need a live broker.
+testpaths = ["tests"]

@@ -41,10 +41,61 @@
     immediately-invoked lambda; a message with nothing to set (`google.protobuf.Empty`,
     say) is simply default-constructed.
 #}
-{%- macro example_message(payload) -%}
+{%- macro example_message(payload, seed=2) -%}
 {%- if payload.protobuf.example_fields -%}
-[] { {{ payload.cpp.class_name }} example; {% for field in payload.protobuf.example_fields %}example.set_{{ field.name|lower }}({{ field.get_random_example_value(lang="c++") }}); {% endfor %}return example; }()
+[] { {{ payload.cpp.class_name }} example; {% for field in payload.protobuf.example_fields %}example.set_{{ field.name|lower }}({{ field.get_random_example_value(lang="c++", seed=seed) }}); {% endfor %}return example; }()
 {%- else -%}
 {{ payload.cpp.class_name }}{}
 {%- endif -%}
+{%- endmacro -%}
+
+{#
+    Stamps the content type of `payload` onto an already-built message named `msg`.
+
+    The `stinger::mqtt::Message` factories default every message to
+    "application/json", which is wrong for a protobuf payload and silently so: a
+    peer that checks the content type drops the message and reports only that it
+    never arrived.  So the generated code says what it is publishing at every
+    publish site rather than inheriting a default.
+#}
+{%- macro stamp_content_type(payload, msg="msg") -%}
+{{ msg }}.properties.contentType = "{{ payload.content_type }}";
+{%- endmacro -%}
+
+{#
+    Drops a received message whose content type is missing or disagrees with `payload`.
+
+    The content type has to be present and has to match, the same rule the Python and
+    Rust receivers apply.  The one exception is a protobuf payload under
+    `[protobuf] mime_type = false`, which says this interface's protobuf messages are
+    not labelled at all -- `enforce_content_type` carries that decision for every
+    language, so this renders nothing rather than a check that could never pass.
+
+    `bail` is the statement that abandons the message at this site.
+#}
+{%- macro expect_content_type(payload, label, msg_expr="msg", bail="return") -%}
+{%- if payload.enforce_content_type -%}
+if (!{{ msg_expr }}.properties.contentType.has_value() || {{ msg_expr }}.properties.contentType.value() != "{{ payload.content_type }}")
+    {
+        _broker->Log(LOG_WARNING, "Received '{{ label }}' with content type '%s'; expected '{{ payload.content_type }}'.  Dropping message.",
+                     {{ msg_expr }}.properties.contentType.value_or("(none)").c_str());
+        {{ bail }};
+    }
+{%- else -%}
+// `[protobuf] mime_type = false`: a '{{ label }}' message carries no content type, so
+    // the body is assumed to be the declared protobuf message.
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    The body of an error response to a request carrying `payload`.
+
+    An error carries no data -- the return code and debug info travel in MQTT user
+    properties -- but the message still has to be labelled with the content type the
+    caller expects, or the caller's own check rejects it.  So the body is an empty JSON
+    object for a JSON response and empty bytes for a protobuf one, which a protobuf
+    consumer parses as a default-constructed message rather than choking on "{}".
+#}
+{%- macro error_body(payload) -%}
+{%- if payload.is_protobuf -%}""{%- else -%}"{}"{%- endif -%}
 {%- endmacro -%}

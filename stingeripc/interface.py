@@ -10,9 +10,6 @@ VERSIONS_SUPPORTED = ["0.3.0"]
 
 class StingerInterface(StingerSpec):
 
-    def __init__(self, stinger: Dict[str, Any], config: StingerConfig):
-        super().__init__(stinger["interface"], config)
-
     @classmethod
     def from_yaml(cls, yaml_input: Union[str, IO], config: StingerConfig) -> StingerSpec:
         yaml_obj = parse_yaml_file(yaml_input) if isinstance(yaml_input, (str, Path)) else parse_yaml_io(yaml_input)

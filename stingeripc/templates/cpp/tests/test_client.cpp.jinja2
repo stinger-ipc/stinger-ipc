@@ -72,7 +72,7 @@ protected:
 
         InstanceInfo info;
         info.serviceId = kServiceId;
-        {%-for topic_param in config.topics.params %}
+        {%-for topic_param in stinger.topics.params %}
         info.{{topic_param|lowerCamelCase}} = "test-{{topic_param}}";
         {%-endfor%}
 
@@ -87,7 +87,7 @@ protected:
         params["client_id"] = _conn->GetClientId();
         params["service_id"] = kServiceId;
         params["interface_name"] = {{stinger.cpp.client_class_name}}::NAME;
-        {%-for topic_param in config.topics.params %}
+        {%-for topic_param in stinger.topics.params %}
         params["{{topic_param}}"] = "test-{{topic_param}}";
         {%-endfor%}
         return params;

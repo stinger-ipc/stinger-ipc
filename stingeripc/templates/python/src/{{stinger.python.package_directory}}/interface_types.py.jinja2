@@ -49,7 +49,7 @@ class {{stinger.name|UpperCamelCase}}InterfaceInfo(BaseModel):
     instance: str
     connection_topic: str
     timestamp: str
-    {%-for topic_param in config.topics.params%}
+    {%-for topic_param in stinger.topics.params%}
     {{topic_param|snake_case}}: str
     {%-endfor%}
 

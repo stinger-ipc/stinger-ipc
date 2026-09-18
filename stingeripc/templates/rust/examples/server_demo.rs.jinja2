@@ -95,7 +95,7 @@ async fn main() {
 
     // Set up an MQTT client connection. 
     #[cfg(feature = "lwt")]
-    let lwt = StingerAvailability::new({%for param in utils.get_topic_arguments(config.topics.lwt) %}"example", {% endfor %});
+    let lwt = StingerAvailability::new({%for param in utils.get_topic_arguments(stinger.topics.lwt) %}"example", {% endfor %});
     let mut mqttier_options_builder = MqttierOptionsBuilder::default();
     mqttier_options_builder
         .connection(Connection::Tcp(TcpConnection::from_env_with_defaults("localhost", 1883)))
@@ -126,11 +126,11 @@ async fn main() {
 
     // Create the server object.
     let mut server = {{stinger.rust.server_struct_name}}::new(connection, handlers.clone(), "rust-server-demo:1".to_string(),{%if stinger.properties|length > 0 %} initial_property_values, {%endif%}
-            {%- for topic_param in config.topics.params %} "example".to_string(), {% endfor %}).await;
+            {%- for topic_param in stinger.topics.params %} "example".to_string(), {% endfor %}).await;
     {%else%}
     // Create the server object.
     let mut server = {{stinger.rust.server_struct_name}}::new(connection, "rust-server-demo:1".to_string(),{%if stinger.properties|length > 0 %} initial_property_values, {%endif%}
-            {%- for topic_param in config.topics.params %} "example".to_string(), {% endfor %}).await;
+            {%- for topic_param in stinger.topics.params %} "example".to_string(), {% endfor %}).await;
     {%endif%}
 
     {%if stinger.commands|length > 0 %}

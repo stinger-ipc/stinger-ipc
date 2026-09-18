@@ -45,7 +45,7 @@ class IpcProperty(InterfaceComponent):
         The topic is derived from the configured ``property_values`` topic
         template, with the interface name and property name filled in.
         """
-        template_topic = self._config.topics.property_values
+        template_topic = self.topics.property_values
         template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, property_name=self.name, **kwargs)
         return template_topic
 
@@ -55,7 +55,7 @@ class IpcProperty(InterfaceComponent):
         The topic is derived from the configured ``property_updates`` topic
         template, with the interface name and property name filled in.
         """
-        template_topic = self._config.topics.property_updates
+        template_topic = self.topics.property_updates
         template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, property_name=self.name, **kwargs)
         return template_topic
 
@@ -65,7 +65,7 @@ class IpcProperty(InterfaceComponent):
         The topic is derived from the configured ``property_update_responses``
         topic template, with the interface name and property name filled in.
         """
-        template_topic = self._config.topics.property_update_responses
+        template_topic = self.topics.property_update_responses
         template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, property_name=self.name, **kwargs)
         return template_topic
 

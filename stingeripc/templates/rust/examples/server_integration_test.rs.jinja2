@@ -169,7 +169,7 @@ async fn main() {
     let tracker = Arc::new(ResultsTracker::new());
 
     #[cfg(feature = "lwt")]
-    let lwt = StingerAvailability::new({%for param in utils.get_topic_arguments(config.topics.lwt) %}"example", {% endfor %});
+    let lwt = StingerAvailability::new({%for param in utils.get_topic_arguments(stinger.topics.lwt) %}"example", {% endfor %});
     let mut mqttier_options_builder = MqttierOptionsBuilder::default();
     mqttier_options_builder
         .connection(Connection::Tcp(TcpConnection::from_env_with_defaults("localhost", 1883)))
@@ -198,10 +198,10 @@ async fn main() {
     let handlers: Arc<Mutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers<MqttierClient>>>> = Arc::new(Mutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl::new(tracker.clone()))));
 
     let mut server = {{stinger.rust.server_struct_name}}::new(connection, handlers.clone(), "rust-server-integration-test:1".to_string(),{%if stinger.properties|length > 0 %} initial_property_values, {%endif%}
-            {%- for topic_param in config.topics.params %} "example".to_string(), {% endfor %}).await;
+            {%- for topic_param in stinger.topics.params %} "example".to_string(), {% endfor %}).await;
     {%else%}
     let mut server = {{stinger.rust.server_struct_name}}::new(connection, "rust-server-integration-test:1".to_string(),{%if stinger.properties|length > 0 %} initial_property_values, {%endif%}
-            {%- for topic_param in config.topics.params %} "example".to_string(), {% endfor %}).await;
+            {%- for topic_param in stinger.topics.params %} "example".to_string(), {% endfor %}).await;
     {%endif%}
 
     {%for cmd_name, cmd in stinger.commands.items()%}
@@ -250,7 +250,7 @@ async fn main() {
             match rx.changed().await {
                 Ok(_) => {
                     let value = rx.borrow_and_update();
-                    {%if prop.value.arg_type.name in comparable_types%}
+                    {%if prop.payload.is_protobuf or prop.value.arg_type.name in comparable_types%}
                     let expected = {{ property_example_external(prop, seed=99) }};
                     let matches = *value == expected;
                     tracker.check("property:{{prop_name}}:write", matches, &format!("expected={:?} actual={:?}", expected, *value));

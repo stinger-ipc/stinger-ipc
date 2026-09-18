@@ -52,8 +52,34 @@
     payload's example is a populated message: see `example_message` in the codec
     partial for why it cannot be left at its defaults.
 #}
-{%macro example_value(prop)-%}
-{%if prop.payload.is_protobuf%}{{codec.example_message(prop.payload)}}{%else%}{%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}
+{%macro example_value(prop, seed=2)-%}
+{%if prop.payload.is_protobuf%}{{codec.example_message(prop.payload, seed=seed)}}{%else%}{%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++", seed=seed)}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}
+{%-endmacro%}
+
+{#
+    True when a property's value can be compared against an expected one.  A
+    protobuf message compares with `==` like a primitive does; a JSON property is
+    comparable when its declared value is one of `types`.
+#}
+{%macro value_is_comparable(prop, types)-%}
+{%if prop.payload.is_protobuf%}1{%elif prop.arg_list | selectattr('arg_type.name', 'in', types) | list | length > 0%}1{%endif%}
+{%-endmacro%}
+
+{#
+    The single parameter a property callback lambda takes when the generated test
+    wants to name it `value` rather than after the property's declared argument.
+#}
+{%macro callback_value_type(prop)-%}
+{%if prop.payload.is_protobuf%}const {{prop.payload.cpp.class_name}}&{%else%}{{prop.cpp.temp_type}}{%endif%}
+{%-endmacro%}
+
+{#
+    The version a property is at once its first value has been set.  A server starts a
+    property at -1 and increments on each published value, so a generated test that has
+    set one value requests against 0; there is no public getter for the version.
+#}
+{%macro first_property_version()-%}
+0
 {%-endmacro%}
 
 {%macro public_declarations(prop_name, prop, client, config)%}
@@ -116,6 +142,11 @@ mutable std::mutex _{{prop_name | lowerCamelCase}}PropertySubscriptionMutex;
 {% endif %}
 // MQTT Subscription ID for `{{prop_name}}` property {%if client %}updates{%else%}update requests{%endif%}.
 int _{{prop_name | lowerCamelCase}}PropertySubscriptionId = -1;
+{% if client %}
+// This property's own update-response topic.  Responses all arrive on one wildcard
+// subscription, so the topic is what says which property a response belongs to.
+std::string _{{prop_name | lowerCamelCase}}PropertyResponseTopic;
+{% endif %}
 {% if client %}
 // Signalled when a value for the `{{prop_name}}` property arrives, so that a getter
 // waiting on the first value can proceed.  Guarded by `_{{prop_name | lowerCamelCase}}PropertyMutex`.

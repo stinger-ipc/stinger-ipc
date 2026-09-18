@@ -78,7 +78,7 @@ class {{stinger.python.client_class_name}}:
         self._topic_template_kwargs = {
             "client_id": self._conn.client_id,
             "service_id": instance_info.instance_id,
-            {%- for topic_param in config.topics.params %}
+            {%- for topic_param in stinger.topics.params %}
             "{{topic_param|snake_case}}": instance_info.info.{{topic_param|snake_case}},
             {%-endfor%}
         }
@@ -98,9 +98,10 @@ class {{stinger.python.client_class_name}}:
         self._changed_value_callbacks_for_{{prop_name|snake_case}}: List[{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType] = []
         
         {%endfor-%}
-        {%-for sig_name in stinger.signals.keys()-%}
+        {%-for sig_name, sig in stinger.signals.items()-%}
         # Signal: {{sig_name}}
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}: List[{{sig_name | UpperCamelCase}}SignalCallbackType] = []
+        self._signal_payload_callbacks_for_{{sig_name | snake_case }}: List[Callable[[{{sig.payload.python.class_name}}], None]] = []
 
         {%endfor-%}
 
@@ -111,6 +112,18 @@ class {{stinger.python.client_class_name}}:
         self._logger.debug("Subscribing to method response topic %s", self._all_methods_response_topic)
         self._conn.subscribe(self._all_methods_response_topic, self._receive_any_method_response_message)
         {%endif%}
+        # The exact response topic of each property, so a response arriving on the wildcard
+        # subscription below can be checked against the content type that property uses.
+        # A property whose content type is not enforced is simply absent.  Always defined,
+        # because `_receive_any_property_response_message` reads it whether or not this
+        # interface has a property to subscribe for.
+        self._property_response_content_types = {
+            {%- for prop_name, prop_spec in stinger.properties.items() %}
+            {%- if prop_spec.payload.enforce_content_type %}
+            "{{prop_spec.response_topic()}}".format(**self._topic_template_kwargs): "{{ codec.content_type(prop_spec.payload) }}",
+            {%- endif %}
+            {%- endfor %}
+        } # type: Dict[str, str]
         {%if stinger.properties.values()|rejectattr('read_only')|list|length > 0%}
         self._all_properties_response_topic = "{{stinger.all_properties_response_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
         self._logger.debug("Subscribing to property response topic %s", self._all_properties_response_topic)
@@ -244,13 +257,15 @@ class {{stinger.python.client_class_name}}:
     
     {%for sig_name, sig in stinger.signals.items()%}
     def _receive_{{sig_name|snake_case}}_signal_message(self, message: Message):
-        {% if (not sig.payload.is_protobuf) or config.protobuf.mime_type is not false %}
+        {% if sig.payload.enforce_content_type %}
         if message.content_type is None or message.content_type != '{{ codec.content_type(sig.payload) }}':
             self._logger.warning("Received '{{sig_name}}' signal with unexpected content type: %s", message.content_type)
             return
         {% endif %}
 
         model = {{ codec.decode(sig.payload, "message.payload") }}
+        for payload_handler in self._signal_payload_callbacks_for_{{sig_name | snake_case}}:
+            payload_handler(model)
         {% if sig.payload.is_protobuf -%}
         # A protobuf signal has no named arguments to spread, so both callback lists are
         # called the same way: with the message itself.
@@ -271,10 +286,18 @@ class {{stinger.python.client_class_name}}:
         self._subscribe_to_{{sig_name | snake_case}}_signal()
         return handler
 
-    def _subscribe_to_{{sig_name | snake_case}}_signal(self):
-        """ Subscribes to the '{{sig_name}}' signal topic once, when its first handler is registered.
+    def receive_{{sig_name | snake_case }}_payload(self, handler: Callable[[{{sig.payload.python.class_name}}], None]):
+        """ {{ docstrings.google_docstring(sig.documentation, 8, extra="Equivalent to `receive_" ~ (sig_name|snake_case) ~ "()`, but the handler receives the whole `" ~ sig.payload.python.class_name ~ "` payload rather than its individual arguments. Can be used as a decorator. Any number of handlers of either kind may be registered.") }}
         """
-        if len(self._signal_recv_callbacks_for_{{sig_name | snake_case}}) == 1:
+        self._signal_payload_callbacks_for_{{sig_name | snake_case }}.append(handler)
+        self._subscribe_to_{{sig_name | snake_case}}_signal()
+        return handler
+
+    def _subscribe_to_{{sig_name | snake_case}}_signal(self):
+        """ Subscribes to the '{{sig_name}}' signal topic once, when its first handler of
+        either kind is registered.
+        """
+        if len(self._signal_recv_callbacks_for_{{sig_name | snake_case}}) + len(self._signal_payload_callbacks_for_{{sig_name | snake_case}}) == 1:
             {{sig_name|snake_case}}_topic = "{{sig.topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format] 
             self._logger.debug("Subscribing to '{{sig_name}}' signal topic %s", {{sig_name|snake_case}}_topic)
             self._conn.subscribe({{sig_name|snake_case}}_topic, self._receive_{{sig_name|snake_case}}_signal_message)
@@ -316,10 +339,17 @@ class {{stinger.python.client_class_name}}:
         self._conn.publish(req_msg)
         return fut
 
-    def _handle_{{method_name | snake_case}}_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str]=None):
+    def _handle_{{method_name | snake_case}}_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str]=None, content_type: Optional[str]=None):
         """ This called with the response to a `{{method_name}}` IPC method call.
         """
         self._logger.debug("Handling {{method_name | snake_case}} response message %s", fut)
+
+        {% if method.response_payload.enforce_content_type -%}
+        if content_type != "{{ codec.content_type(method.response_payload) }}":
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(
+                f"Response to the '{{method_name}}' method has content type '{content_type}'; expected '{{ codec.content_type(method.response_payload) }}'"))
+            return
+        {%- endif %}
 
         if return_value != MethodReturnCode.SUCCESS.value:
             self._logger.warning("Received error return value %s from '{{method_name}}' method: %s", return_value, debug_message)
@@ -368,7 +398,7 @@ class {{stinger.python.client_class_name}}:
             if correlation_id in self._pending_method_responses:
                 cb = self._pending_method_responses[correlation_id]
                 del self._pending_method_responses[correlation_id]
-                cb(message.payload, return_code, debug_message)
+                cb(message.payload, return_code, debug_message, message.content_type)
             else:
                 self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
         else:
@@ -378,6 +408,12 @@ class {{stinger.python.client_class_name}}:
     # PROPERTIES
 
     def _receive_any_property_response_message(self, message: Message):
+        expected_content_type = self._property_response_content_types.get(message.topic)
+        if expected_content_type is not None and message.content_type != expected_content_type:
+            self._logger.warning(
+                "Received property update response on '%s' with unexpected content type: %s", message.topic, message.content_type
+            )
+            return
         user_properties = message.user_properties or {}
         return_code = user_properties.get("ReturnCode")
         if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
@@ -387,7 +423,7 @@ class {{stinger.python.client_class_name}}:
     {%-for prop_name, prop_spec in stinger.properties.items()%}
     def _receive_{{prop_name | snake_case}}_property_update_message(self, message: Message):
         # Handle '{{prop_name}}' property change.
-        {% if (not prop_spec.payload.is_protobuf) or config.protobuf.mime_type is not false %}
+        {% if prop_spec.payload.enforce_content_type %}
         if message.content_type is None or message.content_type != '{{ codec.content_type(prop_spec.payload) }}':
             self._logger.warning("Received '{{prop_name}}' property change with unexpected content type: %s", message.content_type)
             return

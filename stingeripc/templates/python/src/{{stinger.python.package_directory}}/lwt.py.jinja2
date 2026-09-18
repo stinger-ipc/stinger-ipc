@@ -2,12 +2,12 @@ from pyqttier.lwt import OnlinePresence
 from pyqttier.message import Message
 import json
 
-def StingerPresence({%for param in utils.get_topic_arguments(config.topics.lwt) %}{{param}}: str,{% endfor %}) -> OnlinePresence:
+def StingerPresence({%for param in utils.get_topic_arguments(stinger.topics.lwt) %}{{param}}: str,{% endfor %}) -> OnlinePresence:
     """Helper function to create an OnlinePresence instance for StingerIPC clients."""
 
     def _create_message(is_online: bool) -> Message:
         return Message(
-            topic=f"{{config.topics.lwt}}",
+            topic=f"{{stinger.topics.lwt}}",
             payload=json.dumps({"online": is_online}).encode("utf-8"),
             qos=1,
             retain=True,
@@ -15,7 +15,7 @@ def StingerPresence({%for param in utils.get_topic_arguments(config.topics.lwt) 
         )
 
     return OnlinePresence(
-        topic=f"{{config.topics.lwt}}",
+        topic=f"{{stinger.topics.lwt}}",
         online=_create_message(is_online=True),
         offline=_create_message(is_online=False),
     )

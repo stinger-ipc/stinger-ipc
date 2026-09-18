@@ -81,7 +81,7 @@ Client -> Client : Do all the things
 | Name | Type | Description |
 |---|---|---|
 | instance | string | Identifies the specific instance of the service. |
-| {{config.topics.params|join(", ")}} | string | Topic parameter(s) that identify this instance on the broker. |
+| {{stinger.topics.params|join(", ")}} | string | Topic parameter(s) that identify this instance on the broker. |
 | methods | map&lt;string,string&gt; | Maps method names to their version string, for methods that declare a version. |
 | commands | map&lt;string,string&gt; | Maps command names to their version string, for commands that declare a version. |
 

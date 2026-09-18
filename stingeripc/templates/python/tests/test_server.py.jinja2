@@ -77,7 +77,7 @@ class {{stinger.name|UpperCamelCase}}ServerSetup:
             {%if stinger.properties|length > 0%}
             {%-if config.properties.stinger_owned_values %}self.initial_property_values{%else%}self.get_property_access(){%endif%},
             {%-endif%}
-            {%for topic_param in config.topics.params %}
+            {%for topic_param in stinger.topics.params %}
             "x",
             {%endfor%}
         )

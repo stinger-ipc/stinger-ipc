@@ -27,7 +27,7 @@ namespace {{stinger.name|snake_case}} {
 struct InstanceInfo {
 public:
     std::optional<std::string> serviceId; // In the payload, this is the 'instance' field.
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     std::optional<std::string> {{topic_param|lowerCamelCase}};
     {%-endfor%}
     std::map<std::string, std::string> methods; // Maps method names to their version string, for methods that declare a version.
@@ -73,7 +73,7 @@ private:
     int _discoverySubscriptionId = -1;
     stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
     std::shared_ptr<stinger::utils::IConnection> _broker;
-    std::map<uint64_t, InstanceInfo> _discoveredInstances; // Keyed by a hash of service_id, {%for topic_param in config.topics.params %}{%if loop.last%}and {%endif%}{{topic_param}}{%if not loop.last%}, {%endif%}{% endfor%}
+    std::map<uint64_t, InstanceInfo> _discoveredInstances; // Keyed by a hash of service_id, {%for topic_param in stinger.topics.params %}{%if loop.last%}and {%endif%}{{topic_param}}{%if not loop.last%}, {%endif%}{% endfor%}
     std::function<void(const InstanceInfo&)> _discovery_callback;
     
     mutable std::mutex _mutex;
