@@ -1,5 +1,5 @@
 from pyqttier.lwt import OnlinePresence
-from pyqttier.message import Message
+from pystingerconniface import Message
 import json
 
 def StingerPresence({%for param in utils.get_topic_arguments(stinger.topics.lwt) %}{{param}}: str,{% endfor %}) -> OnlinePresence:

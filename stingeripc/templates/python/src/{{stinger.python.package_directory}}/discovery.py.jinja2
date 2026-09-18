@@ -12,8 +12,7 @@ import logging
 import threading
 import concurrent.futures as futures
 from pydantic import ValidationError
-from pyqttier.interface import IBrokerConnection
-from pyqttier.message import Message
+from pystingerconniface import IBrokerConnection, Message
 from .interface_types import *
 from . import semver
 from .client import {{stinger.python.client_class_name}}, {{stinger.python.client_class_name}}Builder, DiscoveredInstance
