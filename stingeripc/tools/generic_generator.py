@@ -1,11 +1,13 @@
 from jacobsjinjatoo import templator as jj2
 from jacobsjinjatoo import stringmanip
+import json
 import os
 import tomllib
 import shutil
 import typer
 from typing_extensions import Annotated
-from typing import Optional, Any, Sequence
+from typing import Optional, Any, Callable, Sequence
+from functools import lru_cache
 from pathlib import Path
 from rich import print
 import importlib.resources
@@ -17,6 +19,7 @@ from stingeripc.filtering import filter_by_consumer
 from stingeripc.config import load_config, ProtobufConfig, StingerConfig
 from stingeripc.exceptions import ProtobufError
 from stingeripc.protobuf_compiler import ProtobufSources
+from stingeripc.protobufjs import descriptor_set_to_protobufjs
 
 
 def _to_plain(value: Any) -> Any:
@@ -165,6 +168,26 @@ def protobuf_sources(config_obj, inname: Path) -> ProtobufSources:
     return ProtobufSources(proto_dir, protobuf_config.protoc, python37=config_obj.python.python37)
 
 
+def _protobufjs_bundle_builder(stinger, config_obj, inname: Path) -> Callable[[], str]:
+    """A callable a template uses to ask for the protobuf.js schema document.
+
+    Deliberately not the document itself.  Building it runs protoc, while these
+    parameters are assembled once for every target language, so a language that
+    has no use for it must not pay for it.  The result is cached because a
+    template may reasonably ask more than once.
+    """
+
+    @lru_cache(maxsize=1)
+    def build() -> str:
+        refs = stinger.all_protobuf_refs()
+        if not refs:
+            return "null"
+        files = protobuf_sources(config_obj, inname).descriptor_files_for(refs)
+        return json.dumps(descriptor_set_to_protobufjs(files), indent=2, sort_keys=True)
+
+    return build
+
+
 def resolve_protobuf_messages(stinger, config_obj, inname: Path) -> None:
     """Match every protobuf message the interface names against the .proto sources.
 
@@ -247,6 +270,7 @@ def main(
             "get_topic_arguments": topic_util.get_topic_arguments,
             "template_topic_fill_in": topic_util.topic_template_fill_in,
             "topic_template_to_js": topic_util.topic_template_to_js,
+            "protobufjs_bundle": _protobufjs_bundle_builder(stinger, config_obj, inname),
         },
     }
 

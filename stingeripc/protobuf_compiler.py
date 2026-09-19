@@ -112,25 +112,38 @@ _WELL_KNOWN_MODULES = (
 )
 
 _well_known_index: Optional[dict[str, tuple[str, str, DescriptorProto]]] = None
+_well_known_files: Optional[dict[str, FileDescriptorProto]] = None
 
 
-def well_known_message_index() -> dict[str, tuple[str, str, DescriptorProto]]:
-    """Fully-qualified name -> (declaring file, package, descriptor) for the well-known types.
+def well_known_file_descriptors() -> dict[str, FileDescriptorProto]:
+    """Declaring file name -> descriptor, for each of protobuf's well-known types.
 
     Read out of the protobuf runtime that stinger itself imports, so the messages
     match the ones the generated code will use, and no protoc invocation is needed
-    to know they exist.
+    to know they exist.  Keyed the way an import names the file, e.g.
+    ``google/protobuf/empty.proto``, so these compose with a compiled descriptor
+    set without duplicating a file that is in both.
     """
+    global _well_known_files
+    if _well_known_files is None:
+        files: dict[str, FileDescriptorProto] = {}
+        for module_name in _WELL_KNOWN_MODULES:
+            module = importlib.import_module(f"google.protobuf.{module_name}")
+            file_proto = FileDescriptorProto()
+            module.DESCRIPTOR.CopyToProto(file_proto)
+            files[module.DESCRIPTOR.name] = file_proto
+        _well_known_files = files
+    return _well_known_files
+
+
+def well_known_message_index() -> dict[str, tuple[str, str, DescriptorProto]]:
+    """Fully-qualified name -> (declaring file, package, descriptor) for the well-known types."""
     global _well_known_index
     if _well_known_index is None:
         index: dict[str, tuple[str, str, DescriptorProto]] = {}
-        for module_name in _WELL_KNOWN_MODULES:
-            module = importlib.import_module(f"google.protobuf.{module_name}")
-            file_descriptor = module.DESCRIPTOR
-            file_proto = FileDescriptorProto()
-            file_descriptor.CopyToProto(file_proto)
+        for file_name, file_proto in well_known_file_descriptors().items():
             for full_name, descriptor in _message_names(file_proto):
-                index[full_name] = (file_descriptor.name, file_proto.package, descriptor)
+                index[full_name] = (file_name, file_proto.package, descriptor)
         _well_known_index = index
     return _well_known_index
 
@@ -178,6 +191,40 @@ class ProtobufSources:
             descriptor_set = FileDescriptorSet()
             descriptor_set.ParseFromString(out.read_bytes())
             return descriptor_set
+
+    def descriptor_files_for(self, refs: Sequence[ProtobufMessageRef]) -> list[FileDescriptorProto]:
+        """Every .proto file needed to describe `refs`, as descriptors.
+
+        The interface's own sources come from protoc, which `--include_imports`
+        already makes complete: a well-known type that some .proto file imports is
+        in the compiled set along with it.  What is missing is a well-known type
+        named only from the stinger file, which no .proto imports -- most commonly
+        a command declaring `google.protobuf.Empty`.  Those are spliced in from the
+        runtime, together with whatever they themselves import, since a consumer
+        that resolves type references would otherwise be left with a dangling one.
+
+        Files are keyed by name so that a well-known type reached both ways appears
+        once; a duplicate would redeclare its messages.
+
+        Works with no .proto sources at all, which is the case for an interface
+        whose only protobuf payloads are well-known types.
+        """
+        files: dict[str, FileDescriptorProto] = {}
+        if self.has_sources:
+            for file_proto in self.descriptor_set().file:
+                files[file_proto.name] = file_proto
+
+        runtime = well_known_file_descriptors()
+        pending = [ref.proto_file for ref in refs if ref.is_well_known and ref.is_resolved]
+        while pending:
+            name = pending.pop()
+            if name in files or name not in runtime:
+                continue
+            file_proto = runtime[name]
+            files[name] = file_proto
+            pending.extend(file_proto.dependency)
+
+        return [files[name] for name in sorted(files)]
 
     def _message_index(self) -> dict[str, tuple[str, str, DescriptorProto]]:
         """Fully-qualified message name -> (declaring file, package, descriptor), compiled once."""

@@ -509,5 +509,91 @@ table.array-of-struct .publish-button {
     margin-right: 4px;
 }
 
+/* A struct argument's members, indented under the argument that holds them. */
+.struct-arg {
+    border-left: 3px solid #b3c6e0;
+    padding-left: 10px;
+    margin-left: 2px;
+}
+
+/* An element whose payload is a protobuf message rather than JSON arguments.
+   Tinted so the two encodings are distinguishable at a glance; the controls
+   inside work the same way. */
+.protobuf-box {
+    background: #fbfaf6;
+    border-color: #d8cfae;
+}
+
+.protobuf-note {
+    font-size: 0.88em;
+    color: #5a5340;
+    margin: 0 0 8px 0;
+}
+
+.protobuf-note code {
+    background: #f0ece0;
+    border-radius: 4px;
+    padding: 1px 5px;
+}
+
+/* The protobuf type of a field, shown under its name.  It is the only clue the
+   page can give about what a field will accept, since a protobuf message has no
+   per-field descriptions to draw on the way a stinger argument does. */
+.proto-field-type {
+    font-family: 'Andale Mono', 'Courier New', Courier, monospace;
+    font-size: 0.72em;
+    color: #7a7260;
+    margin-top: 2px;
+}
+
+/* Each level of nesting steps in, so the shape of a message is readable. */
+.proto-nested {
+    border-left: 3px solid #d8cfae;
+    padding-left: 10px;
+    margin: 4px 0 4px 2px;
+}
+
+.proto-arglist {
+    margin: 0;
+}
+
+.proto-repeated-item,
+.proto-map-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 4px 0;
+}
+
+.proto-repeated-item > div,
+.proto-map-entry > div {
+    flex: 1;
+}
+
+.proto-map-key {
+    max-width: 140px;
+}
+
+.proto-remove {
+    padding: 2px 8px 3px 8px;
+    line-height: 1.2;
+}
+
+.proto-depth-limit {
+    font-style: italic;
+    color: #8a7b4f;
+    font-size: 0.9em;
+}
+
+/* A payload that could not be decoded, shown against the element it arrived for. */
+.proto-error {
+    color: #a3281f;
+    background: #fdeceb;
+    border: 1px solid #f0b6b1;
+    border-radius: 6px;
+    padding: 6px 10px;
+    margin-top: 8px;
+    font-size: 0.93em;
+}
 
 {%endraw%}

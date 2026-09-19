@@ -1,3 +1,4 @@
+{%- import "partials/codec.jinja2" as codec -%}
 <!DOCTYPE html>
 <html>
   <head>
@@ -156,16 +157,7 @@
     <!------------- SIGNALS ------------->
     <div ng-show="activeTab === 'signals'">
     {%for sig_name, sig in stinger.signals.items() %}
-{%- if sig.payload.is_protobuf %}
-    <!-- 'sig_name' carries the protobuf message {{ sig.payload.protobuf.full_name }}.  This
-         page speaks JSON over a websocket and has no protobuf runtime, so the element
-         is listed without controls rather than shown as something that would not work. -->
-    <div class="component protobuf-only">
-      <h3>{{ sig_name }}</h3>
-      <p>Carries the protobuf message <code>{{ sig.payload.protobuf.full_name }}</code>; not decodable in this browser demo.</p>
-    </div>
-{%- else %}
-    <div class="component-box signal-box" id="signal-box-{{ sig_name }}">
+    <div class="component-box signal-box{% if sig.payload.is_protobuf %} protobuf-box{% endif %}" id="signal-box-{{ sig_name }}">
         <h3 class="component-title signal-title" ng-class="{'flash': signals['{{ sig_name | lowerCamelCase }}'].flash}"><span class="mdi mdi-bell-outline"></span> {{ sig_name }}</h3>
         {%if sig.documentation %}
         <details class="component-doc signal-doc">
@@ -176,27 +168,25 @@
         </details>
         {%endif%}
         <!--<div class="signal-topic topic">Subscribe: {{ sig.topic() }}</div>-->
-        <div class="last-received signal-value">
-        {{ arglist(sig.arg_list, ['signals', sig_name, 'received'], true) | indent(8) }}
-        </div>
-    </div>
+{%- if sig.payload.is_protobuf %}
+        <div class="protobuf-note">protobuf <code>{{ sig.payload.protobuf.full_name }}</code>, published as <code>{{ codec.content_type(sig.payload) }}</code></div>
 {%- endif %}
+        <div class="last-received signal-value">
+{%- if sig.payload.is_protobuf %}
+        {{ codec.protoform(sig.payload, "signals['" + (sig_name | lowerCamelCase) + "'].received", true) | indent(8) }}
+{%- else %}
+        {{ arglist(sig.arg_list, ['signals', sig_name, 'received'], true) | indent(8) }}
+{%- endif %}
+        </div>
+        <div class="proto-error" ng-show="signals['{{ sig_name | lowerCamelCase }}'].decode_error" ng-bind="signals['{{ sig_name | lowerCamelCase }}'].decode_error"></div>
+    </div>
     {%endfor%}{# end signals loop #}
     </div>
 
     <!------------- PROPERTIES ------------->
     <div ng-show="activeTab === 'properties'">
     {%for prop_name, prop in stinger.properties.items() %}
-{%- if prop.payload.is_protobuf %}
-    <!-- 'prop_name' carries the protobuf message {{ prop.payload.protobuf.full_name }}.  This
-         page speaks JSON over a websocket and has no protobuf runtime, so the element
-         is listed without controls rather than shown as something that would not work. -->
-    <div class="component protobuf-only">
-      <h3>{{ prop_name }}</h3>
-      <p>Carries the protobuf message <code>{{ prop.payload.protobuf.full_name }}</code>; not decodable in this browser demo.</p>
-    </div>
-{%- else %}
-    <div class="component-box prop-box" id="prop-box-{{ prop_name }}">
+    <div class="component-box prop-box{% if prop.payload.is_protobuf %} protobuf-box{% endif %}" id="prop-box-{{ prop_name }}">
         <h3 class="component-title prop-title" ng-class="{'flash': properties['{{ prop_name | lowerCamelCase }}'].flash}"><span class="mdi mdi-tune"></span> {{ prop_name }}</h3>
         {%if prop.documentation %}
         <details class="component-doc prop-doc">
@@ -207,30 +197,29 @@
         </details>
         {%endif%}
         <!--<div class="property-topic topic">Subscribe: {{ prop.value_topic() }}</div>-->
+{%- if prop.payload.is_protobuf %}
+        <div class="protobuf-note">protobuf <code>{{ prop.payload.protobuf.full_name }}</code>, published as <code>{{ codec.content_type(prop.payload) }}</code></div>
+{%- endif %}
         <div class="last-received property-value">
-          {{ arglist(prop.arg_list, ['properties', prop_name, 'received'], prop.read_only) | indent(8) }}
+{%- if prop.payload.is_protobuf %}
+          {{ codec.protoform(prop.payload, "properties['" + (prop_name | lowerCamelCase) + "'].received", prop.read_only) | indent(10) }}
+{%- else %}
+          {{ arglist(prop.arg_list, ['properties', prop_name, 'received'], prop.read_only) | indent(10) }}
+{%- endif %}
         </div>
+        <div class="proto-error" ng-show="properties['{{ prop_name | lowerCamelCase }}'].decode_error" ng-bind="properties['{{ prop_name | lowerCamelCase }}'].decode_error"></div>
         {%if not prop.read_only %}
         <input type="button" class="publish-button" value="Update" ng-click="updateProperty(properties.{{ prop_name | lowerCamelCase }})" />
+        <div class="proto-error" ng-show="properties['{{ prop_name | lowerCamelCase }}'].encode_error" ng-bind="properties['{{ prop_name | lowerCamelCase }}'].encode_error"></div>
         {%endif%}
     </div>
-{%- endif %}
     {%endfor%} {# end properties loop #}
     </div>
 
     <!------------- METHODS ------------->
     <div ng-show="activeTab === 'methods'">
     {%for method_name, method in stinger.methods.items() %}
-{%- if method.request_payload.is_protobuf %}
-    <!-- 'method_name' carries the protobuf message {{ method.request_payload.protobuf.full_name }}.  This
-         page speaks JSON over a websocket and has no protobuf runtime, so the element
-         is listed without controls rather than shown as something that would not work. -->
-    <div class="component protobuf-only">
-      <h3>{{ method_name }}</h3>
-      <p>Carries the protobuf message <code>{{ method.request_payload.protobuf.full_name }}</code>; not decodable in this browser demo.</p>
-    </div>
-{%- else %}
-    <div class="component-box method-box" id="method-box-{{ method_name }}">
+    <div class="component-box method-box{% if method.request_payload.is_protobuf or method.response_payload.is_protobuf %} protobuf-box{% endif %}" id="method-box-{{ method_name }}">
         <h3 class="component-title method-title"><span class="mdi mdi-function"></span> {{ method_name }}</h3>
         {%if method.documentation %}
         <details class="component-doc method-doc">
@@ -242,35 +231,39 @@
         {%endif%}
         <!--<div class="method-topic topic">Publish: {{ method.topic }}</div>-->
         <div class="method-form-box">
+{%- if method.request_payload.is_protobuf %}
+            <div class="protobuf-note">Request: protobuf <code>{{ method.request_payload.protobuf.full_name }}</code></div>
+{%- endif %}
             <form ng-submit="callMethod(methods.{{method_name|lowerCamelCase}})">
+{%- if method.request_payload.is_protobuf %}
+                {{ codec.protoform(method.request_payload, "methods['" + (method_name | lowerCamelCase) + "'].args", false) | indent(16) }}
+{%- else %}
                 {{ arglist(method.arg_list, ['methods', method_name, 'args'], false) | indent(8) }}
+{%- endif %}
                 <button type="submit" class="publish-button">Call {{ method_name }}</button>
             </form>
+            <div class="proto-error" ng-show="methods['{{ method_name | lowerCamelCase }}'].encode_error" ng-bind="methods['{{ method_name | lowerCamelCase }}'].encode_error"></div>
         </div>
-        <div class="last-received method-response" ng-show="methods['{{ method_name | lowerCamelCase }}'].received_time">
-            <div class="method-response-status"><span class="mdi mdi-check-circle-outline"></span> Response received at <span ng-bind="methods['{{ method_name | lowerCamelCase }}'].received_time | date:'HH:mm:ss'"></span></div>
-        {%if method.return_value is not none %}
+        <div class="last-received method-response" ng-show="methods['{{ method_name | lowerCamelCase }}'].received_time || methods['{{ method_name | lowerCamelCase }}'].decode_error">
+            <div class="method-response-status" ng-show="methods['{{ method_name | lowerCamelCase }}'].received_time"><span class="mdi mdi-check-circle-outline"></span> Response received at <span ng-bind="methods['{{ method_name | lowerCamelCase }}'].received_time | date:'HH:mm:ss'"></span></div>
+        {#- A method's two wire bodies are independent: either may be protobuf
+            while the other is JSON, so the response is asked about separately. #}
+        {%- if method.response_payload.is_protobuf %}
+        <div class="protobuf-note">Response: protobuf <code>{{ method.response_payload.protobuf.full_name }}</code></div>
+        {{ codec.protoform(method.response_payload, "methods['" + (method_name | lowerCamelCase) + "'].received", true) | indent(8) }}
+        {%- elif method.return_value is not none %}
         {{ arglist(method.return_arg_list, ['methods', method_name, 'received'], true) | indent(8) }}
-        {%endif%}
+        {%- endif %}
+            <div class="proto-error" ng-show="methods['{{ method_name | lowerCamelCase }}'].decode_error" ng-bind="methods['{{ method_name | lowerCamelCase }}'].decode_error"></div>
         </div>
     </div>
-{%- endif %}
     {%endfor%} {# end methods loop #}
     </div>
 
     <!------------- COMMANDS ------------->
     <div ng-show="activeTab === 'commands'">
     {%for command_name, command in stinger.commands.items() %}
-{%- if command.payload.is_protobuf %}
-    <!-- 'command_name' carries the protobuf message {{ command.payload.protobuf.full_name }}.  This
-         page speaks JSON over a websocket and has no protobuf runtime, so the element
-         is listed without controls rather than shown as something that would not work. -->
-    <div class="component protobuf-only">
-      <h3>{{ command_name }}</h3>
-      <p>Carries the protobuf message <code>{{ command.payload.protobuf.full_name }}</code>; not decodable in this browser demo.</p>
-    </div>
-{%- else %}
-    <div class="component-box command-box" id="command-box-{{ command_name }}">
+    <div class="component-box command-box{% if command.payload.is_protobuf %} protobuf-box{% endif %}" id="command-box-{{ command_name }}">
         <h3 class="component-title command-title"><span class="mdi mdi-send"></span> {{ command_name }}</h3>
         {%if command.documentation %}
         <details class="component-doc command-doc">
@@ -282,18 +275,27 @@
         {%endif%}
         <!--<div class="command-topic topic">Publish: {{ command.topic() }}</div>-->
         <div class="command-form-box">
+{%- if command.payload.is_protobuf %}
+            <div class="protobuf-note">protobuf <code>{{ command.payload.protobuf.full_name }}</code>, published as <code>{{ codec.content_type(command.payload) }}</code></div>
+{%- endif %}
             <form ng-submit="sendCommand(commands.{{command_name|lowerCamelCase}})">
+{%- if command.payload.is_protobuf %}
+                {{ codec.protoform(command.payload, "commands['" + (command_name | lowerCamelCase) + "'].args", false) | indent(16) }}
+{%- else %}
                 {{ arglist(command.arg_list, ['commands', command_name, 'args'], false) | indent(8) }}
+{%- endif %}
                 <button type="submit" class="publish-button">Send {{ command_name }}</button>
             </form>
+            <div class="proto-error" ng-show="commands['{{ command_name | lowerCamelCase }}'].encode_error" ng-bind="commands['{{ command_name | lowerCamelCase }}'].encode_error"></div>
         </div>
         <div class="command-sent-status" ng-show="commands['{{ command_name | lowerCamelCase }}'].sent_time">
             <span class="mdi mdi-send-check-outline"></span> Sent at <span ng-bind="commands['{{ command_name | lowerCamelCase }}'].sent_time | date:'HH:mm:ss'"></span>.  A command is fire-and-forget, so there is no response.
         </div>
     </div>
-{%- endif %}
     {%endfor%} {# end commands loop #}
     </div>
+
+{{ codec.field_list_template(stinger) }}
 
     {%raw%}
     <div id="console" ng-class="{ 'expanded' : (console.showing) }">
@@ -313,6 +315,18 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.8.2/angular.min.js"></script>
     <script src="https://unpkg.com/mqtt@5.14.0/dist/mqtt.min.js"></script>
+{%- if stinger.uses_protobuf() %}
+    <!-- long.js must load before protobuf.js.  protobuf.js reads `window.Long`
+         at load time and its own fallback is written to defeat bundlers, so the
+         CDN build carries no copy.  Without it a 64-bit field is silently
+         rounded through a JavaScript number and `{longs: String}` does nothing. -->
+    <script src="https://cdn.jsdelivr.net/npm/long@5.2.3/umd/index.js"></script>
+    <!-- The light build: everything needed to load a JSON descriptor and read
+         and write messages.  The full build adds a .proto text parser, which
+         this page has no use for -- its schema arrives already parsed. -->
+    <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.4.0/dist/light/protobuf.min.js"></script>
+    <script src="proto_bundle.js"></script>
+{%- endif %}
     <script src="app.js"></script>
   </body>
 </html>

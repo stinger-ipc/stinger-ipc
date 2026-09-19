@@ -1,3 +1,4 @@
+{%- import "partials/codec.jinja2" as codec -%}
 const clientId = "{{stinger.name}}-web-" + new Date().getTime();
 const client_id = clientId;
 
@@ -7,11 +8,243 @@ const topicParams = Object.fromEntries(new URLSearchParams(location.search));
 
 const instanceId = topicParams.instance_id || null;
 
-function makeRequestProperties() {
+function makeRequestProperties(contentType) {
     const correlationData = Math.random().toString(16).substr(2, 8);
     return {
-        "contentType": "application/json",
+        "contentType": contentType,
         "correlationData": correlationData
+    }
+}
+
+{%- if stinger.uses_protobuf() %}
+// The protobuf schema, loaded from the document proto_bundle.js carries.
+//
+// resolveAll() is not optional: fromJSON leaves a field's reference to another
+// message or enum as a name, and `resolvedType` -- which is how the controls
+// below tell a message field from a scalar one -- stays null until it is called.
+const protoRoot = protobuf.Root.fromJSON(window.STINGER_PROTO).resolveAll();
+
+// How a decoded protobuf message is turned into something Angular can bind to.
+//
+// `defaults` so that an unset field still renders a control rather than a blank;
+// `arrays`/`objects` so an empty repeated field or map is [] or {} for ng-repeat
+// to iterate instead of undefined; `oneofs` to add the virtual field naming which
+// branch is set; `enums: String` so a value reads as its name; `longs: String`
+// because a 64-bit value does not survive a JavaScript number; and `bytes: String`
+// for base64, which is the same representation the JSON binary controls use.
+const PROTO_TO_OBJECT = {
+    longs: String,
+    enums: String,
+    bytes: String,
+    defaults: true,
+    arrays: true,
+    objects: true,
+    oneofs: true
+};
+
+// Decode a protobuf message body into a plain object.
+function decodeProtobuf(protoTypeName, message) {
+    const messageType = protoRoot.lookupType(protoTypeName);
+    return messageType.toObject(messageType.decode(new Uint8Array(message)), PROTO_TO_OBJECT);
+}
+
+// Protobuf types whose JavaScript representation is a plain number, and those
+// that need more precision than a number has.
+const PROTO_NUMBER_TYPES = ["double", "float", "int32", "uint32", "sint32", "fixed32", "sfixed32"];
+const PROTO_LONG_TYPES = ["int64", "uint64", "sint64", "fixed64", "sfixed64"];
+
+// Bring one form value to the type its field expects, or explain why it cannot be.
+//
+// Necessary because neither of protobuf.js's own entry points is safe on its own
+// here.  `verify` rejects a string where a 64-bit field is expected, which is the
+// only way such a value can come out of a text input; `fromObject` accepts the
+// string but also quietly turns anything else unparseable into zero, and accepts
+// an enum name that does not exist.  So values are checked against the schema
+// here first, and what reaches protobuf.js is already the right shape.
+//
+// Returns {ok: true, value} or {ok: false, error}.
+function normalizeProtoValue(field, value, path) {
+    if (value === null || value === undefined || value === "") {
+        return {ok: true, value: undefined};
+    }
+
+    const resolved = field.resolvedType;
+    if (resolved && resolved.fieldsArray) {
+        return normalizeProtoObject(resolved, value, path);
+    }
+    if (resolved && resolved.values) {
+        if (typeof value === "number") {
+            return {ok: true, value: value};
+        }
+        if (Object.prototype.hasOwnProperty.call(resolved.values, value)) {
+            return {ok: true, value: value};
+        }
+        return {ok: false, error: path + ": '" + value + "' is not a value of enum " + resolved.name};
+    }
+
+    if (PROTO_NUMBER_TYPES.indexOf(field.type) !== -1) {
+        const asNumber = typeof value === "number" ? value : Number(String(value).trim());
+        if (!isFinite(asNumber)) {
+            return {ok: false, error: path + ": '" + value + "' is not a number"};
+        }
+        return {ok: true, value: asNumber};
+    }
+    if (PROTO_LONG_TYPES.indexOf(field.type) !== -1) {
+        // Kept as a string: a 64-bit value does not survive a JavaScript number,
+        // and protobuf.js reads a string for these fields exactly.
+        const text = typeof value === "string" ? value.trim() : String(value);
+        if (!/^-?\d+$/.test(text)) {
+            return {ok: false, error: path + ": '" + value + "' is not a whole number"};
+        }
+        return {ok: true, value: text};
+    }
+    if (field.type === "bool") {
+        if (typeof value === "boolean") {
+            return {ok: true, value: value};
+        }
+        const text = String(value).toLowerCase();
+        if (text === "true" || text === "false") {
+            return {ok: true, value: text === "true"};
+        }
+        return {ok: false, error: path + ": '" + value + "' is not true or false"};
+    }
+    return {ok: true, value: value};
+}
+
+// The same, for every field of a message.
+function normalizeProtoObject(messageType, obj, path) {
+    if (obj === null || obj === undefined) {
+        return {ok: true, value: undefined};
+    }
+    const normalized = {};
+    for (const field of messageType.fieldsArray) {
+        const value = obj[field.name];
+        if (value === null || value === undefined || value === "") {
+            continue;
+        }
+        const where = path ? path + "." + field.name : field.name;
+
+        if (field.map) {
+            const entries = {};
+            for (const key in value) {
+                if (!value.hasOwnProperty(key)) continue;
+                const item = normalizeProtoValue(field, value[key], where + "[" + key + "]");
+                if (!item.ok) return item;
+                if (item.value !== undefined) entries[key] = item.value;
+            }
+            normalized[field.name] = entries;
+        } else if (field.repeated) {
+            if (!Array.isArray(value)) {
+                return {ok: false, error: where + ": expected a list"};
+            }
+            const items = [];
+            for (let i = 0; i < value.length; i++) {
+                const item = normalizeProtoValue(field, value[i], where + "[" + i + "]");
+                if (!item.ok) return item;
+                if (item.value !== undefined) items.push(item.value);
+            }
+            normalized[field.name] = items;
+        } else {
+            const item = normalizeProtoValue(field, value, where);
+            if (!item.ok) return item;
+            if (item.value !== undefined) normalized[field.name] = item.value;
+        }
+    }
+    return {ok: true, value: normalized};
+}
+
+// Encode a plain object as a protobuf message body.
+//
+// Returns {ok: true, bytes, display} or {ok: false, error}.  The error string is
+// what the page shows beside the control, and is the protobuf counterpart of the
+// `validate_schema()` the other targets call before publishing.
+function encodeProtobuf(protoTypeName, obj) {
+    const messageType = protoRoot.lookupType(protoTypeName);
+
+    const normalized = normalizeProtoObject(messageType, obj || {}, "");
+    if (!normalized.ok) {
+        return normalized;
+    }
+
+    let message;
+    try {
+        message = messageType.fromObject(normalized.value);
+    } catch (err) {
+        return {ok: false, error: String(err)};
+    }
+    const invalid = messageType.verify(message);
+    if (invalid) {
+        return {ok: false, error: invalid};
+    }
+    const bytes = messageType.encode(message).finish();
+    return {ok: true, bytes: bytes, display: JSON.stringify(obj) + " (" + bytes.length + " bytes " + protoTypeName + ")"};
+}
+{%- else %}
+// This interface carries no protobuf payloads, so the page loads no protobuf
+// runtime.  These exist only so that the decode and encode paths below read the
+// same whether or not an interface happens to use protobuf.
+function decodeProtobuf(protoTypeName, message) {
+    throw new Error("No protobuf runtime is loaded for this interface.");
+}
+
+function encodeProtobuf(protoTypeName, obj) {
+    return {ok: false, error: "No protobuf runtime is loaded for this interface."};
+}
+{%- endif %}
+
+// Encode one outgoing body according to the element that carries it.
+//
+// Returns {ok: true, bytes, display} or {ok: false, error}.  `display` is what
+// the request console shows, which for protobuf is the object plus a byte count
+// rather than the bytes themselves.
+function encodePayload(protoTypeName, obj) {
+    if (protoTypeName) {
+        return encodeProtobuf(protoTypeName, obj);
+    }
+    const text = JSON.stringify(obj);
+    return {ok: true, bytes: text, display: text};
+}
+
+// Decode one received message body according to the element that carries it.
+//
+// `protoTypeName` is the fully-qualified protobuf message name for a protobuf
+// payload and null for a JSON one, so an element's encoding is decided once,
+// where the element is declared, rather than here.
+//
+// A zero-length body means "no value" only for JSON.  A protobuf message whose
+// fields are all at their defaults -- and google.protobuf.Empty always --
+// legitimately encodes to zero bytes, and decodes to an empty object.
+function decodePayload(protoTypeName, message) {
+    if (protoTypeName) {
+        return decodeProtobuf(protoTypeName, message);
+    }
+    if (message.length === 0) {
+        return null;
+    }
+    return JSON.parse(message.toString());
+}
+
+// Decode a body for one element, reporting a failure rather than throwing.
+//
+// Returns {ok: true, value} or {ok: false, error}, so the caller can show the
+// problem against the element it belongs to and carry on with the others.
+//
+// A content type that is present and disagrees is a mismatch.  One that is
+// absent is accepted: the generated servers all stamp a content type, but this
+// page is also pointed at hand-written publishers that do not, and refusing
+// those would make it less useful as a debugging tool than it is today.
+function decodeFor(element, packet, message, protoTypeName, expectedContentType, enforce) {
+    const actualContentType = packet.properties ? packet.properties.contentType : undefined;
+    if (enforce && actualContentType && actualContentType !== expectedContentType) {
+        const error = "expected content type '" + expectedContentType + "' but received '" + actualContentType + "'";
+        console.warn("Rejecting message for '" + element.name + "': " + error);
+        return {ok: false, error: error};
+    }
+    try {
+        return {ok: true, value: decodePayload(protoTypeName, message)};
+    } catch (err) {
+        console.error("Could not decode message for '" + element.name + "':", err);
+        return {ok: false, error: String(err)};
     }
 }
 
@@ -132,9 +365,13 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
         "{{sig_name | lowerCamelCase}}": {
             "subscription_id": null,
             "name": "{{sig_name}}",
-            "received": null,
+            "received": {%if signal.payload.is_protobuf%}{}{%else%}null{%endif%},
             "received_time": null,
             "flash": false,
+            "decode_error": null,
+            "content_type": "{{ codec.content_type(signal.payload) }}",
+            "enforce_content_type": {{ codec.enforce_content_type(signal.payload) }},
+            "proto_type": {{ codec.proto_type(signal.payload) }},
             "mqtt_topic": `{{ utils.topic_template_to_js(signal.topic(), stinger.topics.params) }}`
         }{%if not loop.last%},{%endif%}
     {%endfor-%} };
@@ -148,6 +385,11 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
                     "{{member.name}}": null{%if not loop.last%},{%endif%}
                 {%endfor%} }{%else%}null{%endif%}{%if not loop.last%},{%endif%}
             {%endfor%} },
+            "decode_error": null,
+            "encode_error": null,
+            "content_type": "{{ codec.content_type(prop.payload) }}",
+            "enforce_content_type": {{ codec.enforce_content_type(prop.payload) }},
+            "proto_type": {{ codec.proto_type(prop.payload) }},
             "mqtt_topic": `{{ utils.topic_template_to_js(prop.value_topic(), stinger.topics.params) }}`,{% if not prop.read_only %}
             "update_topic": `{{ utils.topic_template_to_js(prop.update_topic(), stinger.topics.params) }}`,
             "response_topic": `{{ utils.topic_template_to_js(prop.response_topic(), stinger.topics.params) }}`,{%endif%}
@@ -166,11 +408,20 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
             "name": "{{method_name}}",
             "mqtt_topic": `{{ utils.topic_template_to_js(method.request_topic(), stinger.topics.params) }}`,
             "response_topic": `{{ utils.topic_template_to_js(method.response_topic(), stinger.topics.params) }}`,
+            // A method's request and response are independent wire bodies: either
+            // may be protobuf while the other is JSON, so each carries its own codec.
+            "request_content_type": "{{ codec.content_type(method.request_payload) }}",
+            "request_proto_type": {{ codec.proto_type(method.request_payload) }},
+            "response_content_type": "{{ codec.content_type(method.response_payload) }}",
+            "enforce_response_content_type": {{ codec.enforce_content_type(method.response_payload) }},
+            "response_proto_type": {{ codec.proto_type(method.response_payload) }},
             "pending_correlation_id": null,
+            "decode_error": null,
+            "encode_error": null,
             "args": { {%-for arg in method.arg_list %}
                 "{{arg.name}}": null{%if not loop.last%},{%endif%}
             {%endfor-%} },
-            "received": null,
+            "received": {%if method.response_payload.is_protobuf%}{}{%else%}null{%endif%},
             "received_time": null
         }{%if not loop.last%},{%endif%}
         {%-endfor%}
@@ -181,6 +432,9 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
         "{{command_name | lowerCamelCase}}": {
             "name": "{{command_name}}",
             "mqtt_topic": `{{ utils.topic_template_to_js(command.topic(), stinger.topics.params) }}`,
+            "content_type": "{{ codec.content_type(command.payload) }}",
+            "proto_type": {{ codec.proto_type(command.payload) }},
+            "encode_error": null,
             "args": { {%-for arg in command.arg_list %}
                 "{{arg.name}}": null{%if not loop.last%},{%endif%}
             {%endfor-%} },
@@ -213,44 +467,58 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
         console.log("Connection Lost");
     });
 
-    function publish_method_request(method, payload) {
+    function publish_method_request(method, payload, display) {
         var qos = 1;
-        console.log("METHOD REQUEST", method, payload);
-        let props = makeRequestProperties();
+        console.log("METHOD REQUEST", method, display);
+        let props = makeRequestProperties(method.request_content_type);
         props.responseTopic = method.response_topic;
-        $scope.console.requests.unshift({"name":method.name, "correlationData":props.correlationData, "topic": method.mqtt_topic, "payload": payload, "response": null, "requestTime": Date.now()});
+        $scope.console.requests.unshift({"name":method.name, "correlationData":props.correlationData, "topic": method.mqtt_topic, "payload": display, "response": null, "requestTime": Date.now()});
         console.log("PUBLISH REQUEST", method.mqtt_topic, payload, props);
         client.publish(method.mqtt_topic, payload, { "qos": qos, retain: false, properties: props});
         return props.correlationData;
     }
 
-    function publish_property_update(prop_obj, payload) {
-        console.log("PROPERTY UPDATE", prop_obj, payload);
+    function publish_property_update(prop_obj, payload, display) {
+        console.log("PROPERTY UPDATE", prop_obj, display);
         const correlationData = Math.random().toString(16).substr(2, 8);
         let props = {
-            "contentType": "application/json",{%if config.properties.version_tracking%}
+            "contentType": prop_obj.content_type,{%if config.properties.version_tracking%}
             "userProperties": {
                 "PropertyVersion": prop_obj.property_version
             },{%endif%}
             "correlationData": correlationData,
             "responseTopic": prop_obj.response_topic
         };
-        $scope.console.requests.unshift({"name":prop_obj.name, "correlationData":correlationData, "topic": prop_obj.update_topic, "payload": payload, "response": null, "requestTime": Date.now()});
+        $scope.console.requests.unshift({"name":prop_obj.name, "correlationData":correlationData, "topic": prop_obj.update_topic, "payload": display, "response": null, "requestTime": Date.now()});
         console.log("PUBLISH UPDATE", prop_obj.update_topic, payload, props);
         client.publish(prop_obj.update_topic, payload, { "qos": 1, retain: false, properties: props});
         return;
     }
 
-    function publish_command(command, payload) {
-        console.log("COMMAND", command, payload);
+    function publish_command(command, payload, display) {
+        console.log("COMMAND", command, display);
         // Commands are fire-and-forget: no correlation data and no response topic are provided.
         let props = {
-            "contentType": "application/json"
+            "contentType": command.content_type
         };
-        $scope.console.requests.unshift({"name":command.name, "topic": command.mqtt_topic, "payload": payload, "eventTime": new Date().toLocaleTimeString()});
+        $scope.console.requests.unshift({"name":command.name, "topic": command.mqtt_topic, "payload": display, "eventTime": new Date().toLocaleTimeString()});
         console.log("PUBLISH COMMAND", command.mqtt_topic, payload, props);
         client.publish(command.mqtt_topic, payload, { "qos": {{stinger.command_qos}}, retain: false, properties: props});
         return;
+    }
+
+    // Store a freshly decoded value on an element.
+    //
+    // A protobuf payload's controls are bound to the object itself rather than to
+    // a path re-read on every digest, so the decoded fields are copied into the
+    // object that is already there.  Replacing it would leave the controls bound
+    // to the previous message for ever.
+    function setReceived(element, protoTypeName, value) {
+        if (protoTypeName && value && typeof value === "object" && element.received && typeof element.received === "object") {
+            angular.copy(value, element.received);
+        } else {
+            element.received = value;
+        }
     }
 
     client.on('message', function(topic, message, packet) {
@@ -259,20 +527,23 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
 
         console.log("Message Arrived: " + topic + " (" + subid + ")");
 
-        var obj;
-        if (message.toString().length == 0) {
-            obj = null;
-        } else {
-            obj = JSON.parse(message.toString());
-        }
-        console.log(obj);
-
+        // Decoding happens inside each match below, not here.  Until the element
+        // that a message belongs to is known, the encoding of its body is not
+        // known either -- an interface may mix protobuf and JSON elements freely.
+        //
+        // Every decode is also guarded, so that one undecodable message cannot
+        // escape this handler and skip the $scope.$apply() at the end, which
+        // would leave every element on the page stale rather than just this one.
         for (const key in $scope.signals) {
             if (!$scope.signals.hasOwnProperty(key)) continue;
             const sig = $scope.signals[key];
             if (sig.subscription_id == subid) {
-                sig.received = obj;
-                sig.received_time = new Date();
+                const decoded = decodeFor(sig, packet, message, sig.proto_type, sig.content_type, sig.enforce_content_type);
+                sig.decode_error = decoded.ok ? null : decoded.error;
+                if (decoded.ok) {
+                    setReceived(sig, sig.proto_type, decoded.value);
+                    sig.received_time = new Date();
+                }
                 triggerFlash(sig);
             }
         }
@@ -280,8 +551,12 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
             if (!$scope.properties.hasOwnProperty(key)) continue;
             const prop = $scope.properties[key];
             if (prop.subscription_id == subid) {
-                prop.received = obj;
-                console.log("Set property '" + prop.name + "' received object to ", prop.received);
+                const decoded = decodeFor(prop, packet, message, prop.proto_type, prop.content_type, prop.enforce_content_type);
+                prop.decode_error = decoded.ok ? null : decoded.error;
+                if (decoded.ok) {
+                    setReceived(prop, prop.proto_type, decoded.value);
+                    console.log("Set property '" + prop.name + "' received object to ", prop.received);
+                }
                 {%if config.properties.version_tracking%}prop.property_version = packet.properties.userProperties.PropertyVersion;
                 {%endif%}triggerFlash(prop);
             }
@@ -291,12 +566,16 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
             const method = $scope.methods[key];
             if (responseSubscriptionId == subid) {
                 if (packet.properties.correlationData && method.pending_correlation_id == packet.properties.correlationData) {
-                    method.received = obj;
-                    method.received_time = new Date();
+                    const decoded = decodeFor(method, packet, message, method.response_proto_type, method.response_content_type, method.enforce_response_content_type);
+                    method.decode_error = decoded.ok ? null : decoded.error;
+                    if (decoded.ok) {
+                        setReceived(method, method.response_proto_type, decoded.value);
+                        method.received_time = new Date();
+                    }
                     for (let i=0; i<$scope.console.requests.length; i++) {
                         const req = $scope.console.requests[i];
                         if (req.correlationData == packet.properties.correlationData) {
-                            req.response = obj;
+                            req.response = decoded.ok ? decoded.value : decoded.error;
                             req.responseTime = Date.now();
                         }
                     }
@@ -370,29 +649,173 @@ app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
         $scope.$apply();
     });
 
-    $scope.updateProperty = function(prop) {
-        const payload = JSON.stringify(prop.received);
-        publish_property_update(prop, payload);
-    };
- 
-    $scope.sendCommand = function(command) {
-        const payload = {};
-        for (const key in command.args) {
-            if (!command.args.hasOwnProperty(key)) continue;
-            payload[key] = command.args[key];
+{%- if stinger.uses_protobuf() %}
+    // How deep a protobuf message is rendered before the page stops descending.
+    //
+    // Protobuf allows a message to contain itself, and the controls below are
+    // built by a template that includes itself, so without a stop the page would
+    // expand forever rather than draw anything.
+    const PROTO_MAX_DEPTH = 6;
+
+    const protoFieldCache = {};
+
+    // The fields of a protobuf message, described for the controls to render.
+    //
+    // Memoised on the type name, and deliberately so: ng-repeat re-evaluates its
+    // expression on every digest and compares by identity, so returning a freshly
+    // built array each time would never settle.
+    $scope.protoFields = function(typeName) {
+        if (!protoFieldCache[typeName]) {
+            const messageType = protoRoot.lookupType(typeName);
+            protoFieldCache[typeName] = messageType.fieldsArray.map(function (field) {
+                const resolved = field.resolvedType;
+                const isMessage = !!(resolved && resolved.fieldsArray);
+                const isEnum = !!(resolved && resolved.values && !isMessage);
+                let inputType = "text";
+                let step = null;
+                if (PROTO_NUMBER_TYPES.indexOf(field.type) !== -1) {
+                    inputType = "number";
+                    step = (field.type === "double" || field.type === "float") ? "any" : "1";
+                } else if (PROTO_LONG_TYPES.indexOf(field.type) !== -1) {
+                    // Deliberately a text input: a 64-bit value is carried as a
+                    // string, and a number input would round it on the way in.
+                    inputType = "text";
+                } else if (field.type === "bool") {
+                    inputType = "checkbox";
+                }
+                return {
+                    name: field.name,
+                    id: field.id,
+                    type: field.type,
+                    repeated: !!field.repeated && !field.map,
+                    map: !!field.map,
+                    keyType: field.keyType || null,
+                    isMessage: isMessage,
+                    isEnum: isEnum,
+                    resolvedTypeName: isMessage || isEnum ? resolved.fullName.replace(/^\./, "") : null,
+                    enumValues: isEnum ? Object.keys(resolved.values) : null,
+                    inputType: inputType,
+                    step: step,
+                    label: (field.map ? "map<" + field.keyType + ", " : (field.repeated ? "repeated " : ""))
+                         + (isMessage || isEnum ? resolved.name : field.type)
+                         + (field.map ? ">" : "")
+                };
+            });
         }
-        const payload_str = JSON.stringify(payload);
-        publish_command(command, payload_str);
+        return protoFieldCache[typeName];
+    };
+
+    // The object a nested message field's controls bind into, created on demand.
+    // Called from ng-init, which runs once when the scope is made, rather than
+    // from an expression that would re-run on every digest.
+    $scope.protoChild = function(model, field) {
+        if (!model[field.name] || typeof model[field.name] !== "object") {
+            model[field.name] = {};
+        }
+        return model[field.name];
+    };
+
+    $scope.protoAddItem = function(model, field) {
+        if (!Array.isArray(model[field.name])) {
+            model[field.name] = [];
+        }
+        model[field.name].push(field.isMessage ? {} : (field.inputType === "checkbox" ? false : ""));
+    };
+
+    $scope.protoRemoveItem = function(model, field, index) {
+        if (Array.isArray(model[field.name])) {
+            model[field.name].splice(index, 1);
+        }
+    };
+
+    // Map entries are edited through a side list of {key, value} pairs.
+    //
+    // Editing a key in place is not possible otherwise: the key *is* the property
+    // name, so renaming it would mean deleting and recreating the property that
+    // ng-repeat is currently iterating.  The list is the source of truth while
+    // editing and is written back to the message on every change.
+    const protoMapEntryCache = new WeakMap();
+
+    $scope.protoMapEntries = function(model, field) {
+        let byField = protoMapEntryCache.get(model);
+        if (!byField) {
+            byField = {};
+            protoMapEntryCache.set(model, byField);
+        }
+        if (!byField[field.name]) {
+            const existing = model[field.name] || {};
+            byField[field.name] = Object.keys(existing).map(function (key) {
+                return {key: key, value: existing[key]};
+            });
+        }
+        return byField[field.name];
+    };
+
+    $scope.protoSyncMap = function(model, field) {
+        const entries = $scope.protoMapEntries(model, field);
+        const rebuilt = {};
+        for (const entry of entries) {
+            if (entry.key !== "" && entry.key !== null && entry.key !== undefined) {
+                rebuilt[entry.key] = entry.value;
+            }
+        }
+        model[field.name] = rebuilt;
+    };
+
+    $scope.protoAddMapEntry = function(model, field) {
+        $scope.protoMapEntries(model, field).push({key: "", value: field.isMessage ? {} : ""});
+    };
+
+    $scope.protoRemoveMapEntry = function(model, field, index) {
+        $scope.protoMapEntries(model, field).splice(index, 1);
+        $scope.protoSyncMap(model, field);
+    };
+
+    $scope.protoMaxDepth = PROTO_MAX_DEPTH;
+{%- endif %}
+
+    // A protobuf message is built from the whole `args` object, since a protobuf
+    // payload has no stinger arguments to copy across one at a time.
+    function outgoingBody(element, protoTypeName) {
+        if (protoTypeName) {
+            return element.args;
+        }
+        const body = {};
+        for (const key in element.args) {
+            if (!element.args.hasOwnProperty(key)) continue;
+            body[key] = element.args[key];
+        }
+        return body;
+    }
+
+    $scope.updateProperty = function(prop) {
+        const encoded = encodePayload(prop.proto_type, prop.received);
+        prop.encode_error = encoded.ok ? null : encoded.error;
+        if (!encoded.ok) {
+            console.warn("Not publishing property '" + prop.name + "': " + encoded.error);
+            return;
+        }
+        publish_property_update(prop, encoded.bytes, encoded.display);
+    };
+
+    $scope.sendCommand = function(command) {
+        const encoded = encodePayload(command.proto_type, outgoingBody(command, command.proto_type));
+        command.encode_error = encoded.ok ? null : encoded.error;
+        if (!encoded.ok) {
+            console.warn("Not publishing command '" + command.name + "': " + encoded.error);
+            return;
+        }
+        publish_command(command, encoded.bytes, encoded.display);
         command.sent_time = new Date();
     };
 
     $scope.callMethod = function(method) {
-        const payload = {};
-        for (const key in method.args) {
-            if (!method.args.hasOwnProperty(key)) continue;
-            payload[key] = method.args[key];
+        const encoded = encodePayload(method.request_proto_type, outgoingBody(method, method.request_proto_type));
+        method.encode_error = encoded.ok ? null : encoded.error;
+        if (!encoded.ok) {
+            console.warn("Not calling method '" + method.name + "': " + encoded.error);
+            return;
         }
-        const payload_str = JSON.stringify(payload);
-        method.pending_correlation_id = publish_method_request(method, payload_str);
+        method.pending_correlation_id = publish_method_request(method, encoded.bytes, encoded.display);
     };
 });

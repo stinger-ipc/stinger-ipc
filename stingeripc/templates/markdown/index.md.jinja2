@@ -21,9 +21,9 @@ Carried as the protobuf message **`{{ payload.protobuf.full_name }}`**, defined 
 {%- endmacro -%}
 {%- macro content_type_row(payload) -%}
 {%- if payload.is_protobuf -%}
-| content-type | `{{ config.protobuf_mime_type }}; messageType="{{ payload.protobuf.full_name }}"` |
+| content-type | `{{ payload.content_type }}; messageType="{{ payload.protobuf.full_name }}"` |
 {%- else -%}
-| content-type | `application/json` |
+| content-type | `{{ payload.content_type }}` |
 {%- endif -%}
 {%- endmacro -%}
 # _{{stinger.title}}_ API Overview 

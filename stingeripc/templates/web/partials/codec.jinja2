@@ -1,0 +1,182 @@
+{#
+    The wire codec for one payload, for the browser.
+
+    The counterpart of templates/python/partials/codec.jinja2 and
+    templates/rust/partials/codec.jinja2.  Every macro takes a `Payload` and
+    answers one question about how that payload crosses the wire, so index.html
+    and app.js are written once and do not branch on the encoding themselves.
+
+    Import into a template with:
+        {% import "partials/codec.jinja2" as codec %}
+
+    Imported macros do not inherit the calling template's context, so anything
+    they need is passed in explicitly.
+
+    Unlike the other languages, both of this tree's consumers are rendered by
+    different templators -- index.html by `WebTemplator` and app.js by
+    `CodeTemplator` -- and the two do not offer the same filters.  Only filters
+    both provide (`lowerCamelCase`, `snake_case`) may be used here.
+#}
+
+{#
+    The MQTT content type messages carrying this payload are published with.
+
+    Emitted bare, so a caller quotes it the way its own output needs.
+#}
+{%- macro content_type(payload) -%}
+{{ payload.content_type }}
+{%- endmacro -%}
+
+{#
+    Whether a receiver rejects a message whose content type does not match.
+
+    False only for a protobuf payload of an interface configured with
+    `[protobuf] mime_type = false`, which says messages are not labelled at all.
+    Rendered as a JavaScript boolean literal.
+#}
+{%- macro enforce_content_type(payload) -%}
+{{ "true" if payload.enforce_content_type else "false" }}
+{%- endmacro -%}
+
+{#
+    The protobuf message this payload carries, as a JavaScript literal.
+
+    The fully-qualified name as a quoted string for a protobuf payload, and
+    `null` for a JSON one.  `decodePayload`/`encodePayload` in app.js switch on
+    exactly this, so a payload's encoding is decided in one place per element
+    rather than at each publish and receive site.
+#}
+{%- macro proto_type(payload) -%}
+{%- if payload.is_protobuf -%}
+"{{ payload.protobuf.full_name }}"
+{%- else -%}
+null
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    A human-readable description of the payload's encoding, for the UI.
+#}
+{%- macro encoding_label(payload) -%}
+{%- if payload.is_protobuf -%}
+protobuf message {{ payload.protobuf.full_name }}
+{%- else -%}
+JSON
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    The controls for one protobuf payload.
+
+    A single element that pulls in the recursive `proto-field-list.html` template
+    below.  The fields are not unrolled here the way `arglist` unrolls a JSON
+    payload's arguments, because a protobuf message may nest or repeat other
+    messages to any depth: the shape is known to the browser, from the schema in
+    proto_bundle.js, rather than to the generator.
+
+    `model_expr` is the Angular expression holding the message's values, and
+    `read_only` renders them without controls.
+#}
+{%- macro protoform(payload, model_expr, read_only) -%}
+{#- The ng-if is what gives this form a scope of its own.  ng-init assigns to the
+    scope of the element it sits on, and ng-include makes a scope for its content
+    but not for its own attributes, so without it every form on the page would
+    write `ctx` to the one controller scope and only the last would survive. -#}
+<div class="proto-form" ng-if="true"
+     ng-init="ctx = {type: '{{ payload.protobuf.full_name }}', model: {{ model_expr }}, readOnly: {{ "true" if read_only else "false" }}, depth: 0}"
+     ng-include="'proto-field-list.html'"></div>
+{%- endmacro -%}
+
+{#
+    The one copy of the recursive field template, emitted once per page.
+
+    AngularJS renders a tree of unknown depth by having a template include itself,
+    which needs no build step and no custom directive.  Each level puts a fresh
+    `ctx` on the scope that ng-if or ng-repeat has already created for it, so the
+    include below reads its own context rather than its parent's.
+#}
+{%- macro field_list_template(stinger) -%}
+{%- if stinger.uses_protobuf() %}
+    <script type="text/ng-template" id="proto-field-list.html">
+      <table class="arglist proto-arglist">
+        <tr class="argrow" ng-repeat="f in protoFields(ctx.type)">
+          <td class="arg-name-cell">
+            <div class="arg-name">{{ '{{f.name}}' }}</div>
+            <div class="proto-field-type">{{ '{{f.label}}' }}</div>
+          </td>
+          <td class="arg-value-cell">
+
+            <span class="proto-depth-limit" ng-if="ctx.depth >= protoMaxDepth">nested deeper &mdash; not shown</span>
+
+            <!-- A message: the same template again, one level down. -->
+            <div class="proto-nested"
+                 ng-if="ctx.depth < protoMaxDepth && f.isMessage && !f.repeated && !f.map"
+                 ng-init="ctx = {type: f.resolvedTypeName, model: protoChild(ctx.model, f), readOnly: ctx.readOnly, depth: ctx.depth + 1}"
+                 ng-include="'proto-field-list.html'"></div>
+
+            <!-- An enum binds its value name, not its number, which is what the
+                 schema in proto_bundle.js reads back on encode. -->
+            <select ng-if="ctx.depth < protoMaxDepth && f.isEnum && !f.repeated && !f.map"
+                    ng-disabled="ctx.readOnly"
+                    ng-model="ctx.model[f.name]"
+                    ng-options="v as v for v in f.enumValues"></select>
+
+            <!-- A plain scalar. -->
+            <input ng-if="ctx.depth < protoMaxDepth && !f.isMessage && !f.isEnum && !f.repeated && !f.map"
+                   ng-disabled="ctx.readOnly"
+                   type="{{ '{{f.inputType}}' }}"
+                   step="{{ '{{f.step}}' }}"
+                   ng-model="ctx.model[f.name]" />
+
+            <!-- A repeated field, of either kind. -->
+            <div class="proto-repeated" ng-if="ctx.depth < protoMaxDepth && f.repeated">
+              <div class="proto-repeated-item" ng-repeat="item in ctx.model[f.name] track by $index">
+                <div ng-if="f.isMessage"
+                     ng-init="ctx = {type: f.resolvedTypeName, model: ctx.model[f.name][$index], readOnly: ctx.readOnly, depth: ctx.depth + 1}"
+                     ng-include="'proto-field-list.html'"></div>
+                <select ng-if="f.isEnum"
+                        ng-disabled="ctx.readOnly"
+                        ng-model="ctx.model[f.name][$index]"
+                        ng-options="v as v for v in f.enumValues"></select>
+                <input ng-if="!f.isMessage && !f.isEnum"
+                       ng-disabled="ctx.readOnly"
+                       type="{{ '{{f.inputType}}' }}"
+                       step="{{ '{{f.step}}' }}"
+                       ng-model="ctx.model[f.name][$index]" />
+                <button type="button" class="publish-button proto-remove" ng-if="!ctx.readOnly"
+                        ng-click="protoRemoveItem(ctx.model, f, $index)">&#10005;</button>
+              </div>
+              <button type="button" class="publish-button" ng-if="!ctx.readOnly"
+                      ng-click="protoAddItem(ctx.model, f)">+ Add {{ '{{f.name}}' }}</button>
+            </div>
+
+            <!-- A map, edited through a list of key/value pairs. -->
+            <div class="proto-map" ng-if="ctx.depth < protoMaxDepth && f.map">
+              <div class="proto-map-entry" ng-repeat="entry in protoMapEntries(ctx.model, f) track by $index">
+                <input class="proto-map-key" ng-disabled="ctx.readOnly" type="text" placeholder="key"
+                       ng-model="entry.key" ng-change="protoSyncMap(ctx.model, f)" />
+                <div class="proto-nested" ng-if="f.isMessage"
+                     ng-init="ctx = {type: f.resolvedTypeName, model: entry.value, readOnly: ctx.readOnly, depth: ctx.depth + 1}"
+                     ng-include="'proto-field-list.html'"></div>
+                <select ng-if="f.isEnum"
+                        ng-disabled="ctx.readOnly"
+                        ng-model="entry.value"
+                        ng-change="protoSyncMap(ctx.model, f)"
+                        ng-options="v as v for v in f.enumValues"></select>
+                <input ng-if="!f.isMessage && !f.isEnum" ng-disabled="ctx.readOnly"
+                       type="{{ '{{f.inputType}}' }}"
+                       step="{{ '{{f.step}}' }}"
+                       ng-model="entry.value" ng-change="protoSyncMap(ctx.model, f)" />
+                <button type="button" class="publish-button proto-remove" ng-if="!ctx.readOnly"
+                        ng-click="protoRemoveMapEntry(ctx.model, f, $index)">&#10005;</button>
+              </div>
+              <button type="button" class="publish-button" ng-if="!ctx.readOnly"
+                      ng-click="protoAddMapEntry(ctx.model, f)">+ Add entry</button>
+            </div>
+
+          </td>
+        </tr>
+      </table>
+    </script>
+{%- endif %}
+{%- endmacro -%}
