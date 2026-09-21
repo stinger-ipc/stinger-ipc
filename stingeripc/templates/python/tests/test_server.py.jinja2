@@ -6,6 +6,8 @@ Tests for {{stinger.name}} server.
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 import sys
+import threading
+import time
 from pathlib import Path
 {{ imports.datetime_types(config) }}
 from {{stinger.python.module_name}}.server import {{stinger.name | UpperCamelCase}}Server
@@ -26,6 +28,19 @@ def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
     """Convert a Pydantic model to a JSON-serializable dict."""
     json_str = model.model_dump_json(by_alias=True)
     return json.loads(json_str)
+
+{%if stinger.methods | length > 0 %}
+def wait_for(predicate, timeout: float = 2.0) -> bool:
+    """The server handles method requests on its own dispatch thread rather than on the
+    thread that delivered the message, so a test has to wait for the handling to land
+    instead of asserting immediately after simulating a request."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if predicate():
+            return True
+        time.sleep(0.001)
+    return predicate()
+{%endif%}
 
 class {{stinger.name|UpperCamelCase}}ServerSetup:
 
@@ -485,6 +500,8 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # The dispatch thread handles the request, so wait for it to publish the response.
+        assert wait_for(lambda: len(mock_connection.find_published(response_topic)) > 0), f"No response message was published for method '{{method_name|snake_case}}'."
         assert received_request is not None, "Handler for method '{{method_name|snake_case}}' was not called"
         assert isinstance(received_request, {{method.request_payload.python.class_name}}), f"Handler was called with {type(received_request)} rather than the request message"
         assert received_request == request_obj, "Handler did not receive the request that was sent"
@@ -533,6 +550,9 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
         )
         mock_connection.simulate_message(incoming_msg)
 
+        # The dispatch thread handles the request, so wait for it to publish the response.
+        assert wait_for(lambda: len(mock_connection.find_published(response_topic)) > 0), f"No response message was published for method '{{method_name|snake_case}}'."
+
         # Verify that handler was called with correct arguments
         assert received_args is not None, "Handler for method '{{method_name|snake_case}}' was not called"
         assert method_data == received_args, f"Handler arguments {received_args} do not match expected {method_data}"
@@ -555,6 +575,62 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
         {%endif-%}
         assert resp_payload == expected_resp_dict, f"Response payload '{resp_payload}' does not match expected '{expected_resp_dict}'"
     {%- endif %}
+
+    def test_{{method_name|snake_case}}_request_does_not_block_delivering_thread(self, server, mock_connection):
+        """A '{{method_name|snake_case}}' handler must not run on the thread that delivered the
+        request.  The application's handler is arbitrarily slow, and running it inline would
+        stall the broker's network loop: no keep-alives, no other subscriptions, no outgoing
+        publishes for as long as the handler takes."""
+        handler_entered = threading.Event()
+        release_handler = threading.Event()
+
+        def handler(*args) -> {{method.python.return_value_annotation}}:
+            handler_entered.set()
+            # Block until the test releases it, but give up eventually so that a regression
+            # to inline handling fails this test rather than hanging the suite.
+            release_handler.wait(timeout=5.0)
+            return {%if method.request_payload.is_protobuf%}{{method.python.return_value_annotation}}(){%else%}{{method.get_return_value_random_example_value('python')}}{%endif%}
+
+        server.handle_{{method_name|snake_case}}(handler)
+
+        {%- if method.request_payload.is_protobuf %}
+        request_payload = {{method.request_payload.python.class_name}}().SerializeToString()
+        content_type = "{{ config.protobuf.mime_type }}"
+        {%- else %}
+        method_data = {
+            {%-for arg in method.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
+            {%-endfor%}
+        } # type: Dict[str, Any]
+        request_obj = {{method.request_payload.python.class_name}}(**method_data)
+        request_payload = request_obj.model_dump_json(by_alias=True).encode('utf-8')
+        content_type = "application/json"
+        {%- endif %}
+        response_topic = "client/test/slow-response"
+        incoming_msg = Message(
+            topic="{{method.request_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
+            payload=request_payload,
+            qos=1,
+            retain=False,
+            content_type=content_type,
+            response_topic=response_topic,
+            correlation_data=b"method-slow",
+        )
+
+        # Delivering the request must hand control straight back, not wait for the handler.
+        delivery_start = time.monotonic()
+        mock_connection.simulate_message(incoming_msg)
+        delivery_duration = time.monotonic() - delivery_start
+
+        try:
+            assert handler_entered.wait(timeout=2.0), "The '{{method_name|snake_case}}' handler was never called"
+            assert delivery_duration < 0.5, f"Delivering the '{{method_name|snake_case}}' request waited {delivery_duration}s on the handler"
+            # The handler is still blocked, so it cannot have responded yet.
+            assert mock_connection.find_published(response_topic) == [], "A '{{method_name|snake_case}}' response was published before the handler returned"
+        finally:
+            release_handler.set()
+
+        assert wait_for(lambda: len(mock_connection.find_published(response_topic)) == 1), "No '{{method_name|snake_case}}' response was published once the handler returned"
     {%endfor%}
 {%endif%}
 

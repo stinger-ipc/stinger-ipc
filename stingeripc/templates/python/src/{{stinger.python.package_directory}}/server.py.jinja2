@@ -11,6 +11,7 @@ This is the Server for the {{stinger.name}} interface.
 {%- import "partials/codec.jinja2" as codec %}
 import json
 import logging
+import queue
 import threading
 import signal
 from time import sleep
@@ -23,7 +24,7 @@ import functools
 from concurrent.futures import Future
 logging.basicConfig(level=logging.DEBUG)
 from pydantic import BaseModel, ValidationError
-from typing import Callable, Dict, Any, Optional, List, Generic, TypeVar, Union, Coroutine
+from typing import Callable, Dict, Any, Optional, List, Generic, Tuple, TypeVar, Union, Coroutine
 from pystingerconniface import IBrokerConnection, Message
 from stinger_python_utils.message_creator import MessageCreator
 from stinger_python_utils.return_codes import (
@@ -111,6 +112,22 @@ class {{stinger.python.server_class_name}}:
         self._running = True
         self._conn.add_message_callback(self._receive_message)
         self._force_property_publish = False # can be set to true for unit tests
+        {%-if stinger.methods|length > 0 %}
+        # Incoming method requests are handled on this thread rather than on the broker's
+        # network loop thread, so an application's method handler may take as long as it
+        # needs without stalling MQTT traffic (keep-alives, other subscriptions, outgoing
+        # publishes).  Requests are handled one at a time in arrival order, which is the
+        # same serialization handlers saw when they ran on the loop thread.
+        self._method_request_queue = queue.Queue() # type: queue.Queue[Optional[Tuple[Callable[[Message], None], Message]]]
+        self._method_request_lock = threading.Lock()
+        # Cleared on shutdown so that no further requests are queued.  Requests already
+        # queued are still handled, so a client waiting on one gets its response.
+        self._method_request_accepting = True
+        # Started before subscribing, so that no request can arrive before there is a
+        # thread to handle it.
+        self._method_request_thread = threading.Thread(target=self._method_request_thread_loop, daemon=True)
+        self._method_request_thread.start()
+        {%-endif%}
         {%for prop_name, prop in stinger.properties.items()%}
         {%-if config.properties.stinger_owned_values%}
         self._property_{{prop_name|snake_case}}: PropertyControls[{{prop.python.annotation}}] = PropertyControls(value=initial_property_values.{{prop_name|snake_case}}{%if config.properties.version_tracking%}, version=initial_property_values.{{prop_name|snake_case}}_version{%endif%})
@@ -122,7 +139,7 @@ class {{stinger.python.server_class_name}}:
         {%endif%}{# end read_only prop -#}
         {%endfor-%}
         {%-for method_name, method in stinger.methods.items()%}
-        self._conn.subscribe("{{method.request_topic()}}".format(**self._topic_template_kwargs), self._process_{{method_name | snake_case}}_call) # type: ignore[str-format]
+        self._conn.subscribe("{{method.request_topic()}}".format(**self._topic_template_kwargs), self._enqueue_method_request(self._process_{{method_name | snake_case}}_call)) # type: ignore[str-format]
         self._method_{{method_name|snake_case}}_handler = None # type: Optional[{{method_type_annotation(method)}}]
         {%endfor%}
         {%-for command_name, command in stinger.commands.items()%}
@@ -145,22 +162,69 @@ class {{stinger.python.server_class_name}}:
     def _signal_handler(self, signum, frame):
         self.shutdown()
 
+    {%if stinger.methods|length > 0 -%}
+    def _enqueue_method_request(self, processor: Callable[[Message], None]) -> Callable[[Message], None]:
+        """ Wraps a method request processor in the callback that is given to the broker.
+        The broker's network loop thread only queues the request; the dispatch thread does
+        the deserializing, the call into the application's handler and the publishing of
+        the response.
+        """
+        def enqueue(message: Message) -> None:
+            with self._method_request_lock:
+                if not self._method_request_accepting:
+                    # The server is shutting down, so the request would never be handled.
+                    self._logger.warning("Dropping a method request received while the server is shutting down.")
+                    return
+                self._method_request_queue.put((processor, message))
+        return enqueue
+
+    def _method_request_thread_loop(self):
+        """ Handles queued method requests, one at a time, in arrival order, until shutdown
+        puts the sentinel on the queue.  Requests queued before then are handled first, so a
+        client waiting on one still gets its response.
+        """
+        while True:
+            item = self._method_request_queue.get()
+            if item is None:
+                return
+            processor, message = item
+            try:
+                processor(message)
+            except Exception as e:
+                # Each `_process_*_call` handles its own errors and answers the client; this
+                # is a last resort so that one bad request cannot kill the dispatch thread.
+                self._logger.exception("Exception while dispatching a method request", exc_info=e)
+
+    {%endif-%}
     def set_event_loop(self, loop: asyncio.AbstractEventLoop):
         """ Sets the event loop for this server.  This is required if any method handlers or property update handlers are async functions that need to be run on an event loop.
         """
         self._event_loop = loop
 
     def shutdown(self, timeout: float=5.0):
-        """Gracefully shutdown the server and stop the advertisement thread."""
+        """Gracefully shutdown the server and stop the advertisement thread{%if stinger.methods|length > 0%} and the method request dispatch thread{%endif%}."""
         if not self._running:
             return
         self._running = False
+        {%-if stinger.methods|length > 0 %}
+        # Stop the method request dispatch thread.  Requests that arrive from here on are
+        # dropped, while requests already queued are handled before the thread exits.
+        with self._method_request_lock:
+            self._method_request_accepting = False
+        self._method_request_queue.put(None)
+        {%-endif%}
         self._conn.unpublish_retained(self._service_advert_topic)
         {%-if stinger.properties|length > 0 %}
         self._unpublish_all_properties()
         {%-endif%}
         if hasattr(self, '_advertise_thread') and self._advertise_thread.is_alive():
             self._advertise_thread.join(timeout=timeout)
+        {%-if stinger.methods|length > 0 %}
+        # A handler running on the dispatch thread may itself call `shutdown()`; it cannot
+        # wait for the thread it is running on.
+        if hasattr(self, '_method_request_thread') and self._method_request_thread.is_alive() and self._method_request_thread is not threading.current_thread():
+            self._method_request_thread.join(timeout=timeout)
+        {%-endif%}
 
     @property
     def instance_id(self) -> str:
