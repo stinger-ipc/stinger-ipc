@@ -11,7 +11,7 @@ dependencies = [
     "jsonschema>=4.0.0", # Not the best json schema library.  TODO: use a faster one.
     "pyqttier>=0.3.0",
     "py-stinger-conn-iface>=0.1.3",
-    "stinger-python-utils>=0.3.0",{% if stinger.uses_protobuf() %}
+    "stinger-python-utils>=0.4.0",{% if stinger.uses_protobuf() %}
     "protobuf{%if config.python.python37%}==4.24.4{%else%}>=5.29{%endif%}", # This interface carries protobuf payloads.{% endif %}
     {%if config.python.python37%}"typing-extensions>=4.0.0",{%endif%}
 ]
