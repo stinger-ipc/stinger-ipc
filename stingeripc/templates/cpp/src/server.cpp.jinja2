@@ -35,6 +35,16 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
         : _broker(broker), _instanceId(instanceId), _advertisementThreadRunning(false){%-for topic_param in stinger.topics.params %}, _{{topic_param | lowerCamelCase}}TopicParam( {{topic_param|lowerCamelCase}} ){%endfor%}
         
 {
+    {%if stinger.methods|length > 0 -%}
+    // Start the method request dispatch thread before registering the message callback,
+    // so that no request can arrive before there is a thread to handle it.
+    {
+        std::lock_guard<std::mutex> lock(_methodRequestMutex);
+        _methodRequestAcceptingRequests = true;
+    }
+    _methodRequestThread = std::thread(&{{stinger.cpp.server_class_name}}::_methodRequestThreadLoop, this);
+
+    {% endif -%}
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](
             const stinger::mqtt::Message& msg)
     {
@@ -73,6 +83,21 @@ constexpr const char {{stinger.cpp.server_class_name}}::INTERFACE_VERSION[];
         _brokerMessageCallbackHandle = 0;
     }
 
+    {%if stinger.methods|length > 0 -%}
+    // Stop the method request dispatch thread.  The message callback is unregistered by
+    // now, so no further requests will be queued; requests already queued are handled
+    // before the thread exits, so a client waiting on one still gets its response.
+    {
+        std::lock_guard<std::mutex> lock(_methodRequestMutex);
+        _methodRequestAcceptingRequests = false;
+    }
+    _methodRequestCondition.notify_all();
+    if (_methodRequestThread.joinable())
+    {
+        _methodRequestThread.join();
+    }
+
+    {% endif -%}
     // Stop the advertisement thread
     _advertisementThreadRunning = false;
     if (_advertisementThread.joinable())
@@ -115,18 +140,30 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(const stinger::mqtt::Mes
         {
             _broker->Log(LOG_INFO, "Received DebugInfo on topic %s: %s", msg.topic.c_str(), msg.properties.debugInfo->c_str());
         }
-        try {
-            if (_{{method_name | camelCase}}Handler)
-            {
-                _call{{method_name | UpperCamelCase}}Handler(msg.topic, msg.payload, msg.properties.contentType, msg.properties.correlationData, msg.properties.responseTopic);
-            }
-        }
-        catch (const std::exception&)
+        // Copy what handling the request needs out of `msg`, which does not outlive this
+        // callback, and hand it to the dispatch thread.  Deserializing the request,
+        // calling the application handler and publishing the response all happen there,
+        // so a slow handler cannot stall the broker's network loop thread.
+        std::string requestTopic = msg.topic;
+        std::string requestPayload = msg.payload;
+        std::optional<std::string> contentType = msg.properties.contentType;
+        std::optional<std::vector<std::byte>> correlationData = msg.properties.correlationData;
+        std::optional<std::string> responseTopic = msg.properties.responseTopic;
+        _enqueueMethodRequest([this, requestTopic, requestPayload, contentType, correlationData, responseTopic]()
         {
-            // We couldn't find an integer out of the string in the topic name,
-            // so we are dropping the message completely. 
-            // TODO: Log this failure
-        }
+            try {
+                if (_{{method_name | camelCase}}Handler)
+                {
+                    _call{{method_name | UpperCamelCase}}Handler(requestTopic, requestPayload, contentType, correlationData, responseTopic);
+                }
+            }
+            catch (const std::exception&)
+            {
+                // We couldn't find an integer out of the string in the topic name,
+                // so we are dropping the message completely. 
+                // TODO: Log this failure
+            }
+        });
     }
     {%endfor%}
     {%for command_name, command in stinger.commands.items()%}
@@ -144,6 +181,49 @@ void {{stinger.cpp.server_class_name}}::_receiveMessage(const stinger::mqtt::Mes
     }
     {%endfor%}
 }
+
+{%if stinger.methods|length > 0%}
+void {{stinger.cpp.server_class_name}}::_enqueueMethodRequest(std::function<void()> job)
+{
+    {
+        std::lock_guard<std::mutex> lock(_methodRequestMutex);
+        if (!_methodRequestAcceptingRequests)
+        {
+            // The server is shutting down, so the request would never be handled.
+            _broker->Log(LOG_WARNING, "Dropping a method request received while the server is shutting down.");
+            return;
+        }
+        _methodRequestQueue.push_back(std::move(job));
+    }
+    _methodRequestCondition.notify_one();
+}
+
+void {{stinger.cpp.server_class_name}}::_methodRequestThreadLoop()
+{
+    while (true)
+    {
+        std::function<void()> job;
+        {
+            std::unique_lock<std::mutex> lock(_methodRequestMutex);
+            _methodRequestCondition.wait(lock, [this]
+            {
+                return !_methodRequestQueue.empty() || !_methodRequestAcceptingRequests;
+            });
+            if (_methodRequestQueue.empty())
+            {
+                // Shutting down with nothing left to handle.
+                return;
+            }
+            job = std::move(_methodRequestQueue.front());
+            _methodRequestQueue.pop_front();
+        }
+
+        // Run outside the lock: the handler may take arbitrarily long, and requests
+        // arriving meanwhile must still be able to queue.
+        job();
+    }
+}
+{%endif%}
 
 {%for sig_name, sig in stinger.signals.items()%}
 std::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp.func_param_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})

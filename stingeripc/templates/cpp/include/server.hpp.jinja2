@@ -20,6 +20,8 @@ It contains enumerations used by the {{stinger.name}} interface.
 #include <chrono>
 #include <thread>
 #include <atomic>
+#include <condition_variable>
+#include <deque>
 #include <rapidjson/document.h>
 {%if stinger.properties | length > 0 %}
 #include "property_structs.hpp"
@@ -121,6 +123,37 @@ private:
     {%endfor%}
     {%endif%}
 
+    {%if stinger.methods|length > 0 -%}
+    // ------------- METHOD REQUEST DISPATCH --------------
+
+    // Incoming method requests are handled on this thread rather than on the broker's
+    // network loop thread, so an application's method handler may take as long as it
+    // needs without stalling MQTT traffic (keep-alives, other subscriptions, outgoing
+    // publishes).  Requests are handled one at a time in arrival order, which is the
+    // same serialization handlers saw when they ran on the loop thread.
+    std::thread _methodRequestThread;
+
+    // Queued method requests.  Each entry deserializes one request, calls the
+    // application handler and publishes the response.
+    std::deque<std::function<void()>> _methodRequestQueue;
+
+    // Guards `_methodRequestQueue` and `_methodRequestAcceptingRequests`.
+    std::mutex _methodRequestMutex;
+
+    // Signals the dispatch thread that a request was queued, or that it should stop.
+    std::condition_variable _methodRequestCondition;
+
+    // Cleared on destruction so that no further requests are queued.  Requests already
+    // queued are still handled, so a client waiting on one gets its response.
+    bool _methodRequestAcceptingRequests = false;
+
+    // Hands a received method request to the dispatch thread.
+    void _enqueueMethodRequest(std::function<void()> job);
+
+    // Method that runs in the method request dispatch thread.
+    void _methodRequestThreadLoop();
+
+    {%endif%}
     // ---------------- SERVICE ADVERTISEMENT ------------------
 
     // Thread for publishing service advertisement messages
