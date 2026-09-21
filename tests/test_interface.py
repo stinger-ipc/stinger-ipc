@@ -21,6 +21,13 @@ class TestSpecCreateManually(unittest.TestCase):
         self.assertEqual(len(self.spec.signals), 1)
         self.assertIn("mySignal", self.spec.signals)
 
+    def test_interface_info_topic(self):
+        self.assertEqual(self.spec.interface_info_topic(), "test_interface/{service_id}/interface")
+
+    def test_interface_info_subscription_topic(self):
+        """Every placeholder left after the interface name becomes an MQTT wildcard."""
+        self.assertEqual(self.spec.interface_info_subscription_topic(), "test_interface/+/interface")
+
 
 class TestSpecCreateFromStructure(unittest.TestCase):
     def setUp(self):

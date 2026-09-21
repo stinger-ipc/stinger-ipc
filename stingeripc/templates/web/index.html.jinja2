@@ -44,10 +44,24 @@
           {{ arglist(arg.values, new_model_parts, read_only) }}
         </div>
         {%elif arg.arg_type|lower == "argtype.binary"%}
-        {%if arg.content_type and arg.content_type.startswith('image/')%}
-        <img class="binary-image" ng-if="{{modelpath}}.{{arg.name}}" ng-src="data:{{arg.content_type}};base64,{{ '{{' }}{{modelpath}}.{{arg.name}}{{ '}}' }}" alt="{{arg.name}}" />
+        {#- A binary arg declares a contentType, so one that carries an image, a sound or
+            a video can be shown as media rather than as the base64 text that came over
+            the wire, and can be filled from a local file rather than pasted base64. #}
+        {%- set is_image = arg.content_type and arg.content_type.startswith('image/') %}
+        {%- set is_audio = arg.content_type and arg.content_type.startswith('audio/') %}
+        {%- set is_video = arg.content_type and arg.content_type.startswith('video/') %}
+        {%if is_image or is_audio or is_video%}
+        {%if is_image%}
+        <img class="binary-media binary-image" alt="{{arg.name}}" ng-if="{{modelpath}}.{{arg.name}}" binary-media="{{modelpath}}.{{arg.name}}" binary-media-type="{{arg.content_type}}" />
+        {%elif is_audio%}
+        <audio class="binary-media binary-audio" controls preload="metadata" ng-if="{{modelpath}}.{{arg.name}}" binary-media="{{modelpath}}.{{arg.name}}" binary-media-type="{{arg.content_type}}"></audio>
+        {%else%}
+        <video class="binary-media binary-video" controls preload="metadata" ng-if="{{modelpath}}.{{arg.name}}" binary-media="{{modelpath}}.{{arg.name}}" binary-media-type="{{arg.content_type}}"></video>
+        {%endif%}
+        <div class="binary-empty" ng-if="!{{modelpath}}.{{arg.name}}">no <code>{{arg.content_type}}</code> data</div>
         {%if not read_only%}
-        <input type="text" ng-model="{{modelpath}}.{{arg.name}}" placeholder="base64 image data" />
+        <input type="file" class="binary-file" accept="{{arg.content_type}}" binary-file="{{modelpath}}.{{arg.name}}" />
+        <input type="text" class="binary-base64" ng-model="{{modelpath}}.{{arg.name}}" placeholder="or paste base64 {{arg.content_type}} data" />
         {%endif%}
         {%else%}
         Binary: <input {%if read_only%}disabled {%endif%}type="text" ng-model="{{modelpath}}.{{arg.name}}" />

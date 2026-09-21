@@ -309,14 +309,52 @@ td.arg-name-cell {
     margin-top: 2px;
 }
 
-.binary-image {
+.binary-media {
     display: block;
+    margin-bottom: 6px;
+}
+
+.binary-image {
     max-width: 240px;
     max-height: 240px;
     height: auto;
     border: 1px solid #d6dbe8;
     border-radius: 6px;
-    margin-bottom: 6px;
+}
+
+.binary-audio {
+    width: 100%;
+    max-width: 320px;
+}
+
+.binary-video {
+    max-width: 320px;
+    max-height: 240px;
+    border: 1px solid #d6dbe8;
+    border-radius: 6px;
+    background: #000;
+}
+
+/* File picker offered alongside the base64 field for a media binary arg. */
+.binary-file {
+    display: block;
+    font-size: 0.8em;
+    margin-bottom: 4px;
+}
+
+.binary-base64 {
+    display: block;
+}
+
+/* Shown in place of the media element until a value arrives. */
+.binary-empty {
+    font-size: 0.8em;
+    font-style: italic;
+    color: #817d83ff;
+}
+
+.binary-empty code {
+    font-style: normal;
 }
 
 tr.argrow:not(:last-child) {

@@ -23,6 +23,69 @@ function resolveTopic(topic) {
 
 var app = angular.module("myApp", []);
 
+// Fills a binary arg from a local file instead of pasted base64.
+//
+// The file is read as a data URL and only its base64 payload is kept, which is the shape
+// a binary arg travels in over the wire.  `ng-model` is not used: AngularJS has no handler
+// for `input[type=file]` and would fall back to assigning `value`, which browsers forbid
+// on a file input.  So the model expression is assigned directly instead.
+//
+//   <input type="file" accept="image/png" binary-file="methods.setWallpaper.args.image" />
+app.directive("binaryFile", ["$parse", function ($parse) {
+    return {
+        restrict: "A",
+        link: function (scope, element, attrs) {
+            const assign = $parse(attrs.binaryFile).assign;
+            element.on("change", function (event) {
+                const file = event.target.files && event.target.files[0];
+                if (!file || !assign) {
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function () {
+                    // A data URL is "data:<contentType>;base64,<payload>".
+                    const payload = String(reader.result).split(",")[1] || "";
+                    scope.$apply(function () {
+                        assign(scope, payload);
+                    });
+                };
+                reader.onerror = function () {
+                    console.error("Could not read '" + file.name + "'", reader.error);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    };
+}]);
+
+// Renders a binary arg whose contentType is a media type as playable/viewable media.
+//
+// A binary arg travels as base64 inside the JSON payload, so the bytes are already a
+// data URL away from being displayable.  The `src` is assigned directly on the element
+// rather than through `ng-src`, because AngularJS treats a non-`img` element's `src` as
+// a RESOURCE_URL and would refuse a `data:` URL on an <audio> or <video> tag.
+//
+//   <img   binary-media="signals.doorbell.received.snapshot" binary-media-type="image/png" />
+//   <audio binary-media="signals.doorbell.received.chime"    binary-media-type="audio/wav" controls></audio>
+//   <video binary-media="signals.doorbell.received.clip"     binary-media-type="video/mp4" controls></video>
+app.directive("binaryMedia", function () {
+    return {
+        restrict: "A",
+        link: function (scope, element, attrs) {
+            const contentType = attrs.binaryMediaType || "application/octet-stream";
+            scope.$watch(attrs.binaryMedia, function (base64Data) {
+                if (base64Data) {
+                    element.attr("src", "data:" + contentType + ";base64," + base64Data);
+                } else {
+                    // No data yet: drop the src so the browser shows nothing rather than
+                    // a broken-media placeholder.
+                    element.removeAttr("src");
+                }
+            });
+        }
+    };
+});
+
 app.controller("myCtrl", function ($scope, $filter, $location, $timeout) {
 
     console.log("Running app");

@@ -164,6 +164,16 @@ class StingerSpec:
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name)
         return topic_template
 
+    def interface_info_subscription_topic(self) -> str:
+        """Return the MQTT filter matching the advertisement of every instance.
+
+        Every placeholder left in the ``interface_discovery`` topic template --
+        the service id and any custom topic parameters -- is replaced with the
+        single-level wildcard ``+``, so one subscription discovers all running
+        instances of this interface.
+        """
+        return topic_util.topic_template_to_mqtt_filter(self.interface_info_topic())
+
     @property
     def summary(self) -> str:
         """One-line summary of the interface, or an empty string if not set."""
