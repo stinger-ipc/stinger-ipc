@@ -44,7 +44,7 @@ All arguments can have optional fields:
 * `optional` (boolean) — whether the argument is optional; defaults to false
 * `example` — an example value used in demo code and documentation (not yet supported)
 * `index` (integer ≥ 1) — payload ordering index required for some serialization formats
-* `schema` (object) — a JSON Schema that further constrains the value (not yet supported)
+* `schema` (object) — a JSON Schema that further constrains the value (see [JSON Schema](#json-schema))
 
 Struct and enum arguments must have respective `structName` and `enumName` fields, where the value is the name of a struct or enum as defined in the stinger file.  When the parent component has a `version` field, struct and enum arguments should also include `structVersion` and `enumVersion` fields respectively.
 
@@ -129,6 +129,7 @@ interface:
   version: 0.0.1
   title: Example Interface
   summary: An example Stinger interface
+  license: MIT
   documentation: |
     Markdown *documentation* can be provided.  It will be used in documentation and code generations.
 
@@ -138,11 +139,16 @@ structures: {}
 
 signals: {}
 
+commands: {}
+
 methods: {}
 
 properties: {}
 
 ```
+
+`title`, `summary`, and `license` are all optional.  `license` names the license or
+copyright under which the interface is provided; all generated code is subject to it.
 
 ## Enums
 
@@ -207,6 +213,32 @@ signals:
         type: datetime
         description: The timestamp of the update.
 ```
+
+## Commands
+
+Commands are messages from a client to a server, with no response — the mirror image of
+a signal, or equivalently a method with no return value:
+
+```plantuml
+@startuml
+Client ->> Server : Command(Parameters)
+@enduml
+```
+
+```yaml
+commands:
+  setTheTable:
+    documentation: Tell the server to lay the table for a meal.
+    arguments:
+      - name: seats
+        type: integer
+        description: How many places to lay.
+```
+
+`arguments` is an array, the same as a signal's `values` or a method's `arguments`.
+Because there is no response, a command has no `returnValue`.  The server may have any
+number of things consuming a command, including none — an unconsumed command is simply
+logged and dropped, the same as a signal nothing is listening for.
 
 ## Methods
 
