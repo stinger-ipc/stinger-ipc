@@ -113,7 +113,10 @@ def asyncapi(
 @app.command()
 def validate(
     input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)],
-    config: Annotated[Optional[list[Path]], typer.Option("--config", "-c", exists=True, file_okay=True, dir_okay=False, readable=True, help="TOML configuration file; needed to check protobuf message names against your .proto sources")] = None,
+    config: Annotated[
+        Optional[list[Path]],
+        typer.Option("--config", "-c", exists=True, file_okay=True, dir_okay=False, readable=True, help="TOML configuration file; needed to check protobuf message names against your .proto sources"),
+    ] = None,
 ):
     """Validate a Stinger interface YAML file.
 

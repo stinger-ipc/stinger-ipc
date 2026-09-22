@@ -109,11 +109,7 @@ def emit_protobuf_bindings(template_dir: Path, outdir: Path, stinger, config_obj
         module_file = outdir / recipe["include_module"].format(**placeholders)
         # prost nests its output by protobuf package, so the search recurses and the
         # include paths stay relative to the module file.
-        generated = sorted(
-            f.relative_to(module_file.parent).as_posix()
-            for f in out_dir.rglob("*.rs")
-            if f.resolve() != module_file.resolve()
-        )
+        generated = sorted(f.relative_to(module_file.parent).as_posix() for f in out_dir.rglob("*.rs") if f.resolve() != module_file.resolve())
         header = recipe.get("include_module_header", "")
         body = "\n".join(f'include!("{name}");' for name in generated)
         module_file.write_text(f"{header}{body}\n")

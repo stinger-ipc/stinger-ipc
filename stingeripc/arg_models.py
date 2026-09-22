@@ -393,8 +393,7 @@ class ArgEnum(Arg):
         if not allowed_items:
             random.setstate(random_state)
             raise InvalidStingerStructure(
-                f"No member of the '{self.enum.name}' enum satisfies the 'schema' constraint "
-                f"{self.value_schema} declared on the '{self.name}' argument, so no example value can be built."
+                f"No member of the '{self.enum.name}' enum satisfies the 'schema' constraint " f"{self.value_schema} declared on the '{self.name}' argument, so no example value can be built."
             )
         random_enum_item = random.choice(allowed_items)
         if lang == "python":

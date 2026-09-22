@@ -80,6 +80,7 @@ class ProtobufConfig(BaseModel):
             raise ValueError("A TRUE value for protobuf mime type does not have a valid meaning")
         return v
 
+
 class DiscoveryConfig(BaseModel):
     """Configuration options for service discovery."""
 

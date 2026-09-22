@@ -185,7 +185,9 @@ class IpcMethod(InterfaceComponent):
         rather than half-read, since a method now returns at most one value.
         """
         if "returnValues" in method_spec:
-            raise InvalidStingerStructure(f"Method '{name}' uses 'returnValues', which was replaced by a single 'returnValue' in stinger spec version 0.3.0.  Return a struct to send several fields together.")
+            raise InvalidStingerStructure(
+                f"Method '{name}' uses 'returnValues', which was replaced by a single 'returnValue' in stinger spec version 0.3.0.  Return a struct to send several fields together."
+            )
 
         if "returnValue" not in method_spec:
             return None

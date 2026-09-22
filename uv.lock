@@ -1268,7 +1268,7 @@ wheels = [
 
 [[package]]
 name = "stinger-ipc"
-version = "0.11.0.dev2"
+version = "0.11.0b0"
 source = { editable = "." }
 dependencies = [
     { name = "asyncapi3" },

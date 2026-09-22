@@ -154,7 +154,6 @@ class TestResolution(unittest.TestCase):
         )
 
 
-
 class TestWellKnownTypes(unittest.TestCase):
     """Protobuf's own types resolve without the interface declaring them."""
 
@@ -291,7 +290,7 @@ class TestParsingProtobufElements(unittest.TestCase):
         self.assertTrue(payload.is_protobuf)
         self.assertEqual(payload.role, PayloadRole.SIGNAL)
         self.assertEqual(payload.arg_list, [], "a protobuf payload has no JSON arguments to iterate")
-        self.assertEqual(payload.content_type, "application/protobuf") # default value from config
+        self.assertEqual(payload.content_type, "application/protobuf")  # default value from config
 
     def test_command_carries_a_protobuf_payload(self):
         spec = _spec({"commands": {"c": {"protobuf": "weather.v1.Forecast"}}})
@@ -357,7 +356,6 @@ class TestInterfaceLevelHelpers(unittest.TestCase):
         sources = _sources()
         sources.resolve_all(self.spec.protobuf_messages())
         self.assertEqual(self.spec.protobuf_files(), ["weather.proto"])
-
 
 
 class TestPythonBindingImportRewrites(unittest.TestCase):

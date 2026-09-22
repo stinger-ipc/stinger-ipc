@@ -86,9 +86,7 @@ def _default_value(field: FieldDescriptorProto) -> Any:
 def _convert_field(field: FieldDescriptorProto, map_entries: dict[str, DescriptorProto]) -> dict[str, Any]:
     """One field, as protobuf.js describes it."""
     if field.type == _TYPE_GROUP:
-        raise ProtobufError(
-            f"Protobuf field '{field.name}' uses a proto2 group, which protobuf.js cannot represent.  Declare a nested message instead."
-        )
+        raise ProtobufError(f"Protobuf field '{field.name}' uses a proto2 group, which protobuf.js cannot represent.  Declare a nested message instead.")
 
     entry = map_entries.get(field.type_name) if field.label == _LABEL_REPEATED else None
     if entry is not None:
