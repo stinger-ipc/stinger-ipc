@@ -53,12 +53,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 packages = ["stingeripc", "stingeripc.tools", "stingeripc.symbols"]
-
-[tool.setuptools.package-data]
-stingeripc = [
-    "templates/**/*.jinja2",
-    "schema/*/schema.yaml",
-]
+include-package-data = true
 
 [project.scripts]
 stinger = "stingeripc.tools.cli:run"
