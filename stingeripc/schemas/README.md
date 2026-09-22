@@ -236,6 +236,23 @@ methods:
       description: True if the move was successful, false otherwise.
 ```
 
+### Timeouts
+
+A method may declare how many seconds a caller should wait for its response:
+
+```yaml
+methods:
+  RunSelfTest:
+    timeout: 60
+    arguments: []
+```
+
+`timeout` defaults to 5 seconds.  It does two things in the generated client: the call
+fails locally with a `TIMEOUT` return code once it elapses, and the request message is
+published with that expiry interval so the broker stops trying to deliver a request the
+caller has already given up on.  Set it higher for a method the server genuinely takes a
+long time to answer.
+
 ## Properties
 
 Properties are values held by the server.  They are re-published when the value changes.  A property has exactly one `value`, which is a single argument.  Use a `struct` or an `array` value to hold several fields together.

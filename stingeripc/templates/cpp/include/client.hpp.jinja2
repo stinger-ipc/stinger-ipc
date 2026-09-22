@@ -18,6 +18,9 @@ It contains enumerations used by the {{stinger.name}} interface.
 #include <mutex>
 #include <condition_variable>
 #include <chrono>
+#include <thread>
+#include <utility>
+#include <vector>
 #include <rapidjson/document.h>
 #include <stinger/mqtt/properties.hpp>
 #include <stinger/utils/iconnection.hpp>
@@ -49,6 +52,14 @@ public:
     // after subscribing to that property's value topic.
     static constexpr std::chrono::seconds PROPERTY_VALUE_TIMEOUT{5};
     {%- endif %}
+    {%- for method_name, method in stinger.methods.items() %}
+    // How long a `{{method_name}}` call waits for the server's response before its future is
+    // failed with a TIMEOUT exception and its bookkeeping discarded.  It is also the
+    // request message's expiry interval, so the broker stops trying to deliver a request
+    // whose caller has already stopped listening.  Declared as `timeout: {{method.timeout}}` on
+    // the '{{method_name}}' method.
+    static constexpr std::chrono::seconds {{method_name | CONST_CASE}}_METHOD_TIMEOUT{ {{-method.timeout-}} };
+    {%- endfor %}
 
     // Constructor taking a connection object.
     {{stinger.cpp.client_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const InstanceInfo& instanceInfo);
@@ -124,13 +135,45 @@ private:
     {%if stinger.methods|length > 0 -%}
     // ------------------- METHODS --------------------
 
+    // An in-flight method call: the promise waiting to be resolved, and the point in time
+    // after which the call is given up on so that neither the promise nor its map entry
+    // outlives a server that never answers.
+    template <typename ReturnType>
+    struct PendingMethodCall
+    {
+        std::promise<ReturnType> promise;
+        std::chrono::steady_clock::time_point deadline;
+    };
+
     {%-for method_name, method in stinger.methods.items()%}
-    // Holds promises for pending `{{method_name}}` method calls.
-    std::map<std::vector<std::byte>, std::promise<{{method.cpp.return_value_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
+    // Holds promises for pending `{{method_name}}` method calls.  Entries are added by the
+    // calling thread and removed by the broker's thread or the timeout thread, so every
+    // access takes the mutex below.
+    std::map<std::vector<std::byte>, PendingMethodCall<{{method.cpp.return_value_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
+    std::mutex _pending{{method_name|UpperCamelCase}}MethodCallsMutex;
     int _{{method_name | lowerCamelCase}}MethodSubscriptionId = -1;
     // This is called internally to process responses to `{{method_name}}` method calls.
     void _handle{{method_name|UpperCamelCase}}Response(const stinger::mqtt::Message& msg);
     {%endfor%}
+
+    // How often the timeout thread below looks for method calls that have passed their
+    // deadline.  A call is therefore failed at some point within this interval of its
+    // own timeout, which is close enough for a timeout measured in seconds.
+    static constexpr std::chrono::milliseconds METHOD_TIMEOUT_SWEEP_INTERVAL{500};
+
+    // Background thread that fails method calls the server never responded to.  One
+    // thread serves every method, rather than a timer per call.
+    std::thread _methodTimeoutThread;
+    std::mutex _methodTimeoutMutex;
+    std::condition_variable _methodTimeoutCondition;
+    bool _stopMethodTimeoutThread = false;
+
+    // Body of `_methodTimeoutThread`: sweep, wait, repeat until the client shuts down.
+    void _runMethodTimeoutThread();
+
+    // Fails every pending method call whose deadline has passed.  Called only from the
+    // timeout thread, and never while holding `_methodTimeoutMutex`.
+    void _failTimedOutMethodCalls();
     {%endif%}
     {%if stinger.properties|length > 0 -%}
     // ---------------- PROPERTIES ------------------

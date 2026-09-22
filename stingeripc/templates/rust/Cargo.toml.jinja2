@@ -58,6 +58,9 @@ features = [
 [dev-dependencies]
 mqttier = "0.9.1"
 stinger-mqtt-trait = { version = "0.7.1", features = ["mock_client"] }
+# `test-util` lets the tests pause the clock, so a test of a timeout does not have to
+# spend the timeout.
+tokio = { version = "1", features = ["test-util"] }
 
 [[example]]
 name = "{{stinger.name|snake_case}}_client_demo"

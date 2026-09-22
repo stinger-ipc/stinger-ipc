@@ -144,11 +144,18 @@ MessageCreator.command_message({{ topic_expr }}, {{ obj_expr }}, qos={{ qos }})
 {%- endif -%}
 {%- endmacro -%}
 
-{%- macro request_message(payload, topic_expr, obj_expr, response_topic_expr, correlation_expr) -%}
+{#
+    A method request.
+
+    `expiry_expr` is the calling method's own timeout in seconds; it becomes the
+    message's expiry interval so the broker stops trying to deliver a request whose
+    caller has already timed out and stopped listening for the response.
+#}
+{%- macro request_message(payload, topic_expr, obj_expr, response_topic_expr, correlation_expr, expiry_expr) -%}
 {%- if payload.is_protobuf -%}
-MessageCreator.binary_request_message({{ topic_expr }}, {{ encode(payload, obj_expr) }}, "{{ payload.content_type }}", {{ response_topic_expr }}, {{ correlation_expr }})
+MessageCreator.binary_request_message({{ topic_expr }}, {{ encode(payload, obj_expr) }}, "{{ payload.content_type }}", {{ response_topic_expr }}, {{ correlation_expr }}, {{ expiry_expr }})
 {%- else -%}
-MessageCreator.request_message({{ topic_expr }}, {{ obj_expr }}, {{ response_topic_expr }}, {{ correlation_expr }})
+MessageCreator.request_message({{ topic_expr }}, {{ obj_expr }}, {{ response_topic_expr }}, {{ correlation_expr }}, {{ expiry_expr }})
 {%- endif -%}
 {%- endmacro -%}
 

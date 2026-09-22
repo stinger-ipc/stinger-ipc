@@ -9,7 +9,7 @@ This is the Client for the {{stinger.name}} interface.
 {% import "partials/imports.jinja2" as imports %}
 {% import "partials/docstrings.jinja2" as docstrings %}
 {%- import "partials/codec.jinja2" as codec %}
-from typing import Dict, Callable, List, Any, Optional, Union
+from typing import Dict, Callable, List, Any, Optional, Tuple, Union
 from uuid import uuid4
 from functools import partial, wraps
 import logging
@@ -23,6 +23,7 @@ import threading
 from stinger_python_utils.return_codes import (
     MethodReturnCode,
     ClientDeserializationErrorStingerMethodException,
+    TimeoutStingerMethodException,
     stinger_exception_factory,
 )
 from .interface_types import *
@@ -42,6 +43,14 @@ logging.basicConfig(level=logging.DEBUG)
 UnmatchedSignalCallbackType = Callable[[Message], None]
 
 UNINITIALIZED_SUBSCRIPTION_ID = -1
+{%for method_name, method in stinger.methods.items()%}
+# How long a '{{method_name}}' call waits for the server's response before its future is
+# failed with a `TimeoutStingerMethodException` and its bookkeeping discarded.  It is also
+# the request message's expiry interval, so the broker stops trying to deliver a request
+# whose caller has already stopped listening.  Declared as `timeout: {{method.timeout}}` on the
+# '{{method_name}}' method.
+{{method_name | CONST_CASE}}_METHOD_TIMEOUT_SECONDS = {{method.timeout}}
+{%endfor%}
 {%if stinger.properties | length > 0 %}
 # How long a property getter or setter waits for the server's current value after
 # subscribing to the property's value topic.
@@ -82,7 +91,10 @@ class {{stinger.python.client_class_name}}:
             {%-endfor%}
         }
         {%-if stinger.methods | length > 0 %}
-        self._pending_method_responses: Dict[str, Callable[..., None]] = {}
+        # Correlation id -> (response handler, timeout timer).  Written from the calling
+        # thread and read from the broker's thread, so every access takes the mutex.
+        self._pending_method_responses: Dict[str, Tuple[Callable[..., None], threading.Timer]] = {}
+        self._pending_method_responses_mutex = threading.Lock()
         {%endif%}
         {%for prop_name, prop_spec in stinger.properties.items()-%}
         # Property: {{prop_name}}
@@ -330,11 +342,11 @@ class {{stinger.python.client_class_name}}:
         """
         fut = futures.Future() # type: futures.Future
         correlation_id = str(uuid4())
-        self._pending_method_responses[correlation_id] = partial(self._handle_{{method_name | snake_case}}_response, fut)
+        self._register_pending_method_response(correlation_id, fut, partial(self._handle_{{method_name | snake_case}}_response, fut), "{{method_name}}", {{method_name | CONST_CASE}}_METHOD_TIMEOUT_SECONDS)
 
         self._logger.debug("Calling '{{method_name}}' method with payload %s", payload)
         response_topic = "{{method.response_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
-        req_msg = {{ codec.request_message(method.request_payload, '"' ~ method.request_topic() ~ '".format(**self._topic_template_kwargs)', "payload", "response_topic", "correlation_id") }} # type: ignore[str-format]
+        req_msg = {{ codec.request_message(method.request_payload, '"' ~ method.request_topic() ~ '".format(**self._topic_template_kwargs)', "payload", "response_topic", "correlation_id", (method_name | CONST_CASE) ~ "_METHOD_TIMEOUT_SECONDS") }} # type: ignore[str-format]
         self._conn.publish(req_msg)
         return fut
 
@@ -377,6 +389,50 @@ class {{stinger.python.client_class_name}}:
     {%endfor%}
 
     {%-if stinger.methods|length > 0-%}
+    def _register_pending_method_response(self, correlation_id: str, fut: futures.Future, handler: Callable[..., None], method_name: str, timeout_seconds: float):
+        """ Records the handler for an in-flight method call and arms its timeout.
+
+        The entry is removed either by `_take_pending_method_response()` when the response
+        arrives or by the timer when it does not, so a call the server never answers
+        neither leaves the pending map growing nor leaves its future unresolved forever.
+
+        Args:
+            timeout_seconds (float): The calling method's own declared timeout.
+        """
+        timer = threading.Timer(timeout_seconds, self._expire_pending_method_response, args=(correlation_id, fut, method_name, timeout_seconds))
+        timer.daemon = True
+        with self._pending_method_responses_mutex:
+            self._pending_method_responses[correlation_id] = (handler, timer)
+        timer.start()
+
+    def _take_pending_method_response(self, correlation_id: str) -> Optional[Callable[..., None]]:
+        """ Removes the handler for a correlation id and disarms its timeout.
+
+        Returns None if the call has already been completed or timed out, which is what
+        makes a duplicate response harmless.
+        """
+        with self._pending_method_responses_mutex:
+            entry = self._pending_method_responses.pop(correlation_id, None)
+        if entry is None:
+            return None
+        handler, timer = entry
+        timer.cancel()
+        return handler
+
+    def _expire_pending_method_response(self, correlation_id: str, fut: futures.Future, method_name: str, timeout_seconds: float):
+        """ Fails a method call whose response did not arrive within its declared timeout.
+
+        Popping the entry under the mutex is what decides between this and the response
+        path, so exactly one of the two ever resolves the future.
+        """
+        with self._pending_method_responses_mutex:
+            if self._pending_method_responses.pop(correlation_id, None) is None:
+                return
+        self._logger.warning("No response to the '%s' method within %s seconds", method_name, timeout_seconds)
+        if fut.set_running_or_notify_cancel():
+            fut.set_exception(TimeoutStingerMethodException(
+                f"No response to the '{method_name}' method within {timeout_seconds} seconds"))
+
     def _receive_any_method_response_message(self, message: Message):
         """
         Handle '{{method_name}}' method response.  This is the callback provided to the MQTT client
@@ -394,12 +450,11 @@ class {{stinger.python.client_class_name}}:
                 return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if message.correlation_data is not None:
             correlation_id = message.correlation_data.decode()
-            if correlation_id in self._pending_method_responses:
-                cb = self._pending_method_responses[correlation_id]
-                del self._pending_method_responses[correlation_id]
+            cb = self._take_pending_method_response(correlation_id)
+            if cb is not None:
                 cb(message.payload, return_code, debug_message, message.content_type)
             else:
-                self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
+                self._logger.warning("Correlation id %s was not in the list of pending method responses; it either already completed or timed out", correlation_id)
         else:
             self._logger.warning("No correlation data in properties sent to %s.", message.topic)
     {%endif%}{# end method response handler #}

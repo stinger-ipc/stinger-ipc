@@ -12,6 +12,11 @@ if TYPE_CHECKING:
     from .components import StingerSpec
 
 
+#: How long a method call waits for its response when the interface does not say.
+#: Kept in step with the ``timeout`` default in the stinger schema.
+DEFAULT_METHOD_TIMEOUT_SECONDS = 5
+
+
 class IpcMethod(InterfaceComponent):
     """A request/response method exposed by the interface.
 
@@ -27,6 +32,7 @@ class IpcMethod(InterfaceComponent):
         self._request_payload = Payload(owner_name=name, role=PayloadRole.METHOD_REQUEST, config=self._config)
         self._response_payload = Payload(owner_name=name, role=PayloadRole.METHOD_RESPONSE, config=self._config)
         self._version: Optional[str] = None
+        self._timeout: int = DEFAULT_METHOD_TIMEOUT_SECONDS
 
     def add_arg(self, arg: Arg) -> IpcMethod:
         """Append an argument to the method's request and return self.
@@ -129,6 +135,18 @@ class IpcMethod(InterfaceComponent):
         return self._version
 
     @property
+    def timeout(self) -> int:
+        """How many seconds a caller waits for this method's response.
+
+        Always a number: an interface that does not declare a ``timeout`` for the
+        method gets ``DEFAULT_METHOD_TIMEOUT_SECONDS``.  The generated clients use
+        it both to fail the call locally and as the request message's expiry
+        interval, so the broker stops trying to deliver a request no one is still
+        waiting on.
+        """
+        return self._timeout
+
+    @property
     def return_value_type(self) -> str | bool:
         """A short string describing the shape of the method's return value.
 
@@ -177,6 +195,23 @@ class IpcMethod(InterfaceComponent):
             raise InvalidStingerStructure(f"ReturnValue for '{name}' method must be a single arg structure.  It is '{type(return_value_spec)}'")
         return return_value_spec
 
+    @staticmethod
+    def _timeout_from_stinger(name: str, method_spec: dict[str, Any]) -> int:
+        """Return the method's declared timeout in seconds, or the default.
+
+        The schema constrains this to an integer, but a hand-written spec that
+        slipped past validation would otherwise reach the templates as a string and
+        render uncompilable code, so it is checked here too.
+        """
+        if "timeout" not in method_spec:
+            return DEFAULT_METHOD_TIMEOUT_SECONDS
+        timeout = method_spec["timeout"]
+        if isinstance(timeout, bool) or not isinstance(timeout, int):
+            raise InvalidStingerStructure(f"Timeout for the '{name}' method must be a whole number of seconds.  It is '{type(timeout)}'")
+        if timeout <= 0:
+            raise InvalidStingerStructure(f"Timeout for the '{name}' method must be greater than zero.  It is {timeout}")
+        return timeout
+
     @classmethod
     def new_method_from_stinger(
         cls,
@@ -186,6 +221,9 @@ class IpcMethod(InterfaceComponent):
     ) -> IpcMethod:
         """Alternative constructor from a Stinger method structure."""
         method = cls(name, stinger_spec)
+
+        # Read before the protobuf branch below returns, so both kinds of method get it.
+        method._timeout = cls._timeout_from_stinger(name, method_spec)
 
         # The schema pairs these: a protobuf method declares both its request and
         # its response as messages, so neither side is silently left as JSON.

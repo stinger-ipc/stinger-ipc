@@ -104,9 +104,23 @@ const UNSUBSCRIBED_SUBSCRIPTION_ID: u32 = u32::MAX;
 const SUBSCRIBING_SUBSCRIPTION_ID: u32 = u32::MAX - 1;
 {%endif%}
 
+{%for method_name, method in stinger.methods.items()%}
+/// How long a `{{method_name}}` call waits for the server's response before giving up with
+/// `MethodReturnCode::Timeout` and dropping its entry from the pending-response map.
+/// It is also the request message's expiry interval, so the broker stops trying to
+/// deliver a request whose caller has already stopped listening.  Declared as
+/// `timeout: {{method.timeout}}` on the '{{method_name}}' method.
+const {{method_name | CONST_CASE}}_METHOD_TIMEOUT_SECONDS: u32 = {{method.timeout}};
+{%endfor%}
+
 {%if stinger.properties | length > 0%}
 /// How long a property read waits for the server's current value after subscribing.
 const PROPERTY_VALUE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
+
+/// How long a property update request waits for the server's response before dropping its
+/// entry from the pending-response map.  Without this the update handler task would wait
+/// on a response that may never come, and the entry would live as long as the client.
+const PROPERTY_UPDATE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
 
 /// The client's cached copy of each property.
 ///
@@ -396,14 +410,33 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
                 Ok(msg) => {
                     debug!("Publishing property update request for '{}' to topic '{}': {:?}", property_name, update_topic, payload_obj);
                     let _publish_result = publisher.publish(msg).await;
-                    let result = receiver.await;
+                    let result = match tokio::time::timeout(PROPERTY_UPDATE_TIMEOUT, receiver).await {
+                        Ok(result) => result,
+                        Err(_) => {
+                            warn!("No response to the update request for property '{}' within {} seconds", property_name, PROPERTY_UPDATE_TIMEOUT.as_secs());
+                            resp_map.lock().expect("Mutex was poisoned").remove(&correlation_id);
+                            if let Some(responder) = opt_responder {
+                                let _ = responder.send(None);
+                            }
+                            continue;
+                        }
+                    };
                     debug!("Received property update response for '{}': {:?}", property_name, result);
                     match result {
                         Ok(MethodReturnCode::Success(opt_response_text)) => {
                             if let Some(responder) = opt_responder {
                                 if let Some(response_text) = opt_response_text {
-                                    let resp_obj = <P as crate::payloads::WirePayload>::from_bytes(&response_text).unwrap();
-                                    let _ = responder.send(Some(Some(extract_value(resp_obj))));
+                                    // The payload comes from the server, so a decode failure is
+                                    // bad remote input, not a bug worth panicking the task over.
+                                    match <P as crate::payloads::WirePayload>::from_bytes(&response_text) {
+                                        Ok(resp_obj) => {
+                                            let _ = responder.send(Some(Some(extract_value(resp_obj))));
+                                        }
+                                        Err(e) => {
+                                            warn!("Failed to deserialize the update response for property '{}': {}", property_name, e);
+                                            let _ = responder.send(None);
+                                        }
+                                    }
                                 } else {
                                     warn!("No response payload received for property update request for '{}'", property_name);
                                     let _ = responder.send(None);
@@ -431,12 +464,25 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     }
     {%endif%}
 
+    {%if stinger.methods | length > 0 %}
+    /// Drops the pending-response entry for a request that will never be answered, so a
+    /// timed-out or abandoned call does not keep its slot in the map for the life of the
+    /// client.  Doing this twice is harmless.
+    fn forget_pending_response(&self, correlation_id: &Uuid) {
+        let mut hashmap = self.pending_responses.lock().expect("Mutex was poisoned");
+        hashmap.remove(correlation_id);
+    }
+    {%endif%}
+
     {%for method_name, method in stinger.methods.items()-%}
 
+    /// Publishes a `{{method_name}}` request and returns its correlation id together with
+    /// the receiver its response will arrive on.  The caller needs the correlation id so
+    /// that it can evict the pending entry if no response ever arrives.
     async fn start_{{method_name|snake_case}}(
             &mut self,
             {{ payload_params(method.request_payload, method.arg_list) }}{% if method.request_payload.is_protobuf or method.arg_list %},{% endif %}
-    ) -> oneshot::Receiver<MethodReturnCode> {
+    ) -> (Uuid, oneshot::Receiver<MethodReturnCode>) {
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
@@ -445,7 +491,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         if let Err(e) = data.validate_schema() {
             error!("Request payload for {{method_name}} failed schema validation, not sending: {}", e);
             let _ = sender.send(MethodReturnCode::ClientSerializationError(format!("Request payload failed schema validation: {}", e)));
-            return receiver;
+            return (correlation_id, receiver);
         }
         {%-endif%}
 
@@ -458,10 +504,10 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
         topic_param_map.insert("method_name".to_string(), "{{method_name}}".to_string());
         let request_topic: String = strfmt("{{method.request_topic()}}", &topic_param_map).unwrap();
         let response_topic: String = strfmt("{{method.response_topic()}}", &topic_param_map).unwrap();
-        let msg = message::request(&request_topic, &data, correlation_id, response_topic).unwrap();
+        let msg = message::request(&request_topic, &data, correlation_id, response_topic, {{method_name | CONST_CASE}}_METHOD_TIMEOUT_SECONDS).unwrap();
         info!("Sending request to topic '{}': {:?}", request_topic, data);
         let _ = self.mqtt_client.publish(msg).await;
-        receiver
+        (correlation_id, receiver)
     }
 
     /// The `{{method_name}}` method.
@@ -471,9 +517,25 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     /// This method awaits on the response to the call before returning.
     pub async fn {{method_name|snake_case}}(&mut self{%if method.request_payload.is_protobuf or method.arg_list %}, {%endif%}{{ payload_params(method.request_payload, method.arg_list) }})->Result<{{method.rust.return_value_type}}, MethodReturnCode> {
 
-        let receiver = self.start_{{method_name|snake_case}}({%if method.request_payload.is_protobuf %}payload{%else%}{%for arg in method.arg_list%}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}).await;
+        let (correlation_id, receiver) = self.start_{{method_name|snake_case}}({%if method.request_payload.is_protobuf %}payload{%else%}{%for arg in method.arg_list%}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}).await;
 
-        let return_code: MethodReturnCode = receiver.await.unwrap();
+        // The receive loop removes the pending entry before it answers, so only the two
+        // failure arms below have anything left to clean up.
+        let return_code: MethodReturnCode = match tokio::time::timeout(std::time::Duration::from_secs({{method_name | CONST_CASE}}_METHOD_TIMEOUT_SECONDS.into()), receiver).await {
+            Ok(Ok(return_code)) => return_code,
+            Ok(Err(_)) => {
+                self.forget_pending_response(&correlation_id);
+                warn!("The '{{method_name}}' method call was dropped before a response arrived");
+                return Err(MethodReturnCode::ClientError(
+                    "The '{{method_name}}' method call was dropped before a response arrived".to_string()));
+            }
+            Err(_) => {
+                self.forget_pending_response(&correlation_id);
+                warn!("No response to the '{{method_name}}' method within {} seconds", {{method_name | CONST_CASE}}_METHOD_TIMEOUT_SECONDS);
+                return Err(MethodReturnCode::Timeout(format!(
+                    "No response to the '{{method_name}}' method within {} seconds", {{method_name | CONST_CASE}}_METHOD_TIMEOUT_SECONDS)));
+            }
+        };
         info!("Received response for method '{{method_name}}': {:?}", return_code);
         match return_code {
             MethodReturnCode::Success({%if not method.has_response %}_{%else%}payload_str{%endif%}) => {
@@ -947,7 +1009,7 @@ mod tests {
         {%for method_name, method in stinger.methods.items()%}
         { // Test calling the {{method_name}} method.
             mock_mqtt.clear_published_messages();
-            let _rx = client.start_{{method_name | snake_case}}(
+            let (_corr_id, _rx) = client.start_{{method_name | snake_case}}(
                 {{ example_payload_local(method.request_payload, method.arg_list) }}).await;
             let sent_message = mock_mqtt.last_published_message().expect("Expected a method request message to be published");
 
@@ -1038,4 +1100,54 @@ mod tests {
         {% endif %}
         {% endfor %}
     }
+{%if stinger.methods|length > 0%}
+    /// The service the timeout tests below point a client at.  Nothing ever answers on
+    /// these topics, which is the whole point.
+    fn unresponsive_service() -> DiscoveredService {
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+            ("service_id".to_string(), "singleton".to_string()),
+            ("client_id".to_string(), "server".to_string()),
+            {%-for topic_param in stinger.topics.params%}
+            ("{{topic_param}}".to_string(), "x_{{topic_param}}_y".to_string()),
+            {%-endfor%}
+        ]);
+        let topic = strfmt("{{stinger.interface_info_topic()}}", &topic_param_map).unwrap();
+        let interface_info = crate::interface::InterfaceInfoBuilder::default()
+            .interface_name(topic_param_map.get("interface_name").unwrap().to_string())
+            .title("{{stinger.title}}".to_string())
+            .version("{{stinger.version}}".to_string())
+            .instance(topic_param_map.get("service_id").unwrap().to_string())
+            .connection_topic(topic)
+            {%-for topic_param in stinger.topics.params%}
+            .{{topic_param}}(topic_param_map.get("{{topic_param}}").unwrap().to_string())
+            {%-endfor%}
+            .build().unwrap();
+        DiscoveredService { interface_info }
+    }
+
+    {%for method_name, method in stinger.methods.items()%}
+    /// A `{{method_name}}` call that is never answered has to fail rather than hang, and
+    /// must not leave its correlation id in the pending-response map.
+    ///
+    /// The clock is paused, so tokio advances it to the timeout as soon as the test has
+    /// nothing else to run: this costs no wall-clock time.
+    #[tokio::test(start_paused = true)]
+    async fn {{method_name|snake_case}}_times_out_when_the_server_never_responds() {
+        let mock_mqtt = MockClient::new("timeout_test_client".to_string());
+        let mut client = {{stinger.rust.client_struct_name}}::new(mock_mqtt.clone(), unresponsive_service()).await;
+
+        let result = client.{{method_name|snake_case}}({{ example_payload_local(method.request_payload, method.arg_list) }}).await;
+
+        assert!(
+            matches!(result, Err(MethodReturnCode::Timeout(_))),
+            "Expected the unanswered '{{method_name}}' call to time out, got {:?}", result
+        );
+        assert!(
+            client.pending_responses.lock().unwrap().is_empty(),
+            "The timed-out '{{method_name}}' call was left in the pending-response map"
+        );
+    }
+    {%endfor%}
+{%endif%}
 }

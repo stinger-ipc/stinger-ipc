@@ -728,6 +728,15 @@ wheels = [
 ]
 
 [[package]]
+name = "py-stinger-conn-iface"
+version = "0.1.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/92/26/db82f184c55ad7c8db4b44339c8038e0caff2d611aa4f93256c84bbddb36/py_stinger_conn_iface-0.1.3.tar.gz", hash = "sha256:81a274ef64beac11e3f6512a481aa4fdc4d852da47347c8a55f6fc927888d520", size = 36415, upload-time = "2026-09-18T23:09:24.294Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e9/33/18e802b27d6154c6fdd6dc0632ec5a27ed1f4f657643972f07cdf7c9ea66/py_stinger_conn_iface-0.1.3-py3-none-any.whl", hash = "sha256:47d0eb708ba69aa75f1af0dd16266cecfcbae118ff0d175e8afbdb142f086152", size = 8444, upload-time = "2026-09-18T23:09:23.394Z" },
+]
+
+[[package]]
 name = "pyaml"
 version = "26.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -865,14 +874,15 @@ wheels = [
 
 [[package]]
 name = "pyqttier"
-version = "0.2.9"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "paho-mqtt" },
+    { name = "py-stinger-conn-iface" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ae/fe/6c247368a1176ebaafae323eff9ac7d15ec5f7a0459f4a46a75de685422d/pyqttier-0.2.9.tar.gz", hash = "sha256:01525ae688dd1ae00e0ab627767570775923ac6d82c4f3f6cb6491123b0820e0", size = 69133, upload-time = "2026-07-10T14:19:11.986Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/84/cd/7212490a43bec131e565082d9a959956f7625445bdd930ea2005d400964c/pyqttier-0.3.0.tar.gz", hash = "sha256:dcdfe072106ab7deb40706c96a0c57f975ab860735096aad5e4e51afaaee491a", size = 68791, upload-time = "2026-09-18T23:13:57.09Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/b6/d7abc961b0946e785e517b7759d00f46c911d984a93b2136280b39bf4601/pyqttier-0.2.9-py3-none-any.whl", hash = "sha256:a17acabd54d6c3f5f58a4aa7239680c4ef79105f28576e65f7227cdf818e4f8c", size = 11240, upload-time = "2026-07-10T14:19:10.813Z" },
+    { url = "https://files.pythonhosted.org/packages/87/d4/96a30d2172b94affbea218121967ab9b5f35a0fbf29c26377b0a8b2edc2a/pyqttier-0.3.0-py3-none-any.whl", hash = "sha256:f9b09aac0b687d5e7da4ae1fb9955e51249ba8b33ed823f85919eb9138e2abb4", size = 9659, upload-time = "2026-09-18T23:13:55.671Z" },
 ]
 
 [[package]]
@@ -1304,7 +1314,7 @@ requires-dist = [
     { name = "ruamel-yaml", specifier = ">=0.18.14" },
     { name = "semantic-version", specifier = ">=2.10.0" },
     { name = "stevedore", specifier = ">=5.5.0" },
-    { name = "stinger-python-utils", specifier = "~=0.3.0" },
+    { name = "stinger-python-utils", specifier = "~=0.5.0" },
     { name = "typer", specifier = ">=0.16.1" },
 ]
 
@@ -1323,15 +1333,16 @@ dev = [
 
 [[package]]
 name = "stinger-python-utils"
-version = "0.3.0"
+version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "py-stinger-conn-iface" },
     { name = "pydantic" },
     { name = "pyqttier" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/41/d2/92b4987aa0c54d694455c5736081b8fc8d3918544b76b75f65fe3291aaea/stinger_python_utils-0.3.0.tar.gz", hash = "sha256:7a66b0707911db57c6c69feddc46a4a531a67189500ad6fd8c7e487c3639dd4b", size = 102904, upload-time = "2026-09-03T15:03:52.258Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/fe/fb/5f459851eee67c9fd26977a411790ab93ff8df5f8da12dc6f131dcf8892d/stinger_python_utils-0.5.0.tar.gz", hash = "sha256:8e110b76602b268801580ceff852be89bdc3e416b5c2157d4e941a78e13089f3", size = 106027, upload-time = "2026-09-22T15:21:33.806Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0b/05/75ad46712123646ad646f3f246c23839413c73293199ade3c4a8349ffcbc/stinger_python_utils-0.3.0-py3-none-any.whl", hash = "sha256:7e1077368ff645d5218ec7488ac261bd243596d70e21bd9f2bc631f68589a9b9", size = 5900, upload-time = "2026-09-03T15:03:51.056Z" },
+    { url = "https://files.pythonhosted.org/packages/a0/f6/4406bb385a80d4f4c42fe62fe8209cccba225c9bf70df3c45cad6a6d5a67/stinger_python_utils-0.5.0-py3-none-any.whl", hash = "sha256:ffb77576486af02afea22f4e789069d6311f150463a46611eb8a4291951ccf69", size = 5960, upload-time = "2026-09-22T15:21:32.746Z" },
 ]
 
 [[package]]

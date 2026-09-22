@@ -632,6 +632,12 @@ $defs:
       documentation:
         $ref: "#/$defs/documentation"
       description: false
+      timeout:
+        type: integer
+        minimum: 1
+        default: 5
+        description: >
+          The number of seconds to wait before the method call is considered "timed out".
       arguments:
         $ref: "#/$defs/payload"
       protobuf:

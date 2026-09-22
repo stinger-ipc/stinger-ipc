@@ -1,5 +1,6 @@
 {% import 'partials/args.jinja2' as ar %}
 {%- import 'partials/properties.jinja2' as pr %}
+{%- import 'partials/codec.jinja2' as codec %}
 /*
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
@@ -20,6 +21,8 @@ stinger-cpp-utils to drive the client without a real MQTT broker:
 #include <rapidjson/document.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
+#include <chrono>
+#include <future>
 #include <map>
 #include <memory>
 #include <string>
@@ -172,6 +175,40 @@ TEST_F({{stinger.cpp.client_class_name}}Test, {{method_name | UpperCamelCase}}Pu
     EXPECT_FALSE(doc.Parse(published[0].payload.c_str()).HasParseError()) << "Published request payload is not valid JSON";
     EXPECT_TRUE(doc.IsObject());
 }
+
+{%- if not method.response_payload.is_protobuf %}
+// Once a `{{method_name}}` response has resolved its future, the call is no longer pending:
+// a second copy of the same response has to be dropped rather than resolve it again.
+TEST_F({{stinger.cpp.client_class_name}}Test, {{method_name | UpperCamelCase}}IgnoresDuplicateResponse)
+{
+    _conn->ClearPublishedMessages();
+
+    auto pending = _client->{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+
+    auto published = _conn->GetPublishedMessages();
+    ASSERT_EQ(published.size(), 1u);
+    ASSERT_TRUE(published[0].properties.responseTopic.has_value());
+
+    {%if method.return_value is none -%}
+    const std::string responsePayload = "{}";
+    {%- else -%}
+    {{method.cpp.return_struct_name}} returnPayload = { {{method.return_value.get_random_example_value(lang="c++")}} };
+    const std::string responsePayload = serializeToString(returnPayload);
+    {%- endif %}
+    auto responseMsg = stinger::mqtt::Message::MethodResponse(
+        *published[0].properties.responseTopic,
+        responsePayload,
+        published[0].properties.correlationData,
+        stinger::error::MethodReturnCode::SUCCESS);
+    {{ codec.stamp_content_type(method.response_payload, "responseMsg") }}
+
+    _conn->SimulateIncomingMessage(responseMsg);
+    ASSERT_EQ(pending.wait_for(std::chrono::seconds(0)), std::future_status::ready) << "The '{{method_name}}' response did not resolve its future";
+
+    // Resolving the same promise twice throws std::future_error, so this must be a no-op.
+    EXPECT_NO_THROW(_conn->SimulateIncomingMessage(responseMsg)) << "A duplicate '{{method_name}}' response was not dropped";
+}
+{%- endif %}
 {%- endif %}
 {%endfor%}
 

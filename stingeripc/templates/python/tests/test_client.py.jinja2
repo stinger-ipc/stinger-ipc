@@ -8,8 +8,11 @@ import sys
 from pathlib import Path
 {{ imports.datetime_types(config) }}
 from {{stinger.name | loweronly}}ipc.client import {{stinger.name | UpperCamelCase}}Client, DiscoveredInstance{%if stinger.properties | length > 0 %}, PropertyValueUnavailableError{%endif%}
-{%if stinger.properties | length > 0 -%}
+{%if stinger.properties | length > 0 or stinger.methods | length > 0 -%}
 from {{stinger.name | loweronly}}ipc import client as client_module
+{%endif-%}
+{%if stinger.methods | length > 0 -%}
+from stinger_python_utils.return_codes import TimeoutStingerMethodException
 {%endif-%}
 {%if stinger.properties | length > 0 or stinger.uses_protobuf() -%}
 from stinger_python_utils.message_creator import MessageCreator
@@ -220,6 +223,20 @@ class TestClientMethods:
         expected_topic = "{{method.request_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
         assert message.topic == expected_topic, f"Incorrect topic for '{{method_name|snake_case}}' method call: {message.topic}"
     {%- endif %}
+
+    def test_{{method_name|snake_case}}_times_out_when_the_server_never_responds(self, monkeypatch, client):
+        """A '{{method_name}}' call nothing answers fails its future rather than waiting forever,
+        and leaves no entry behind in the pending-response map."""
+        monkeypatch.setattr(client_module, "{{method_name | CONST_CASE}}_METHOD_TIMEOUT_SECONDS", 0.05)
+        {%- if method.request_payload.is_protobuf %}
+        fut = client.{{method_name|snake_case}}({{method.request_payload.python.class_name}}())
+        {%- else %}
+        fut = client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+        {%- endif %}
+        with pytest.raises(TimeoutStingerMethodException):
+            fut.result(2)
+        assert client._pending_method_responses == {}, "The timed-out '{{method_name}}' call was left in the pending-response map"
+
     {%endfor%}
 {%endif%}
 {%if stinger.commands | length > 0 %}

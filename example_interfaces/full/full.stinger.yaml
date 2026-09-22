@@ -136,6 +136,7 @@ methods:
 
   hold_temperature:
     documentation: Hold a temperature for a specified duration.
+    timeout: 30
     arguments:
       - name: temperature_celsius
         type: float

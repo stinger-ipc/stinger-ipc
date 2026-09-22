@@ -22,6 +22,12 @@ pub fn interface_online(topic: &str, payload: &crate::interface::InterfaceInfo, 
     Ok(msg)
 }
 {%if stinger.properties|length > 0 %}
+/// How long the broker should keep trying to deliver a property update request.  A
+/// requester that has not been answered by then has already given up, so delivering it
+/// later would apply an update nobody is waiting on.
+#[cfg(feature = "client")]
+const PROPERTY_UPDATE_EXPIRY_SECONDS: u32 = 5;
+
 #[cfg(any(feature = "server", test))]
 pub fn unpublish(topic: &str) -> MqttMessage {
     MqttMessage::simple(topic.to_string(), QoS::AtLeastOnce, true, Bytes::new())
@@ -56,6 +62,7 @@ pub fn property_update_request<T: WirePayload>(topic: &str, payload: &T, {%if co
         .content_type(Some(T::content_type().to_string()))
         .qos(QoS::AtLeastOnce)
         .retain(false)
+        .message_expiry_interval(PROPERTY_UPDATE_EXPIRY_SECONDS)
         .response_topic(response_topic)
         {%- if config.properties.version_tracking %}
         .user_property("PropertyVersion", property_version.to_string())
@@ -118,6 +125,7 @@ pub fn stable_property_update_request<T: WirePayload>(topic: &str, payload: &T, 
         .content_type(Some(T::content_type().to_string()))
         .qos(QoS::AtLeastOnce)
         .retain(false)
+        .message_expiry_interval(PROPERTY_UPDATE_EXPIRY_SECONDS)
         .response_topic(response_topic)
         {%- if config.properties.version_tracking %}
         .user_property("PropertyVersion", property_version.to_string())
@@ -152,13 +160,17 @@ pub fn stable_property_update_response<T: WirePayload>(topic: &str, payload: &T,
 {%endif%}{# end any properties #}
 {%if stinger.methods|length > 0%}
 #[cfg(feature = "client")]
-pub fn request<T: WirePayload>(topic: &str, payload: &T, correlation_id: Uuid, response_topic: String) -> Result<MqttMessage, MethodReturnCode> {
+/// `timeout_seconds` is the calling method's own declared timeout: it becomes the
+/// message's expiry interval so the broker stops trying to deliver a request whose
+/// caller has already timed out and stopped listening for the response.
+pub fn request<T: WirePayload>(topic: &str, payload: &T, correlation_id: Uuid, response_topic: String, timeout_seconds: u32) -> Result<MqttMessage, MethodReturnCode> {
     let msg = MqttMessageBuilder::default()
         .topic(topic)
         .payload(payload.to_bytes().map_err(MethodReturnCode::ClientSerializationError)?)
         .content_type(Some(T::content_type().to_string()))
         .qos(QoS::ExactlyOnce)
         .retain(false)
+        .message_expiry_interval(timeout_seconds)
         .correlation_data(Bytes::from(correlation_id.to_string()))
         .response_topic(response_topic)
         .build().map_err(|e| MethodReturnCode::PayloadError(e.to_string()))?;
@@ -197,13 +209,14 @@ pub fn response<T: WirePayload>(topic: &str, payload: &T, correlation_data: Byte
 
 {%if stinger.methods.values()|selectattr('version')|list|length > 0 %}
 #[cfg(feature = "client")]
-pub fn stable_request<T: WirePayload>(topic: &str, payload: &T, correlation_id: Uuid, response_topic: String, version: &str) -> Result<MqttMessage, MethodReturnCode> {
+pub fn stable_request<T: WirePayload>(topic: &str, payload: &T, correlation_id: Uuid, response_topic: String, version: &str, timeout_seconds: u32) -> Result<MqttMessage, MethodReturnCode> {
     let msg = MqttMessageBuilder::default()
         .topic(topic)
         .payload(payload.to_bytes().map_err(MethodReturnCode::ClientSerializationError)?)
         .content_type(Some(T::content_type().to_string()))
         .qos(QoS::ExactlyOnce)
         .retain(false)
+        .message_expiry_interval(timeout_seconds)
         .correlation_data(Bytes::from(correlation_id.to_string()))
         .response_topic(response_topic)
         .user_property("Version", version)

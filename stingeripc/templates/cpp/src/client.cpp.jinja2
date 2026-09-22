@@ -75,6 +75,9 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
     _{{prop_name | lowerCamelCase}}PropertyResponseTopic = stinger::utils::format("{{prop.response_topic()}}", topicParams);
     {%-endfor%}
     {%endif%}{# end if properties #}
+    {%if stinger.methods|length > 0 %}
+    _methodTimeoutThread = std::thread([this] { _runMethodTimeoutThread(); });
+    {%endif%}
 }
 
 {{stinger.cpp.client_class_name}}::~{{stinger.cpp.client_class_name}}()
@@ -84,7 +87,74 @@ constexpr const char {{stinger.cpp.client_class_name}}::INTERFACE_VERSION[];
         _broker->RemoveMessageCallback(_brokerMessageCallbackHandle);
         _brokerMessageCallbackHandle = 0;
     }
+    {%if stinger.methods|length > 0 %}
+    // Joined before the pending-call maps it touches are destroyed.  Any call still
+    // pending at this point has its promise destroyed with the map, which is what breaks
+    // its future.
+    {
+        std::lock_guard<std::mutex> lock(_methodTimeoutMutex);
+        _stopMethodTimeoutThread = true;
+    }
+    _methodTimeoutCondition.notify_all();
+    if (_methodTimeoutThread.joinable())
+    {
+        _methodTimeoutThread.join();
+    }
+    {%endif%}
 }
+
+{%if stinger.methods|length > 0 %}
+void {{stinger.cpp.client_class_name}}::_runMethodTimeoutThread()
+{
+    while (true)
+    {
+        {
+            std::unique_lock<std::mutex> lock(_methodTimeoutMutex);
+            if (_methodTimeoutCondition.wait_for(lock, METHOD_TIMEOUT_SWEEP_INTERVAL, [this] { return _stopMethodTimeoutThread; }))
+            {
+                return;
+            }
+        }
+        // Deliberately outside `_methodTimeoutMutex`: the sweep takes each pending map's
+        // own mutex, and nothing else ever holds both.
+        _failTimedOutMethodCalls();
+    }
+}
+
+void {{stinger.cpp.client_class_name}}::_failTimedOutMethodCalls()
+{
+    const auto now = std::chrono::steady_clock::now();
+    {%-for method_name, method in stinger.methods.items()%}
+    {
+        // The promises are moved out under the lock and resolved outside it, so waiting
+        // application code never runs with the pending map locked.
+        std::vector<std::promise<{{method.cpp.return_value_class}}>> timedOut;
+        {
+            std::lock_guard<std::mutex> lock(_pending{{method_name|UpperCamelCase}}MethodCallsMutex);
+            for (auto itr = _pending{{method_name|UpperCamelCase}}MethodCalls.begin(); itr != _pending{{method_name|UpperCamelCase}}MethodCalls.end();)
+            {
+                if (itr->second.deadline <= now)
+                {
+                    timedOut.push_back(std::move(itr->second.promise));
+                    itr = _pending{{method_name|UpperCamelCase}}MethodCalls.erase(itr);
+                }
+                else
+                {
+                    ++itr;
+                }
+            }
+        }
+        for (auto& promise : timedOut)
+        {
+            _broker->Log(LOG_WARNING, "No response to the '{{method_name}}' method within %d seconds", static_cast<int>({{method_name | CONST_CASE}}_METHOD_TIMEOUT.count()));
+            promise.set_exception(stinger::error::createStingerException(
+                stinger::error::MethodReturnCode::TIMEOUT,
+                "No response to the '{{method_name}}' method within " + std::to_string({{method_name | CONST_CASE}}_METHOD_TIMEOUT.count()) + " seconds"));
+        }
+    }
+    {%-endfor%}
+}
+{%endif%}
 
 void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Message& msg)
 {
@@ -247,16 +317,18 @@ void {{stinger.cpp.client_class_name}}::register{{sig_name | UpperCamelCase}}Cal
 {%for method_name, method in stinger.methods.items()%}
 std::future<{{method.cpp.return_value_class}}> {{stinger.cpp.client_class_name}}::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
 {
-    std::vector<std::byte> correlationData = stinger::utils::generate_uuid_bytes();
-    _pending{{method_name|UpperCamelCase}}MethodCalls[correlationData] = std::promise<{{method.cpp.return_value_class}}>();
+    // The promise is only put into the pending map once the request is about to go out,
+    // so a call that fails before then leaves nothing behind to time out.
+    std::promise<{{method.cpp.return_value_class}}> promise;
+    auto responseFuture = promise.get_future();
 
     {{method.request_payload.cpp.class_name}} requestArgs{ {%for arg in method.arg_list%}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
 {%- if not method.request_payload.is_protobuf %}
     if (!requestArgs.ValidateSchema()) {
         _broker->Log(LOG_WARNING, "Request payload for '{{method_name}}' failed schema validation; not sending.");
-        _pending{{method_name|UpperCamelCase}}MethodCalls[correlationData].set_exception(
+        promise.set_exception(
             std::make_exception_ptr(std::runtime_error("Request payload for '{{method_name}}' failed schema validation")));
-        return _pending{{method_name|UpperCamelCase}}MethodCalls[correlationData].get_future();
+        return responseFuture;
     }
 {%- endif %}
     auto payloadStr = Wire<{{method.request_payload.cpp.class_name}}>::ToString(requestArgs);
@@ -271,12 +343,21 @@ std::future<{{method.cpp.return_value_class}}> {{stinger.cpp.client_class_name}}
 
     auto responseTopic = stinger::utils::format("{{method.response_topic()}}", topicParams);
     auto requestTopic = stinger::utils::format("{{method.request_topic()}}", topicParams);
-    auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, payloadStr, correlationData, responseTopic);
+    std::vector<std::byte> correlationData = stinger::utils::generate_uuid_bytes();
+    auto msg = stinger::mqtt::Message::MethodRequest(requestTopic, payloadStr, correlationData, responseTopic,
+                                                     static_cast<int>({{method_name | CONST_CASE}}_METHOD_TIMEOUT.count()));
     {{ codec.stamp_content_type(method.request_payload) }}
+
+    {
+        std::lock_guard<std::mutex> lock(_pending{{method_name|UpperCamelCase}}MethodCallsMutex);
+        _pending{{method_name|UpperCamelCase}}MethodCalls.insert_or_assign(
+            correlationData,
+            PendingMethodCall<{{method.cpp.return_value_class}}>{ std::move(promise), std::chrono::steady_clock::now() + {{method_name | CONST_CASE}}_METHOD_TIMEOUT });
+    }
 
     _broker->Publish(msg);
 
-    return _pending{{method_name|UpperCamelCase}}MethodCalls[correlationData].get_future();
+    return responseFuture;
 }
 
 void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Response(
@@ -290,34 +371,45 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
     {{ codec.expect_content_type(method.response_payload, method_name ~ " method response") }}
     
     auto correlationData = msg.properties.correlationData.value_or(std::vector<std::byte>{});
-    auto promiseItr = _pending{{method_name|UpperCamelCase}}MethodCalls.find(correlationData);
-    if (promiseItr != _pending{{method_name|UpperCamelCase}}MethodCalls.end())
-    {
-        if (msg.properties.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(msg.properties.returnCode)) != stinger::error::MethodReturnCode::SUCCESS))
-        {
-            // The method call failed, so set an exception on the promise.
-            promiseItr->second.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(msg.properties.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), msg.properties.debugInfo.value_or("Exception returned via MQTT")));
-            return;
-        }
 
-        // Found the promise for this correlation ID.
-        {%if method.return_value is none %}
-        // Method doesn't return a value.
-        promiseItr->second.set_value();
-        {%else%}
-        // Method returns a single value.
-        auto returnPayload = Wire<{{method.response_payload.cpp.class_name}}>::FromString(msg.payload);
-{%- if not method.response_payload.is_protobuf %}
-        if (!returnPayload.ValidateSchema()) {
-            _broker->Log(LOG_WARNING, "Response payload for '{{method_name}}' failed schema validation.");
-            promiseItr->second.set_exception(
-                std::make_exception_ptr(std::runtime_error("Response payload for '{{method_name}}' failed schema validation")));
+    // The promise is taken out of the map before it is resolved, so the call cannot also
+    // be timed out and a duplicate response finds nothing left to resolve twice.
+    std::promise<{{method.cpp.return_value_class}}> promise;
+    {
+        std::lock_guard<std::mutex> lock(_pending{{method_name|UpperCamelCase}}MethodCallsMutex);
+        auto promiseItr = _pending{{method_name|UpperCamelCase}}MethodCalls.find(correlationData);
+        if (promiseItr == _pending{{method_name|UpperCamelCase}}MethodCalls.end())
+        {
+            _broker->Log(LOG_WARNING, "No pending '{{method_name}}' method call matches this response; it either already completed or timed out");
             return;
         }
-{%- endif %}
-        promiseItr->second.set_value(returnPayload.{{method.return_value.name|lowerCamelCase}});
-        {%endif%}
+        promise = std::move(promiseItr->second.promise);
+        _pending{{method_name|UpperCamelCase}}MethodCalls.erase(promiseItr);
     }
+
+    if (msg.properties.returnCode && (static_cast<stinger::error::MethodReturnCode>(*(msg.properties.returnCode)) != stinger::error::MethodReturnCode::SUCCESS))
+    {
+        // The method call failed, so set an exception on the promise.
+        promise.set_exception(createStingerException(static_cast<stinger::error::MethodReturnCode>(msg.properties.returnCode.value_or(static_cast<int>(stinger::error::MethodReturnCode::UNKNOWN_ERROR))), msg.properties.debugInfo.value_or("Exception returned via MQTT")));
+        return;
+    }
+
+    {%if method.return_value is none %}
+    // Method doesn't return a value.
+    promise.set_value();
+    {%else%}
+    // Method returns a single value.
+    auto returnPayload = Wire<{{method.response_payload.cpp.class_name}}>::FromString(msg.payload);
+{%- if not method.response_payload.is_protobuf %}
+    if (!returnPayload.ValidateSchema()) {
+        _broker->Log(LOG_WARNING, "Response payload for '{{method_name}}' failed schema validation.");
+        promise.set_exception(
+            std::make_exception_ptr(std::runtime_error("Response payload for '{{method_name}}' failed schema validation")));
+        return;
+    }
+{%- endif %}
+    promise.set_value(returnPayload.{{method.return_value.name|lowerCamelCase}});
+    {%endif%}
 
     _broker->Log(LOG_DEBUG, "End of response handler for {{method_name}}");
 }

@@ -1,5 +1,5 @@
 import unittest
-from stingeripc.ipc_method import IpcMethod
+from stingeripc.ipc_method import DEFAULT_METHOD_TIMEOUT_SECONDS, IpcMethod
 from stingeripc.components import StingerSpec, Arg
 from stingeripc.config import StingerConfig
 from stingeripc.exceptions import InvalidStingerStructure
@@ -23,6 +23,9 @@ class TestIpcMethodCreateManually(unittest.TestCase):
 
     def test_version_defaults_to_none(self):
         self.assertIsNone(self.method.version)
+
+    def test_timeout_defaults(self):
+        self.assertEqual(self.method.timeout, DEFAULT_METHOD_TIMEOUT_SECONDS)
 
     def test_initial_arg_list_empty(self):
         self.assertEqual(len(self.method.arg_list), 0)
@@ -73,6 +76,9 @@ class TestIpcMethodFromStinger(unittest.TestCase):
     def test_version_defaults_to_none(self):
         self.assertIsNone(self.method.version)
 
+    def test_timeout_defaults_when_not_declared(self):
+        self.assertEqual(self.method.timeout, DEFAULT_METHOD_TIMEOUT_SECONDS)
+
     def test_arg_list_populated(self):
         self.assertEqual(len(self.method.arg_list), 2)
 
@@ -103,6 +109,50 @@ class TestIpcMethodFromStingerWithVersion(unittest.TestCase):
 
     def test_version_set(self):
         self.assertEqual(self.method.version, "2.1.0")
+
+
+class TestIpcMethodTimeout(unittest.TestCase):
+    """A method's `timeout` bounds how long its caller waits for the response."""
+
+    def setUp(self):
+        self.spec = _make_stinger_spec()
+
+    def _method(self, **extra):
+        method_spec = {"arguments": [{"name": "x", "type": "integer"}]}
+        method_spec.update(extra)
+        return IpcMethod.new_method_from_stinger("add", method_spec, self.spec)
+
+    def test_declared_timeout_is_used(self):
+        self.assertEqual(self._method(timeout=30).timeout, 30)
+
+    def test_default_is_five_seconds(self):
+        self.assertEqual(DEFAULT_METHOD_TIMEOUT_SECONDS, 5)
+
+    def test_protobuf_method_also_gets_its_timeout(self):
+        """The protobuf branch returns early, so it has to read the timeout too."""
+        method = IpcMethod.new_method_from_stinger(
+            "getThing",
+            {"protobuf": "pkg.Request", "returnProtobuf": "pkg.Response", "timeout": 12},
+            self.spec,
+        )
+        self.assertEqual(method.timeout, 12)
+
+    def test_non_integer_timeout_raises(self):
+        with self.assertRaises(InvalidStingerStructure):
+            self._method(timeout="30")
+
+    def test_boolean_timeout_raises(self):
+        """A bool is an int in Python, but it is not a number of seconds."""
+        with self.assertRaises(InvalidStingerStructure):
+            self._method(timeout=True)
+
+    def test_zero_timeout_raises(self):
+        with self.assertRaises(InvalidStingerStructure):
+            self._method(timeout=0)
+
+    def test_negative_timeout_raises(self):
+        with self.assertRaises(InvalidStingerStructure):
+            self._method(timeout=-1)
 
 
 class TestIpcMethodFromStingerWithDocumentation(unittest.TestCase):
