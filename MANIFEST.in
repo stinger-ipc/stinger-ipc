@@ -1,2 +1,2 @@
 recursive-include stingeripc/templates *
-recursive-include stingeripc/schema *
+recursive-include stingeripc/schemas *

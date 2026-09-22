@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import importlib.resources
 from pathlib import Path
 
 from rich import print
@@ -123,14 +124,12 @@ def validate(
     if not stingeripc_version:
         print(f"❌  [bold red]Missing required 'stingeripc.version' field in {input_file}[/bold red]")
         sys.exit(1)
-    schema_dir = Path(__file__).parent.parent / "schema"
     # Each schema directory validates one minor version of the format; anything
     # older than 0.2 is covered by the 0.1 schema.
     schema_compat = next((v for v in ("0.3", "0.2") if stingeripc_version.startswith(v)), "0.1")
-    schema_file = schema_dir / schema_compat / "schema.yaml"
+    schema_text = importlib.resources.files("stingeripc").joinpath("schemas", schema_compat, "schema.yaml").read_text()
     yaml = YAML(typ="safe")
-    with schema_file.open("r") as f:
-        schema_obj = yaml.load(f)
+    schema_obj = yaml.load(schema_text)
     validator = jsonschema_rs.validator_for(schema_obj)
 
     error_count = 0
