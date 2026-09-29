@@ -162,5 +162,5 @@ class IpcProperty(InterfaceComponent):
         return prop_obj
 
     def __str__(self) -> str:
-        what = self._payload.protobuf.full_name if self._payload.is_protobuf else self.value.name
+        what = self._payload.protobuf.full_name if self._payload.protobuf else self.value.name
         return f"IpcProperty<name={self.name} value={what}>"

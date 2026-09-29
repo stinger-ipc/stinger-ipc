@@ -11,12 +11,12 @@ if TYPE_CHECKING:
     from stingeripc.ipc_method import IpcMethod
     from stingeripc.ipc_command import IpcCommand
     from stingeripc.ipc_property import IpcProperty
+    from stingeripc.payload import Payload, ProtobufMessageRef
 
 from . import topic_util
 from .args import ArgPrimitiveType, ArgType
 from .exceptions import InvalidConfiguration, InvalidStingerStructure
 from .lang_symb import *
-from .exceptions import InvalidStingerStructure, InvalidConfiguration
 from jacobsjinjatoo import stringmanip
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 from stingeripc.arg_models import (
@@ -101,13 +101,13 @@ class StingerSpec:
         self._config = config
         self.topics = self.new_topics_from_stinger(stinger)
         interface = stinger.get("interface")
+        if not isinstance(interface, dict):
+            raise InvalidStingerStructure("Interface didn't appear to have a correct type")
         try:
             self._name: str = interface["name"]
             self._version: str = interface["version"]
         except KeyError as e:
             raise InvalidStingerStructure(f"Missing interface property in {interface}: {e}")
-        except TypeError:
-            raise InvalidStingerStructure(f"Interface didn't appear to have a correct type")
 
         assert isinstance(config, StingerConfig), f"Config must be a StingerConfig object. Got {type(config)}"
 
@@ -281,7 +281,8 @@ class StingerSpec:
         ``[protobuf] mime_type`` rather than from the individual message.  Languages
         that emit one blanket encoder for all protobuf payloads read it from here.
         """
-        return self._config.protobuf.mime_type or "application/protobuf"
+        mime_type = self._config.protobuf.mime_type
+        return mime_type if isinstance(mime_type, str) else "application/protobuf"
 
     def uses_well_known_protobuf(self) -> bool:
         """True if any payload is one of protobuf's well-known types.
@@ -302,7 +303,7 @@ class StingerSpec:
         so resolution has to visit all of them; :meth:`protobuf_messages` collapses
         them by name and is for imports and compiler invocations instead.
         """
-        return [payload.protobuf for payload in self.all_payloads() if payload.is_protobuf]
+        return [payload.protobuf for payload in self.all_payloads() if payload.protobuf]
 
     def protobuf_messages(self) -> list["ProtobufMessageRef"]:
         """Every distinct protobuf message referenced by the interface, sorted by name.

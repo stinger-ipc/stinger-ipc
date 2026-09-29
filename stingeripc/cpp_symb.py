@@ -179,7 +179,7 @@ class CppMethodSymbols(CppSymbols):
             return "std::string"
         if isinstance(return_value, ArgStruct) and return_value.optional:
             return f"std::optional<{return_value.cpp.type}>"  # type: ignore[attr-defined]
-        return return_value.cpp.type  # type: ignore[attr-defined]
+        return return_value.cpp.type
 
     @property
     def return_struct_name(self) -> str:

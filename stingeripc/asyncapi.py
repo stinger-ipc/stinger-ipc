@@ -115,26 +115,27 @@ def _struct_to_schema(ist: InterfaceStruct) -> Schema:
     properties: dict[str, dict] = {}
     required: list[str] = []
     for member in ist.values:
+        prop: dict[str, Any]
         if member.arg_type == ArgType.ENUM:
             assert isinstance(member, ArgEnum)
             if member.optional:
-                prop: dict[str, Any] = {"anyOf": [{"$ref": f"#/components/schemas/{member.enum.name}"}, {"type": "null"}]}
+                prop = {"anyOf": [{"$ref": f"#/components/schemas/{member.enum.name}"}, {"type": "null"}]}
             else:
-                prop: dict[str, Any] = {"$ref": f"#/components/schemas/{member.enum.name}"}
+                prop = {"$ref": f"#/components/schemas/{member.enum.name}"}
         elif member.arg_type == ArgType.STRUCT:
             assert isinstance(member, ArgStruct)
             if member.optional:
-                prop: dict[str, Any] = {"anyOf": [{"$ref": f"#/components/schemas/{member.interface_struct.name}"}, {"type": "null"}]}
+                prop = {"anyOf": [{"$ref": f"#/components/schemas/{member.interface_struct.name}"}, {"type": "null"}]}
             else:
-                prop: dict[str, Any] = {"$ref": f"#/components/schemas/{member.interface_struct.name}"}
+                prop = {"$ref": f"#/components/schemas/{member.interface_struct.name}"}
         elif member.arg_type == ArgType.PRIMITIVE:
             assert isinstance(member, ArgPrimitive)
-            prop: dict[str, Any] = _primitive_type_to_schema(member)
+            prop = _primitive_type_to_schema(member)
         elif member.arg_type == ArgType.ARRAY:
             assert isinstance(member, ArgArray)
-            prop: dict[str, Any] = _array_to_schema(member)
+            prop = _array_to_schema(member)
         else:
-            prop: dict[str, Any] = _other_arg_to_schema(member)
+            prop = _other_arg_to_schema(member)
         if member.description and "description" not in prop:
             prop["description"] = member.description
         properties[member.name] = prop
@@ -181,7 +182,7 @@ def _parameters_for_address(address: str, topics: InterfaceTopics) -> models.cha
 
 
 def _topic_template_to_regex(topic_template: str) -> str:
-    """Convert a topic template into a regex where placeholders map to [^\}]+."""
+    """Convert a topic template into a regex where placeholders map to [^\\}]+."""
     return re.sub(r"\{[^{}]+\}", r"[^\\}]+", topic_template)
 
 

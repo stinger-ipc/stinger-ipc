@@ -1,0 +1,34 @@
+name: Checks
+
+# Static checks for the generator's own source.  Code generation, compilation of the
+# generated projects, and the pytest suite are not run here yet.
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+
+    - name: Set up Python
+      run: uv python install
+
+    - name: Install dependencies
+      run: uv sync
+
+    # The paths to check come from `files` in mypy.ini, so a bare invocation here
+    # checks exactly what a developer running `uv run mypy` locally checks.
+    - name: Run mypy
+      run: uv run mypy
+
+    - name: Check formatting
+      run: uv run black --check stingeripc tests

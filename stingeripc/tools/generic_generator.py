@@ -39,15 +39,6 @@ def _to_plain(value: Any) -> Any:
     return value
 
 
-def _parse_yaml(text: str) -> Any:
-    """Parse YAML text with jacobs-json-doc, resolving $ref references in place."""
-    fetcher = PrepopulatedFetcher()
-    fetcher.prepopulate(None, text)
-    options = ParseOptions()
-    options.ref_resolution_mode = RefResolutionMode.RESOLVE_REFERENCES
-    return create_document(uri=None, fetcher=fetcher, options=options)
-
-
 def emit_protobuf_bindings(template_dir: Path, outdir: Path, stinger, config_obj, inname: Path) -> None:
     """Copy the .proto sources into the output and compile them for this language.
 
