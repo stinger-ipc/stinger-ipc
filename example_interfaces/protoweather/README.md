@@ -31,18 +31,56 @@ task rust:generate:protoweather
 
 ## What the generated API looks like
 
-A protobuf element takes and hands back the message itself; a JSON element keeps
-the unpacked form it has always had, plus a payload-object form:
+A signal, command or method takes the **fields of its message** one by one and
+builds the message itself, the same way a JSON element spreads its arguments.  A
+JSON element keeps the unpacked form it has always had, plus a payload-object form
+that a protobuf element does not have:
 
 ```python
-# protobuf
-server.emit_current_conditions_payload(weather_pb2.CurrentConditions(temperature_celsius=21.5))
-future = client.call_get_forecast(weather_pb2.ForecastRequest(location="Provo", days=3))
+# protobuf -- one parameter per field of the message
+server.emit_current_conditions(21.5, "Sunny", 40)
+future = client.get_forecast("Provo", 3)             # -> resolves to weather_pb2.Forecast
+client.send_refresh(include_humidity=True)
+client.send_do_nothing()                             # google.protobuf.Empty has no fields
 
 # JSON
 server.emit_station_name("Rooftop")                  # unpacked
 server.emit_station_name_payload(StationNameSignalPayload(name="Rooftop"))
+```
 
+A receiver is handed the same fields, and a method handler returns the response
+**message**, since the response is one object rather than a parameter list:
+
+```python
+@client_builder.receive_current_conditions
+def on_conditions(temperature_celsius: float, description: str, humidity_percent: int): ...
+
+@server.handle_get_forecast
+async def get_forecast(location: str, days: int) -> weather_pb2.Forecast: ...
+
+@server.receive_refresh
+def on_refresh(include_humidity: bool): ...
+```
+
+A field that may be left unset -- a proto3 `optional`, or a member of a `oneof` --
+is an optional parameter and comes last; a repeated field is a list, a map is a
+dict, and a message-typed field keeps its own generated type.
+
+The other languages follow the same rule, in their own idiom:
+
+```rust
+server.emit_current_conditions(21.5, "Sunny".to_string(), 40).await;
+let forecast = client.get_forecast("Provo".to_string(), 3).await?;
+```
+
+```cpp
+server.emitCurrentConditionsSignal(21.5f, "Sunny", 40);
+std::future<::protoweather::v1::Forecast> f = client.getForecast("Provo", 3);
+```
+
+A property is the exception: its value *is* the message, whole.
+
+```python
 # a protobuf property's value is the message itself
 server.current_conditions = weather_pb2.CurrentConditions(humidity_percent=40)
 reading = server.current_conditions                  # -> weather_pb2.CurrentConditions

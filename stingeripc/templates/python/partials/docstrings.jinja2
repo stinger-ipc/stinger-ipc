@@ -8,13 +8,15 @@
     Imported macros do not inherit the calling template's context (globals like
     ``config``/``stinger`` are not visible), but attribute access on objects passed as
     arguments, and environment-registered filters such as ``snake_case``, work exactly
-    as they do everywhere else -- so ``args`` can be a raw list of ``Arg`` objects
-    rather than something the caller has to pre-flatten.
+    as they do everywhere else -- so ``args`` can be a raw list of parameter
+    objects rather than something the caller has to pre-flatten.
 #}
 
 {#
     Renders a docstring body: an optional summary, an optional ``extra`` prose block,
-    an ``Args:`` section built from a raw list of ``Arg`` objects, an optional
+    an ``Args:`` section built from a raw list of payload parameters (``Arg``
+    objects for a JSON payload, ``ProtobufField`` objects for a protobuf one --
+    both answer to ``python.param_name``/``python.annotation``), an optional
     ``Returns:`` section from a caller-supplied ``(type_str, description)`` tuple, and
     an optional ``Raises:`` section from a list of such tuples.
 
@@ -35,7 +37,7 @@
 {% endif -%}
 {%- if args | length > 0 %}
 Args:
-{% for arg in args %}    {{ arg.name | snake_case }} ({{ arg.python.annotation }}): {{ arg.description or "No description provided." }}
+{% for arg in args %}    {{ arg.python.param_name }} ({{ arg.python.annotation }}): {{ arg.description or "No description provided." }}
 {% endfor -%}
 {% endif -%}
 {%- if returns %}

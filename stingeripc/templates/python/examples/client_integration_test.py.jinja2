@@ -19,7 +19,7 @@ import os
 import sys
 import threading
 import concurrent.futures as futures
-from typing import Optional, Union, List
+from typing import Optional, Union, List{% if stinger.uses_protobuf() %}, Dict{% endif %}
 from datetime import datetime, timedelta, UTC
 from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from {{stinger.python.module_name}}.lwt import StingerPresence
@@ -77,9 +77,9 @@ if __name__ == "__main__":
 
     {%for sig_name, sig in stinger.signals.items()%}
     @client_builder.receive_{{sig_name | snake_case }}
-    def _on_{{sig_name | snake_case}}({% if sig.payload.is_protobuf or sig.arg_list %}{{ codec.handler_params(sig.payload, sig.arg_list) }}, {% endif %}_name="{{sig_name}}"):
+    def _on_{{sig_name | snake_case}}({% if sig.payload.python.params %}{{ codec.handler_params(sig.payload, sig.arg_list) }}, {% endif %}_name="{{sig_name}}"):
         {%if sig.payload.is_protobuf-%}
-        _signal_values[_name] = payload
+        _signal_values[_name] = {{ codec.build_message(sig.payload) }}
         {%else-%}
         _signal_values[_name] = {{"{"}}{% for arg in sig.arg_list %}"{{arg.name}}": {{arg.name|snake_case}}{% if not loop.last %}, {% endif %}{% endfor %}{{"}"}}
         {%endif-%}

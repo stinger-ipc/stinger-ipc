@@ -1,4 +1,4 @@
-{%- from "partials/codec.jinja2" import example_payload, property_example_external -%}
+{%- from "partials/codec.jinja2" import example_payload, payload_params, property_example_external -%}
 {%- set comparable_types = ['PRIMITIVE', 'ENUM', 'DURATION', 'BINARY'] -%}
 //! Integration test server for the {{stinger.name}} interface.
 //!
@@ -107,9 +107,21 @@ impl {{stinger.name | UpperCamelCase }}MethodHandlers<MqttierClient> for {{sting
     }
 
     {%for method_name, method in stinger.methods.items()%}
-    async fn handle_{{method_name|snake_case}}(&self, {%if method.request_payload.is_protobuf%}payload: {{method.request_payload.protobuf.rust.external_name}}{%else%}{%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}) -> Result<{%if method.response_payload.is_protobuf%}{{method.response_payload.protobuf.rust.external_name}}{%else%}{{method.rust.return_value_type}}{%endif%}, MethodReturnCode> {
+    async fn handle_{{method_name|snake_case}}(&self, {{ payload_params(method.request_payload, method.arg_list, external=true) }}) -> Result<{{method.rust.external_return_value_type}}, MethodReturnCode> {
         {%if method.request_payload.is_protobuf%}
-        self.tracker.check("method:{{method_name}}", true, &format!("received request: {:?}", payload));
+        {%- set comparable_fields = method.request_payload.protobuf.rust.comparable_fields -%}
+        {%if not method.request_payload.rust.has_params%}
+        self.tracker.check("method:{{method_name}}", true, "received request (no arguments)");
+        {%elif comparable_fields | length > 0%}
+        let mut matches = true;
+        {%for field in comparable_fields%}
+        let expected_{{loop.index}} = {{field.rust.example_value()}};
+        if {{field.rust.param_name()}} != expected_{{loop.index}} { matches = false; }
+        {%endfor%}
+        self.tracker.check("method:{{method_name}}", matches, "checked against the fields client_integration_test is expected to send");
+        {%else%}
+        self.tracker.check("method:{{method_name}}", true, "received request (fields not independently verifiable)");
+        {%endif%}
         {%else%}
         {%- set comparable_args = method.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list -%}
         {%if method.arg_list | length == 0%}

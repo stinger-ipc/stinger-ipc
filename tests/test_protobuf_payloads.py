@@ -453,3 +453,161 @@ class TestProtobufConfig(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _traps_sources() -> ProtobufSources:
+    """A ProtobufSources over the trap fixtures -- maps, oneofs, enums, proto2."""
+    sources = ProtobufSources(FIXTURES)
+    sources.descriptor_set = lambda: FileDescriptorSet.FromString((FIXTURES / "traps.desc").read_bytes())  # type: ignore[method-assign]
+    return sources
+
+
+class TestFieldModeling(unittest.TestCase):
+    """What a generated per-field API needs to know about a message's members."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.reading = ProtobufMessageRef(full_name="traps.v1.Reading")
+        _traps_sources().resolve(cls.reading)
+
+    def _field(self, name: str):
+        return next(field for field in self.reading.fields if field.name == name)
+
+    def test_fields_are_built_once_and_kept(self):
+        self.assertIs(self.reading.fields[0], self.reading.fields[0], "resolving a field's type must write back to the field templates see")
+
+    def test_a_map_carries_its_key_and_value(self):
+        labels = self._field("labels")
+        self.assertTrue(labels.is_map)
+        self.assertEqual((labels.map_key.kind, labels.map_value.kind), ("string", "int32"))
+
+    def test_a_map_of_messages_resolves_its_value_type(self):
+        nested_by_name = self._field("nested_by_name")
+        self.assertTrue(nested_by_name.is_map)
+        self.assertEqual(nested_by_name.map_value.type_ref.full_name, "traps.v1.Reading.Nested")
+        self.assertTrue(nested_by_name.map_value.type_ref.is_resolved)
+
+    def test_members_of_a_real_oneof_name_it(self):
+        self.assertEqual(self._field("sensor_id").oneof_name, "source")
+        self.assertEqual(self._field("sensor_index").oneof_name, "source")
+
+    def test_a_proto3_optional_is_not_a_oneof_member(self):
+        note = self._field("note")
+        self.assertIsNone(note.oneof_name)
+        self.assertTrue(note.optional)
+        self.assertTrue(note.is_optional_param)
+
+    def test_oneofs_lists_only_the_real_one(self):
+        self.assertEqual([group.name for group in self.reading.oneofs], ["source"])
+        (source,) = self.reading.oneofs
+        self.assertEqual([field.name for field in source.fields], ["sensor_id", "sensor_index"])
+        self.assertIs(source.parent, self.reading)
+
+    def test_an_enum_field_resolves_to_an_enum(self):
+        severity = self._field("severity")
+        self.assertTrue(severity.is_enum)
+        self.assertTrue(severity.type_ref.is_resolved)
+        self.assertTrue(severity.type_ref.is_enum)
+        self.assertEqual(severity.type_ref.fields, [], "an enum has no fields of its own")
+
+    def test_every_reference_to_a_type_is_resolved_not_just_the_first(self):
+        history = self._field("history")
+        self.assertTrue(history.repeated)
+        self.assertFalse(history.is_map)
+        self.assertTrue(history.type_ref.is_resolved, "the same type reached twice resolves both times")
+        self.assertEqual(history.type_ref.scoped_name, "Reading.Nested")
+
+    def test_optional_parameters_come_last(self):
+        self.assertEqual(
+            [field.name for field in self.reading.param_fields],
+            ["labels", "nested_by_name", "severity", "history", "blob", "big", "sensor_id", "sensor_index", "note"],
+        )
+
+    def test_referenced_types_are_what_a_signature_names(self):
+        self.assertEqual([ref.full_name for ref in self.reading.referenced_types], ["traps.v1.Reading.Nested", "traps.v1.Severity"])
+
+    def test_an_enum_lists_the_values_it_declares(self):
+        severity = self._field("severity").type_ref
+        self.assertEqual(severity.enum_values, ["SEVERITY_UNSPECIFIED", "SEVERITY_WARNING", "SEVERITY_CRITICAL"])
+        self.assertEqual(self.reading.enum_values, [], "a message declares no enum values of its own")
+
+    def test_a_message_with_no_fields_takes_no_parameters(self):
+        empty = ProtobufMessageRef(full_name="google.protobuf.Empty")
+        _traps_sources().resolve(empty)
+        self.assertEqual(empty.param_fields, [])
+
+    def test_proto2_singular_fields_track_presence(self):
+        old = ProtobufMessageRef(full_name="traps.legacy.Old")
+        _traps_sources().resolve(old)
+        self.assertEqual(old.syntax, "proto2")
+        by_name = {field.name: field for field in old.fields}
+        self.assertTrue(by_name["count"].optional, "a proto2 'optional' has explicit presence")
+        self.assertFalse(by_name["id"].optional, "a proto2 'required' does not")
+        self.assertFalse(by_name["unpacked"].optional, "a repeated field has no presence to track")
+
+    def test_proto3_singular_fields_do_not(self):
+        self.assertEqual(self.reading.syntax, "proto3")
+        self.assertFalse(self._field("big").optional)
+
+
+class TestInterfaceCoversFieldTypes(unittest.TestCase):
+    """Imports and includes have to reach the types a payload's fields are spelled with."""
+
+    def test_messages_include_the_types_fields_name(self):
+        spec = _spec({"signals": {"s": {"protobuf": "weather.v1.Forecast"}}})
+        _sources().resolve_all(spec.all_protobuf_refs())
+        self.assertEqual(
+            [ref.full_name for ref in spec.protobuf_messages()],
+            ["weather.v1.CurrentConditions", "weather.v1.Forecast"],
+            "the repeated CurrentConditions a Forecast holds is named by the generated signature",
+        )
+
+    def test_a_well_known_field_type_counts_as_using_them(self):
+        spec = _spec({"signals": {"s": {"protobuf": "weather.v1.Forecast"}}})
+        _sources().resolve_all(spec.all_protobuf_refs())
+        self.assertFalse(spec.uses_well_known_protobuf())
+
+
+class TestAsyncApiDescribesProtobuf(unittest.TestCase):
+    """The AsyncAPI document has to describe a protobuf payload, not assume JSON."""
+
+    def setUp(self):
+        from stingeripc.asyncapi import stinger_to_asyncapi
+
+        self.spec = _spec(
+            {
+                "signals": {"pb": {"protobuf": "weather.v1.CurrentConditions"}},
+                "properties": {"pbprop": {"protobuf": "weather.v1.CurrentConditions"}},
+                "commands": {"pbcmd": {"protobuf": "weather.v1.Forecast"}},
+            }
+        )
+        _sources().resolve_all(self.spec.all_protobuf_refs())
+        self.document = stinger_to_asyncapi(self.spec, StingerConfig())
+
+    def _messages_for(self, channel_name: str) -> list[dict]:
+        return list(self.document["channels"][channel_name]["messages"].values())
+
+    def test_a_protobuf_property_does_not_raise(self):
+        """A protobuf property has no single Arg, which used to abort the whole document."""
+        self.assertIn("pbprop_value", self.document["channels"])
+
+    def test_the_payload_is_described_as_the_message(self):
+        (message,) = self._messages_for("pb")
+        payload = message["payload"]
+        self.assertEqual(payload["title"], "weather.v1.CurrentConditions")
+        self.assertEqual(payload["format"], "binary")
+        self.assertIn("weather.proto", payload["description"])
+        self.assertIn("temperature", payload["description"], "the fields a caller passes are named")
+
+    def test_the_content_type_is_protobuf(self):
+        (message,) = self._messages_for("pb")
+        self.assertEqual(message["contentType"], "application/protobuf")
+
+    def test_a_json_interface_is_still_described_as_json(self):
+        from stingeripc.asyncapi import stinger_to_asyncapi
+
+        spec = _spec({"signals": {"s": {"values": [{"name": "x", "type": "integer"}]}}})
+        document = stinger_to_asyncapi(spec, StingerConfig())
+        (message,) = list(document["channels"]["s"]["messages"].values())
+        self.assertEqual(message["contentType"], "application/json")
+        self.assertEqual(message["payload"]["type"], "object")

@@ -2,6 +2,7 @@
 {% import "partials/serialize.jinja2" as ser %}
 {% import "partials/args.jinja2" as ar %}
 {% import "partials/properties.jinja2" as pr %}
+{% import "partials/payload.jinja2" as pl %}
 {%- import "partials/codec.jinja2" as codec %}
 
 #include <vector>
@@ -170,6 +171,40 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Mes
             _broker->Log(LOG_INFO, "{{sig_name}} signal debug from server: %s", msg.properties.debugInfo->c_str());
         }
         {{ codec.expect_content_type(sig.payload, sig_name ~ " signal") }}
+{%- if sig.payload.is_protobuf %}
+        // A protobuf signal's body is the message's own encoding, so it is parsed
+        // through `Wire<>` rather than as JSON.  A body that will not parse is
+        // logged and dropped; there is nothing to send an error back to.
+        try
+        {
+            std::lock_guard<std::mutex> lock(_{{sig_name | lowerCamelCase}}SignalCallbacksMutex);
+            if (_{{sig_name | lowerCamelCase}}SignalCallbacks.empty())
+            {
+                return;
+            }
+            auto signalPayload = Wire<{{sig.payload.cpp.class_name}}>::FromString(msg.payload);
+            {{ pl.unpack_locals(sig.payload, "signalPayload") | indent(12) }}
+            for (const auto& cb : _{{sig_name | lowerCamelCase}}SignalCallbacks)
+            {
+                try
+                {
+                    cb({{ pl.call_args(sig.payload, "signalPayload") }});
+                }
+                catch (const std::exception& e)
+                {
+                    _broker->Log(LOG_ERR, "Exception in {{sig_name}} signal callback [%s]: %s", typeid(e).name(), e.what());
+                }
+                catch (...)
+                {
+                    _broker->Log(LOG_ERR, "Unknown exception in {{sig_name}} signal callback");
+                }
+            }
+        }
+        catch (const std::exception& e)
+        {
+            _broker->Log(LOG_WARNING, "Could not deserialize '{{sig_name}}' signal payload [%s]: %s", typeid(e).name(), e.what());
+        }
+{%- else %}
         rapidjson::Document doc;
         try {
             if (_{{sig_name | camelCase}}SignalCallbacks.size() > 0)
@@ -245,9 +280,10 @@ void {{stinger.cpp.client_class_name}}::_receiveMessage(const stinger::mqtt::Mes
         catch (const std::exception&)
         {
             // We couldn't find an integer out of the string in the topic name,
-            // so we are dropping the message completely. 
+            // so we are dropping the message completely.
             // TODO: Log this failure
         }
+{%- endif %}
     }
     {%-endfor%}{# for signals #}
 
@@ -302,7 +338,7 @@ void {{stinger.cpp.client_class_name}}::_subscribeTo{{sig_name | UpperCamelCase}
     _{{sig_name | lowerCamelCase}}SignalSubscriptionId = _broker->Subscribe({{sig_name | lowerCamelCase}}Topic, {{stinger.signal_qos}});
 }
 
-void {{stinger.cpp.client_class_name}}::register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb)
+void {{stinger.cpp.client_class_name}}::register{{sig_name | UpperCamelCase}}Callback(const std::function<void({{ pl.param_types(sig.payload) }})>& cb)
 {
     { // Scope lock
         std::lock_guard<std::mutex> lock(_{{sig_name | lowerCamelCase}}SignalCallbacksMutex);
@@ -315,14 +351,14 @@ void {{stinger.cpp.client_class_name}}::register{{sig_name | UpperCamelCase}}Cal
 {%-endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-std::future<{{method.cpp.return_value_class}}> {{stinger.cpp.client_class_name}}::{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
+std::future<{{method.cpp.return_value_class}}> {{stinger.cpp.client_class_name}}::{{method_name | camelCase}}({{ pl.params(method.request_payload) }})
 {
     // The promise is only put into the pending map once the request is about to go out,
     // so a call that fails before then leaves nothing behind to time out.
     std::promise<{{method.cpp.return_value_class}}> promise;
     auto responseFuture = promise.get_future();
 
-    {{method.request_payload.cpp.class_name}} requestArgs{ {%for arg in method.arg_list%}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    {{ pl.build(method.request_payload, "requestArgs") | indent(4) }}
 {%- if not method.request_payload.is_protobuf %}
     if (!requestArgs.ValidateSchema()) {
         _broker->Log(LOG_WARNING, "Request payload for '{{method_name}}' failed schema validation; not sending.");
@@ -394,9 +430,23 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
         return;
     }
 
-    {%if method.return_value is none %}
+    {%if not method.has_response %}
     // Method doesn't return a value.
     promise.set_value();
+    {%elif method.response_payload.is_protobuf%}
+    // The response is a protobuf message, and that message is what the future
+    // resolves to; a body that will not parse fails the call instead.
+    try
+    {
+        promise.set_value(Wire<{{method.response_payload.cpp.class_name}}>::FromString(msg.payload));
+    }
+    catch (const std::exception& e)
+    {
+        _broker->Log(LOG_WARNING, "Could not deserialize the '{{method_name}}' method response [%s]: %s", typeid(e).name(), e.what());
+        promise.set_exception(stinger::error::createStingerException(
+            stinger::error::MethodReturnCode::CLIENT_DESERIALIZATION_ERROR,
+            "Could not deserialize the '{{method_name}}' method response"));
+    }
     {%else%}
     // Method returns a single value.
     auto returnPayload = Wire<{{method.response_payload.cpp.class_name}}>::FromString(msg.payload);
@@ -415,9 +465,9 @@ void {{stinger.cpp.client_class_name}}::_handle{{method_name|UpperCamelCase}}Res
 }
 {%endfor%}{# end for each method #}
 {%for command_name, command in stinger.commands.items()%}
-void {{stinger.cpp.client_class_name}}::send{{command_name | UpperCamelCase}}Command({%for arg in command.arg_list%}{{arg.cpp.func_param_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
+void {{stinger.cpp.client_class_name}}::send{{command_name | UpperCamelCase}}Command({{ pl.func_params(command.payload) }})
 {
-    {{command.cpp.payload_struct_name}} commandPayload{ {%for arg in command.arg_list%}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    {{ pl.build(command.payload, "commandPayload") | indent(4) }}
 {%- if not command.payload.is_protobuf %}
     if (!commandPayload.ValidateSchema()) {
         _broker->Log(LOG_WARNING, "Payload for '{{command_name}}' command failed schema validation; not sending.");
@@ -425,10 +475,10 @@ void {{stinger.cpp.client_class_name}}::send{{command_name | UpperCamelCase}}Com
     }
 {%- endif %}
 
-    send{{command_name | UpperCamelCase}}CommandPayload(commandPayload);
+    {%if command.payload.is_protobuf%}_publish{{command_name | UpperCamelCase}}Command{%else%}send{{command_name | UpperCamelCase}}CommandPayload{%endif%}(commandPayload);
 }
 
-void {{stinger.cpp.client_class_name}}::send{{command_name | UpperCamelCase}}CommandPayload(const {{command.payload.cpp.class_name}}& commandPayload)
+void {{stinger.cpp.client_class_name}}::{%if command.payload.is_protobuf%}_publish{{command_name | UpperCamelCase}}Command{%else%}send{{command_name | UpperCamelCase}}CommandPayload{%endif%}(const {{command.payload.cpp.class_name}}& commandPayload)
 {
     auto payloadStr = Wire<{{command.payload.cpp.class_name}}>::ToString(commandPayload);
 

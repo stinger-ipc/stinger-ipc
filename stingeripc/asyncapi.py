@@ -191,6 +191,40 @@ def arg_to_schema(arg: Arg) -> Schema:
     return arg_list_to_schema([arg])
 
 
+def protobuf_to_schema(ref) -> Schema:
+    """Describe a protobuf message the way AsyncAPI can describe a binary body.
+
+    The body is a serialized protobuf message, not a JSON object, so it is declared
+    as binary rather than given a JSON Schema that would misdescribe it.  The
+    message's own name and fields go in the description, which is the only place a
+    reader of the document can learn what those bytes contain.
+    """
+    fields = ", ".join(f"{field.name} ({field.kind})" for field in ref.param_fields)
+    shape = f"  Its fields are: {fields}." if fields else "  It has no fields."
+    return Schema(
+        **{
+            "type": "string",
+            "format": "binary",
+            "title": ref.full_name,
+            "description": f"The protobuf message `{ref.full_name}`, declared in `{ref.proto_file}`, in its binary wire format.{shape}",
+        }
+    )
+
+
+def payload_to_schema(payload) -> Schema:
+    """The schema for either kind of wire body: a JSON argument list or a protobuf message."""
+    if payload.is_protobuf:
+        return protobuf_to_schema(payload.protobuf)
+    return arg_list_to_schema(payload.arg_list)
+
+
+def payload_encoding(payload) -> str:
+    """How to finish the sentence "the payload ... is encoded as ...".""" 
+    if payload.is_protobuf:
+        return f"the protobuf message `{payload.protobuf.full_name}`"
+    return "a JSON object"
+
+
 def arg_list_to_schema(arg_list: list[Arg]) -> Schema:
     properties: dict[str, dict] = {}
     required: list[str] = []
@@ -210,17 +244,17 @@ class AsyncApiSignalHelper:
         self.config = config
 
     def get_payload_schema(self) -> Schema:
-        return arg_list_to_schema(self.signal.arg_list)
+        return payload_to_schema(self.signal.payload)
 
     def get_message(self) -> models.Message:
         payload_schema = self.get_payload_schema()
         return models.Message(
             name=self.signal.name,
             summary=f"The message for the '{self.signal.name}' signal.",
-            description=f"The payload represents the data for the signal.  It is encoded as a JSON object.",
+            description=f"The payload represents the data for the signal.  It is encoded as {payload_encoding(self.signal.payload)}.",
             payload=payload_schema,
-            contentType="application/json",
-            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+            contentType=self.signal.payload.content_type,
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType=self.signal.payload.content_type)),
         )
 
     def to_channel(self) -> models.Channel:
@@ -275,21 +309,21 @@ class AsyncApiMethodHelper:
         return self.method.return_value_name.replace(" ", "_")
 
     def get_request_message(self) -> models.Message:
-        payload_schema = arg_list_to_schema(self.method.arg_list)
+        payload_schema = payload_to_schema(self.method.request_payload)
         response_topic_schema = _topic_template_to_regex(self.method.response_topic())
         return models.Message(
             name=self.request_message_key(),
-            description="""The payload represents the arguments for the method call.  It is encoded as a JSON object.
+            description=f"""The payload represents the arguments for the method call.  It is encoded as {payload_encoding(self.method.request_payload)}.
             
             Correlation data must be provided as an MQTT property.  The data can be any binary data, but must be unique to this method.  Typically, using a UUID is sufficient to ensure uniqueness.  The server will include the same correlation data in the response message, so the client can match responses to requests when multiple requests are in-flight.
             
             A response topic must be provided as an MQTT property.  The server will publish the response message to the provided response topic.  The method-calling client must have a valid subscription to the MQTT response topic.
             """,
             payload=payload_schema,
-            contentType="application/json",
+            contentType=self.method.request_payload.content_type,
             bindings=MessageBindingsObject(
                 mqtt=MQTTMessageBindings(
-                    contentType="application/json",
+                    contentType=self.method.request_payload.content_type,
                     correlationData={"type": "string", "format": "uuid"},
                     responseTopic={"type": "string", "pattern": response_topic_schema},
                 )
@@ -330,7 +364,7 @@ class AsyncApiMethodHelper:
         )
 
     def get_response_message(self) -> models.Message:
-        payload_schema = arg_list_to_schema(self.method.return_arg_list)
+        payload_schema = payload_to_schema(self.method.response_payload)
         represents = "return value" if self.method.return_value is not None else "completion"
         return models.Message(
             name=self.method.return_value_name,
@@ -341,8 +375,8 @@ class AsyncApiMethodHelper:
             (Hint: any blob of data works, so you could include extra tracking information like a timestamp if you needed it).
             """,
             payload=payload_schema,
-            contentType="application/json",
-            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+            contentType=self.method.response_payload.content_type,
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType=self.method.response_payload.content_type)),
             tags=[models.base.Tag(name="method"), models.base.Tag(name="response")],
         )
 
@@ -388,7 +422,7 @@ class AsyncApiCommandHelper:
         return f"{self.command.name}_command"
 
     def get_payload_schema(self) -> Schema:
-        return arg_list_to_schema(self.command.arg_list)
+        return payload_to_schema(self.command.payload)
 
     def get_message(self) -> models.Message:
         payload_schema = self.get_payload_schema()
@@ -400,8 +434,8 @@ class AsyncApiCommandHelper:
             No correlation data and no response topic are provided, because a command has no response.
             """,
             payload=payload_schema,
-            contentType="application/json",
-            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+            contentType=self.command.payload.content_type,
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType=self.command.payload.content_type)),
             tags=[models.base.Tag(name="command")],
         )
 
@@ -457,8 +491,12 @@ class AsyncApiPropertyHelper:
         return f"{self.prop.name}_update_response"
 
     def payload_schema(self) -> Schema:
-        """The property payload: a JSON object with one field, the property's value."""
-        return arg_to_schema(self.prop.value)
+        """The property payload.
+
+        A JSON property carries an object with one field, its value; a protobuf
+        property carries the message itself, with no wrapper around it.
+        """
+        return payload_to_schema(self.prop.payload)
 
     def _payload_ref(self) -> Schema:
         return Schema(**{"$ref": f"#/components/schemas/{self.prop.name}_property"})
@@ -491,8 +529,8 @@ class AsyncApiPropertyHelper:
             summary=f"The current value of the '{self.prop.name}' property.",
             description=description,
             payload=self._payload_ref(),
-            contentType="application/json",
-            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+            contentType=self.prop.payload.content_type,
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType=self.prop.payload.content_type)),
             headers=headers,
             tags=[models.base.Tag(name="property"), models.base.Tag(name="value")],
         )
@@ -527,10 +565,10 @@ class AsyncApiPropertyHelper:
             summary=f"A request to update the '{self.prop.name}' property.",
             description=description,
             payload=self._payload_ref(),
-            contentType="application/json",
+            contentType=self.prop.payload.content_type,
             bindings=MessageBindingsObject(
                 mqtt=MQTTMessageBindings(
-                    contentType="application/json",
+                    contentType=self.prop.payload.content_type,
                     correlationData={"type": "string", "format": "uuid"},
                     responseTopic={"type": "string", "pattern": _topic_template_to_regex(self.prop.response_topic())},
                 )
@@ -597,10 +635,10 @@ class AsyncApiPropertyHelper:
             summary=f"The response after updating the '{self.prop.name}' property.",
             description=description,
             payload=self._payload_ref(),
-            contentType="application/json",
+            contentType=self.prop.payload.content_type,
             bindings=MessageBindingsObject(
                 mqtt=MQTTMessageBindings(
-                    contentType="application/json",
+                    contentType=self.prop.payload.content_type,
                     correlationData={"type": "string", "format": "uuid"},
                 )
             ),

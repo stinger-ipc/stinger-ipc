@@ -1,4 +1,4 @@
-{%- from "partials/codec.jinja2" import example_payload, property_example_external -%}
+{%- from "partials/codec.jinja2" import example_payload, payload_params, property_example_external -%}
 /*
 DO NOT MODIFY THIS FILE {# unless you see this comment #}.  It is automatically generated and changes will be over-written
 on the next generation.
@@ -53,7 +53,7 @@ impl {{stinger.name | UpperCamelCase }}MethodHandlers<MqttierClient> for {{sting
     }
 
     {%for method_name, method in stinger.methods.items()%}
-    async fn handle_{{method_name|snake_case}}(&self, {%if method.request_payload.is_protobuf%}_payload: {{method.request_payload.protobuf.rust.external_name}}{%else%}{%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}) -> Result<{%if method.response_payload.is_protobuf%}{{method.response_payload.protobuf.rust.external_name}}{%else%}{{method.rust.return_value_type}}{%endif%}, MethodReturnCode> {
+    async fn handle_{{method_name|snake_case}}(&self, {{ payload_params(method.request_payload, method.arg_list, prefix="_", external=true) }}) -> Result<{{method.rust.external_return_value_type}}, MethodReturnCode> {
         println!("Handling {{method_name}}");
         {%- if method.response_payload.is_protobuf %}
         Ok(<{{method.response_payload.protobuf.rust.external_name}} as Default>::default())

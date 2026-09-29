@@ -2,6 +2,7 @@
 {%- import "partials/properties.jinja2" as pr %}
 {%- import "partials/args.jinja2" as ar %}
 {%- import "partials/codec.jinja2" as codec %}
+{%- import "partials/payload.jinja2" as pl %}
 #include <vector>
 #include <iostream>
 #include <syslog.h>
@@ -226,9 +227,9 @@ void {{stinger.cpp.server_class_name}}::_methodRequestThreadLoop()
 {%endif%}
 
 {%for sig_name, sig in stinger.signals.items()%}
-std::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp.func_param_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
+std::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamelCase}}Signal({{ pl.func_params(sig.payload) }})
 {
-    {{sig.payload.cpp.class_name}} signalPayload{ {%for arg in sig.arg_list%}{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%} };
+    {{ pl.build(sig.payload, "signalPayload") | indent(4) }}
 {%- if not sig.payload.is_protobuf %}
     if (!signalPayload.ValidateSchema()) {
         _broker->Log(LOG_WARNING, "Payload for '{{sig_name}}' signal failed schema validation; not emitting.");
@@ -238,10 +239,10 @@ std::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamel
     }
 {%- endif %}
 
-    return emit{{sig_name | UpperCamelCase}}SignalPayload(signalPayload);
+    return {%if sig.payload.is_protobuf%}_publish{{sig_name | UpperCamelCase}}Signal{%else%}emit{{sig_name | UpperCamelCase}}SignalPayload{%endif%}(signalPayload);
 }
 
-std::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamelCase}}SignalPayload(const {{sig.payload.cpp.class_name}}& signalPayload)
+std::future<bool> {{stinger.cpp.server_class_name}}::{%if sig.payload.is_protobuf%}_publish{{sig_name | UpperCamelCase}}Signal{%else%}emit{{sig_name | UpperCamelCase}}SignalPayload{%endif%}(const {{sig.payload.cpp.class_name}}& signalPayload)
 {
     auto payloadStr = Wire<{{sig.payload.cpp.class_name}}>::ToString(signalPayload);
 
@@ -264,7 +265,7 @@ std::future<bool> {{stinger.cpp.server_class_name}}::emit{{sig_name | UpperCamel
 {%endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
-void {{stinger.cpp.server_class_name}}::register{{method_name | UpperCamelCase}}Handler(std::function<{{method.cpp.return_value_class}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func)
+void {{stinger.cpp.server_class_name}}::register{{method_name | UpperCamelCase}}Handler(std::function<{{method.cpp.return_value_class}}({{ pl.param_types(method.request_payload) }})> func)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle {{method.topic | replace('%1%', '+') }} method requests.");
     _{{method_name | camelCase}}Handler = func;
@@ -299,7 +300,7 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
         // TODO: publish an error response because we don't have a method handler.
         return;
     }
-    {%if method.arg_list | length > 0 %}
+    {%if method.request_payload.is_protobuf or method.arg_list | length > 0 %}
     auto requestArgs = Wire<{{method.request_payload.cpp.class_name}}>::FromString(payload);
 {%- if not method.request_payload.is_protobuf %}
     if (!requestArgs.ValidateSchema()) {
@@ -316,15 +317,22 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
     }
 {%- endif %}
     {%endif%}
+{%- if method.request_payload.is_protobuf %}
+    // The handler takes the request message's fields, so they are read off it here.
+    {{ pl.unpack_locals(method.request_payload, "requestArgs") | indent(4) }}
+{%- endif %}
     try
     {
-        {%if method.return_value is none %}
+        {%if not method.has_response %}
         // Method doesn't return a value.
-        _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}requestArgs.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+        _{{method_name | camelCase}}Handler({{ pl.call_args(method.request_payload, "requestArgs") }});
         auto returnPayload = {{method.cpp.return_struct_name}}();
+        {%elif method.response_payload.is_protobuf%}
+        // The handler builds the response message itself.
+        auto returnPayload = _{{method_name | camelCase}}Handler({{ pl.call_args(method.request_payload, "requestArgs") }});
         {%else%}
         // Method returns a single value.
-        auto returnValue = _{{method_name | camelCase}}Handler({%for arg in method.arg_list%}requestArgs.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+        auto returnValue = _{{method_name | camelCase}}Handler({{ pl.call_args(method.request_payload, "requestArgs") }});
         {{method.cpp.return_struct_name}} returnPayload = {returnValue};
         {%endif%}
 {%- if not method.response_payload.is_protobuf %}
@@ -392,12 +400,13 @@ void {{stinger.cpp.server_class_name}}::_call{{method_name | UpperCamelCase}}Han
 {%endfor%}
 
 {%for command_name, command in stinger.commands.items()%}
-void {{stinger.cpp.server_class_name}}::receive{{command_name | UpperCamelCase}}Command(const std::function<void({%for arg in command.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& handler)
+void {{stinger.cpp.server_class_name}}::receive{{command_name | UpperCamelCase}}Command(const std::function<void({{ pl.param_types(command.payload) }})>& handler)
 {
     _broker->Log(LOG_DEBUG, "Application registered a function to handle {{command_name}} commands.");
     std::lock_guard<std::mutex> lock(_{{command_name | lowerCamelCase}}CommandHandlersMutex);
     _{{command_name | lowerCamelCase}}CommandHandlers.push_back(handler);
 }
+{%- if not command.payload.is_protobuf %}
 
 void {{stinger.cpp.server_class_name}}::receive{{command_name | UpperCamelCase}}CommandPayload(const std::function<void(const {{command.payload.cpp.class_name}}&)>& handler)
 {
@@ -405,6 +414,7 @@ void {{stinger.cpp.server_class_name}}::receive{{command_name | UpperCamelCase}}
     std::lock_guard<std::mutex> lock(_{{command_name | lowerCamelCase}}CommandHandlersMutex);
     _{{command_name | lowerCamelCase}}CommandPayloadHandlers.push_back(handler);
 }
+{%- endif %}
 
 void {{stinger.cpp.server_class_name}}::_receive{{command_name | UpperCamelCase}}Command(const stinger::mqtt::Message& msg)
 {
@@ -419,14 +429,18 @@ void {{stinger.cpp.server_class_name}}::_receive{{command_name | UpperCamelCase}
 
     // Copy the handler list so the lock isn't held while the handlers run: a handler is
     // then free to register another one, and the list cannot change mid-iteration.
-    std::vector<std::function<void({%for arg in command.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>> handlers;
+    std::vector<std::function<void({{ pl.param_types(command.payload) }})>> handlers;
+{%- if not command.payload.is_protobuf %}
     std::vector<std::function<void(const {{command.payload.cpp.class_name}}&)>> payloadHandlers;
+{%- endif %}
     {
         std::lock_guard<std::mutex> lock(_{{command_name | lowerCamelCase}}CommandHandlersMutex);
         handlers = _{{command_name | lowerCamelCase}}CommandHandlers;
+{%- if not command.payload.is_protobuf %}
         payloadHandlers = _{{command_name | lowerCamelCase}}CommandPayloadHandlers;
+{%- endif %}
     }
-    if (handlers.empty() && payloadHandlers.empty())
+    if (handlers.empty(){% if not command.payload.is_protobuf %} && payloadHandlers.empty(){% endif %})
     {
         _broker->Log(LOG_WARNING, "Received '{{command_name}}' command but no handler is registered; dropping it.");
         return;
@@ -437,7 +451,6 @@ void {{stinger.cpp.server_class_name}}::_receive{{command_name | UpperCamelCase}
         auto commandPayload = Wire<{{command.payload.cpp.class_name}}>::FromString(msg.payload);
 {%- if not command.payload.is_protobuf %}
         if (!commandPayload.ValidateSchema())
-{%- endif %}
         {
             _broker->Log(LOG_WARNING, "Received '{{command_name}}' command payload failed schema validation; dropping it.");
             return;
@@ -458,12 +471,15 @@ void {{stinger.cpp.server_class_name}}::_receive{{command_name | UpperCamelCase}
                 _broker->Log(LOG_ERR, "Unknown exception in {{command_name}} command payload handler");
             }
         }
+{%- else %}
+        {{ pl.unpack_locals(command.payload, "commandPayload") | indent(8) }}
+{%- endif %}
 
         for (const auto& handler : handlers)
         {
             try
             {
-                handler({%for arg in command.arg_list%}commandPayload.{{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%});
+                handler({{ pl.call_args(command.payload, "commandPayload") }});
             }
             catch (const std::exception& e)
             {

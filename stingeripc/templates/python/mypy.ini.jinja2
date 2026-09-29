@@ -1,7 +1,15 @@
 [mypy]
 warn_unused_ignores = True
 check_untyped_defs = True
+{#- The last mypy that runs on Python 3.7 does not know `import-untyped` or
+    `import-not-found`, and rejects the whole line if either is named -- which
+    would leave `unused-ignore` switched on too.  It reports a missing stub under
+    the older, broader `import` code instead. -#}
+{%- if config.python.python37 %}
+disable_error_code = import, unused-ignore
+{%- else %}
 disable_error_code = import-untyped, import-not-found, unused-ignore
+{%- endif %}
 
 [mypy-stringcase.*]
 ignore_missing_imports = True
@@ -22,6 +30,10 @@ ignore_missing_imports = True
 ignore_missing_imports = True
 
 [mypy-stinger_python_utils.*]
+ignore_missing_imports = True
+
+# Type checking does not install the test dependencies.
+[mypy-pytest.*]
 ignore_missing_imports = True
 {%- if stinger.uses_protobuf() %}
 

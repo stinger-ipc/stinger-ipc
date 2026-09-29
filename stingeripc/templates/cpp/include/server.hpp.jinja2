@@ -7,6 +7,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 {%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 */
 {% import 'partials/properties.jinja2' as pr %}
+{% import 'partials/payload.jinja2' as pl %}
 
 #pragma once
 
@@ -22,6 +23,12 @@ It contains enumerations used by the {{stinger.name}} interface.
 #include <atomic>
 #include <condition_variable>
 #include <deque>
+{%- if stinger.uses_protobuf() %}
+// A per-field protobuf signature names these directly: a `std::vector`/`std::map`
+// for a repeated or map field, and a `std::optional` for one that tracks presence.
+#include <optional>
+#include <vector>
+{%- endif %}
 #include <rapidjson/document.h>
 {%if stinger.properties | length > 0 %}
 #include "property_structs.hpp"
@@ -57,15 +64,20 @@ public:
     virtual ~{{stinger.cpp.server_class_name}}();
 
     {%for sig_name, sig in stinger.signals.items()%}
-    std::future<bool> emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.cpp.func_param_type}}{%if not loop.last%}, {%endif%}{%endfor%});
+    {#- A JSON signal's values are named by the payload struct in signal_payloads.hpp,
+        right beside this declaration; a protobuf signal's are not visible anywhere in
+        the generated headers, so this declaration spells them out. #}
+    std::future<bool> emit{{sig_name | UpperCamelCase}}Signal({%if sig.payload.is_protobuf%}{{ pl.func_params(sig.payload) }}{%else%}{{ pl.func_param_types(sig.payload) }}{%endif%});
+{%- if not sig.payload.is_protobuf %}
 
     // Publishes an already-built '{{sig_name}}' payload, for callers that hold the
     // payload object rather than its individual values.
     std::future<bool> emit{{sig_name | UpperCamelCase}}SignalPayload(const {{sig.payload.cpp.class_name}}& payload);
+{%- endif %}
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
-    void register{{method_name | UpperCamelCase}}Handler(std::function<{{method.cpp.return_value_class}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> func);
+    void register{{method_name | UpperCamelCase}}Handler(std::function<{{method.cpp.return_value_class}}({{ pl.param_types(method.request_payload) }})> func);
     {%endfor%}
 
     {%for command_name, command in stinger.commands.items()%}
@@ -73,11 +85,13 @@ public:
     // Any number of handlers may be registered; each one is called when a `{{command_name}}`
     // command is received.  Commands are fire-and-forget, so a handler returns nothing and
     // nothing is sent back to the client that sent the command.
-    void receive{{command_name | UpperCamelCase}}Command(const std::function<void({%for arg in command.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& handler);
+    void receive{{command_name | UpperCamelCase}}Command(const std::function<void({{ pl.param_types(command.payload) }})>& handler);
+{%- if not command.payload.is_protobuf %}
 
     // Registers a handler that receives the whole '{{command_name}}' payload rather than
     // its individual arguments.  Any number of handlers of either kind may be registered.
     void receive{{command_name | UpperCamelCase}}CommandPayload(const std::function<void(const {{command.payload.cpp.class_name}}&)>& handler);
+{%- endif %}
     {%endfor%}
 
     {%for prop_name, prop in stinger.properties.items()%}
@@ -92,10 +106,18 @@ private:
     {%endfor%}
     stinger::utils::CallbackHandleType _brokerMessageCallbackHandle = 0;
     void _receiveMessage(const stinger::mqtt::Message& msg);
+    {%- for sig_name, sig in stinger.signals.items() %}
+    {%- if sig.payload.is_protobuf %}
+
+    // Publishes an already-built '{{sig_name}}' message.  A protobuf signal's public
+    // API is per-field, so this is where the message actually goes out.
+    std::future<bool> _publish{{sig_name | UpperCamelCase}}Signal(const {{sig.payload.cpp.class_name}}& signalPayload);
+    {%- endif %}
+    {%- endfor %}
 
     {%for method_name, method in stinger.methods.items()%}
     void _call{{method_name | UpperCamelCase}}Handler(const std::string& topic, const std::string& payload, const std::optional<std::string>& optContentType, const std::optional<std::vector<std::byte>>& optCorrelationData, const std::optional<std::string>& optResponseTopic) const;
-    std::function<{{method.cpp.return_value_class}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})> _{{method_name | camelCase}}Handler;
+    std::function<{{method.cpp.return_value_class}}({{ pl.param_types(method.request_payload) }})> _{{method_name | camelCase}}Handler;
     int _{{method_name | camelCase}}MethodSubscriptionId;
     {%endfor%}
 
@@ -103,12 +125,14 @@ private:
     // ------------------- COMMANDS -------------------
     {%for command_name, command in stinger.commands.items()%}
     // Internal method for handling a received `{{command_name}}` command.
+{%- if not command.payload.is_protobuf %}
     std::vector<std::function<void(const {{command.payload.cpp.class_name}}&)>> _{{command_name | lowerCamelCase}}CommandPayloadHandlers;
+{%- endif %}
     void _receive{{command_name | UpperCamelCase}}Command(const stinger::mqtt::Message& msg);
 
     // List of handlers to be called whenever the `{{command_name}}` command is received.
     // An empty list is legal; received commands are then dropped.
-    std::vector<std::function<void({%for arg in command.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>> _{{command_name | lowerCamelCase}}CommandHandlers;
+    std::vector<std::function<void({{ pl.param_types(command.payload) }})>> _{{command_name | lowerCamelCase}}CommandHandlers;
     std::mutex _{{command_name | lowerCamelCase}}CommandHandlersMutex;
 
     // MQTT Subscription ID for `{{command_name}}` command receptions.

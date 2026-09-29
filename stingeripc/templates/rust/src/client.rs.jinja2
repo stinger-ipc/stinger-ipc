@@ -1,4 +1,4 @@
-{%- from "partials/codec.jinja2" import expect_content_type, decode_or, empty_payload_bytes, payload_params, build_payload, example_payload_local, property_wrap, property_unwrap, property_example -%}
+{%- from "partials/codec.jinja2" import expect_content_type, decode_or, empty_payload_bytes, payload_params, param_names, build_payload, example_payload_local, property_wrap, property_unwrap, property_example -%}
 //! Client module for {{stinger.name}} IPC
 //!
 //! This module is only available when the "client" feature is enabled.
@@ -481,12 +481,22 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     /// that it can evict the pending entry if no response ever arrives.
     async fn start_{{method_name|snake_case}}(
             &mut self,
-            {{ payload_params(method.request_payload, method.arg_list) }}{% if method.request_payload.is_protobuf or method.arg_list %},{% endif %}
+            {{ payload_params(method.request_payload, method.arg_list) }}{% if method.request_payload.rust.has_params %},{% endif %}
     ) -> (Uuid, oneshot::Receiver<MethodReturnCode>) {
+        {#- A protobuf request is assembled before the bookkeeping below, so that a
+            message field called `sender`, `receiver` or `correlation_id` is not
+            shadowed by the local of that name.  A JSON request keeps its original
+            position: its fields are checked against their schema, and that check
+            reports failure through `sender`. #}
+        {%- if method.request_payload.is_protobuf %}
+        {{ build_payload(method.request_payload, method.arg_list) }}
+        {%- endif %}
         // Setup tracking for the future response.
         let correlation_id = Uuid::new_v4();
         let (sender, receiver) = oneshot::channel();
+        {%- if not method.request_payload.is_protobuf %}
         {{ build_payload(method.request_payload, method.arg_list) }}
+        {%- endif %}
         {%-if method.arg_list | length > 0 %}
         if let Err(e) = data.validate_schema() {
             error!("Request payload for {{method_name}} failed schema validation, not sending: {}", e);
@@ -515,9 +525,9 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     /// and published to the `{{method.topic}}` MQTT topic.
     ///
     /// This method awaits on the response to the call before returning.
-    pub async fn {{method_name|snake_case}}(&mut self{%if method.request_payload.is_protobuf or method.arg_list %}, {%endif%}{{ payload_params(method.request_payload, method.arg_list) }})->Result<{{method.rust.return_value_type}}, MethodReturnCode> {
+    pub async fn {{method_name|snake_case}}(&mut self{%if method.request_payload.rust.has_params %}, {%endif%}{{ payload_params(method.request_payload, method.arg_list) }})->Result<{{method.rust.return_value_type}}, MethodReturnCode> {
 
-        let (correlation_id, receiver) = self.start_{{method_name|snake_case}}({%if method.request_payload.is_protobuf %}payload{%else%}{%for arg in method.arg_list%}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}).await;
+        let (correlation_id, receiver) = self.start_{{method_name|snake_case}}({{ param_names(method.request_payload, method.arg_list) }}).await;
 
         // The receive loop removes the pending entry before it answers, so only the two
         // failure arms below have anything left to clean up.
@@ -571,7 +581,7 @@ impl<C: Mqtt5PubSub + Clone + Send + 'static> {{stinger.rust.client_struct_name}
     ///
     /// A command is fire-and-forget: the server sends no response, so there is
     /// nothing to await and no way to learn whether the server acted on it.
-    pub async fn send_{{cmd_name|snake_case}}(&mut self{%if cmd.payload.is_protobuf or cmd.arg_list %}, {%endif%}{{ payload_params(cmd.payload, cmd.arg_list) }}) {
+    pub async fn send_{{cmd_name|snake_case}}(&mut self{%if cmd.payload.rust.has_params %}, {%endif%}{{ payload_params(cmd.payload, cmd.arg_list) }}) {
         {{ build_payload(cmd.payload, cmd.arg_list) }}
         {%- if not cmd.payload.is_protobuf %}
         if let Err(err) = data.validate_schema() {

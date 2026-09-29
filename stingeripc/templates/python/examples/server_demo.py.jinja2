@@ -7,7 +7,7 @@ from time import sleep
 import signal
 import os
 import asyncio
-from typing import Optional, Union, List
+from typing import Optional, Union, List{% if stinger.uses_protobuf() %}, Dict{% endif %}
 from datetime import datetime, timedelta, UTC
 from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from {{stinger.python.module_name}}.lwt import StingerPresence
@@ -44,11 +44,11 @@ async def main(server):
     while True:
         try:
             {%for sig_name, sig in stinger.signals.items()-%}
-            server.emit_{{sig_name|snake_case}}{{ codec.payload_suffix(sig.payload) }}({{ codec.example_payload(sig.payload, sig.arg_list, named=False) }})
+            server.emit_{{sig_name|snake_case}}({{ codec.example_payload(sig.payload, sig.arg_list, named=False) }})
             {%endfor%}
             await asyncio.sleep(4)
             {%for sig_name, sig in stinger.signals.items()-%}
-            server.emit_{{sig_name|snake_case}}{{ codec.payload_suffix(sig.payload) }}({{ codec.example_payload(sig.payload, sig.arg_list) }})
+            server.emit_{{sig_name|snake_case}}({{ codec.example_payload(sig.payload, sig.arg_list) }})
             {%endfor%}
             await asyncio.sleep(42)
         except KeyboardInterrupt:
@@ -102,9 +102,9 @@ if __name__ == '__main__':
 
     {%for method_name, method in stinger.methods.items()%}
     @server.handle_{{method_name | snake_case}} 
-    async def {{method_name | snake_case}}({{ codec.handler_params(method.request_payload, method.arg_list, name="request") }}) -> {{method.python.return_value_annotation}}:
+    async def {{method_name | snake_case}}({{ codec.handler_params(method.request_payload, method.arg_list) }}) -> {{method.python.return_value_annotation}}:
         """ This is an example handler for the '{{method_name}}' method.  """
-        print(f"--> Running {{method_name | snake_case}}({%if method.request_payload.is_protobuf%}{request}{%else%}{%for arg in method.arg_list %}{ {{-arg.name|snake_case-}}{% if 'bytes' in arg.python.annotation %}!r{%endif-%} }{%if not loop.last%}, {%endif%}{%endfor%}{%endif%})'")
+        print(f"--> Running {{method_name | snake_case}}({{ codec.example_print(method.request_payload, method.arg_list, labeled=False) }})'")
         return {%if method.response_payload.is_protobuf%}{{codec.example_message(method.response_payload)}}{%else%}{{method.get_return_value_random_example_value('python')}}{%endif%}
     {%endfor%}
     {%for command_name, command in stinger.commands.items()%}
@@ -112,7 +112,7 @@ if __name__ == '__main__':
     def on_{{command_name | snake_case}}({{ codec.handler_params(command.payload, command.arg_list) }}):
         """ This is an example handler for the '{{command_name}}' command.  A command has no
         response, so this returns nothing. """
-        print(f"==> Received the '{{command_name}}' command: {%if command.payload.is_protobuf%}{payload}{%else%}{%for arg in command.arg_list %}{{arg.name}}={ {{-arg.name|snake_case-}}{% if 'bytes' in arg.python.annotation %}!r{%endif-%} }{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}")
+        print(f"==> Received the '{{command_name}}' command: {{ codec.example_print(command.payload, command.arg_list) }}")
     {%endfor%}
     {%if config.properties.stinger_owned_values %}
     {%for prop_name, prop in stinger.properties.items()%}

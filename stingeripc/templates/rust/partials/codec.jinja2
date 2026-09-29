@@ -149,13 +149,28 @@ let expected_content_type = <{{ payload.rust.struct_name }} as WirePayload>::con
 {%- endmacro %}
 
 {#
+    The attribute that lets a `let` of unit type past clippy.
+
+    Only `google.protobuf.Empty` has one: prost substitutes `()` for it rather than
+    generating an empty struct.  The generated code binds the payload to a local
+    anyway, so that the publish and decode paths are the same shape whatever the
+    payload is, and this is what keeps `-D warnings` happy about the one case where
+    that local holds nothing.
+#}
+{%- macro unit_allow(payload) -%}
+{%- if payload.rust.is_unit -%}
+#[allow(clippy::let_unit_value)]
+        {% endif -%}
+{%- endmacro -%}
+
+{#
     Statements decoding a received message into `out_var`, bailing out via `bail`
     ("continue" or "return") if the bytes cannot be decoded.  A JSON payload is
     additionally checked against any declared schema constraints; a protobuf
     message carries no JSON schema, so there is nothing to check.
 #}
 {%- macro decode_or(payload, msg_expr, out_var, label, bail) %}
-let {{ out_var }} = match <{{ payload.rust.struct_name }} as WirePayload>::from_bytes(&{{ msg_expr }}.payload) {
+{{ unit_allow(payload) }}let {{ out_var }} = match <{{ payload.rust.struct_name }} as WirePayload>::from_bytes(&{{ msg_expr }}.payload) {
             Ok(decoded) => {
                 {%- if not payload.is_protobuf %}
                 if let Err(e) = decoded.validate_schema() {
@@ -190,27 +205,65 @@ Bytes::from_static(b"{}")
 {#
     The parameters an emit/send function takes.
 
-    A JSON payload is unpacked into one parameter per argument, which is the API
-    generated servers and clients have always had.  A protobuf payload arrives as
-    the message itself, since taking it apart is what protobuf callers asked not
-    to happen.
+    Both encodings are unpacked into one parameter per value: a JSON payload into
+    one per argument, a protobuf payload into one per member of the prost struct.
+    A real `oneof` is one member and therefore one parameter, since prost holds the
+    whole group in a single `Option<Enum>`.
+
+    `prefix` marks parameters a stub does not read (`_days`).  `external` spells
+    message types the way code outside the library reaches them (`proto::X` rather
+    than `crate::proto::X`).  `quote` wraps each parameter in backticks, for the one
+    place in the docs that lists them as prose rather than as a signature.
 #}
-{%- macro payload_params(payload, arg_list) -%}
+{%- macro payload_params(payload, arg_list, prefix="", external=false, quote=false) -%}
+{%- set tick = "`" if quote else "" -%}
 {%- if payload.is_protobuf -%}
-payload: {{ payload.rust.struct_name }}
+{%- for member in payload.rust.params %}{{ tick }}{{ member.rust.param_name(prefix) }}: {% if external %}{{ member.rust.external_type }}{% else %}{{ member.rust.type }}{% endif %}{{ tick }}{% if not loop.last %}, {% endif %}{% endfor -%}
 {%- else -%}
-{%- for arg in arg_list %}{{ arg.name|snake_case }}: {{ arg.rust.type }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- for arg in arg_list %}{{ tick }}{{ prefix }}{{ arg.name|snake_case }}: {{ arg.rust.type }}{{ tick }}{% if not loop.last %}, {% endif %}{% endfor -%}
 {%- endif -%}
 {%- endmacro -%}
 
 {#
-    Statements binding the payload to `data`, from whichever form the parameters
-    took.  A protobuf message is already the payload; a JSON payload is assembled
-    from the individual arguments.
+    Just the names of those parameters, for forwarding a call on unchanged.
+#}
+{%- macro param_names(payload, arg_list, prefix="") -%}
+{%- if payload.is_protobuf -%}
+{%- for member in payload.rust.params %}{{ member.rust.param_name(prefix) }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- else -%}
+{%- for arg in arg_list %}{{ prefix }}{{ arg.name|snake_case }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    Those same parameters read back off a decoded payload object, for handing a
+    received message to a handler that takes them one by one.
+#}
+{%- macro unpack_payload(payload, arg_list, var="payload") -%}
+{%- if payload.is_protobuf -%}
+{%- for member in payload.rust.params %}{{ var }}.{{ member.rust.field_name }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- else -%}
+{%- for arg in arg_list %}{{ var }}.{{ arg.name|snake_case }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    Statements binding the payload to `data`, assembled from the individual
+    parameters.  A protobuf message with no fields at all (`google.protobuf.Empty`)
+    has nothing to assemble, so it is taken at its default.
 #}
 {%- macro build_payload(payload, arg_list) -%}
 {%- if payload.is_protobuf -%}
-let data = payload;
+{{ unit_allow(payload) }}
+{%- if payload.rust.has_params -%}
+let data = {{ payload.rust.struct_name }} {
+{%- for member in payload.rust.params %}
+            {{ member.rust.field_name }},
+{%- endfor %}
+        };
+{%- else -%}
+let data = <{{ payload.rust.struct_name }} as Default>::default();
+{%- endif -%}
 {%- else -%}
 let data = {{ payload.rust.struct_name }} {
 {%- for arg in arg_list %}
@@ -244,29 +297,28 @@ let data = {{ payload.rust.struct_name }} {
 {%- endmacro -%}
 
 {#
-    An example value for a whole payload, for demos and generated tests.
+    Example arguments for a whole payload, for demos and generated tests.
 
-    A JSON payload is built from its arguments' example values; a protobuf payload
-    is the message itself, populated as `example_message` describes.
+    One example per parameter, in the same order `payload_params` declares them.  A
+    member whose example would need the shape of another declaration -- a message,
+    a repeated field, a map, a `oneof` -- gets its empty or absent value, which is
+    spelled the same way inside and outside the library.
 #}
 {%- macro example_payload(payload, arg_list) -%}
 {%- if payload.is_protobuf -%}
-{{ example_message(payload, payload.protobuf.rust.external_name) }}
+{%- for member in payload.rust.params %}{{ member.rust.example_value() }}{% if not loop.last %}, {% endif %}{% endfor -%}
 {%- else -%}
 {%- for arg in arg_list %}{{ arg.get_random_example_value(lang="rust") }}{% if not loop.last %}, {% endif %}{% endfor -%}
 {%- endif -%}
 {%- endmacro -%}
 
 {#
-    Like `example_payload`, but for code inside the library itself, which reaches
-    protobuf messages through `crate::proto` rather than importing the module.
+    Like `example_payload`, but for code inside the library itself.  The two agree
+    for every payload, and are kept apart only so that a call site does not have to
+    know which side of the library boundary it is on.
 #}
 {%- macro example_payload_local(payload, arg_list) -%}
-{%- if payload.is_protobuf -%}
-{{ example_message(payload, payload.rust.struct_name) }}
-{%- else -%}
-{%- for arg in arg_list %}{{ arg.get_random_example_value(lang="rust") }}{% if not loop.last %}, {% endif %}{% endfor -%}
-{%- endif -%}
+{{ example_payload(payload, arg_list) }}
 {%- endmacro -%}
 
 {#

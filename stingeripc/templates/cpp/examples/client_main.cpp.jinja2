@@ -1,5 +1,6 @@
 {% import 'partials/args.jinja2' as ar %}
 {%- import 'partials/codec.jinja2' as codec %}
+{%- import 'partials/payload.jinja2' as pl %}
 
 #include <iostream>
 #include <sstream>
@@ -42,6 +43,15 @@ int main(int argc, char** argv)
 
     // Register callbacks for signals.
     {%-for sig_name, sig in stinger.signals.items() %}
+    {%- if sig.payload.is_protobuf %}
+    // A protobuf signal hands over the message's fields; they are put back together
+    // here so the whole message can be printed the way a protobuf property's is.
+    client.register{{sig_name | UpperCamelCase}}Callback([]({{ pl.params(sig.payload) }})
+    {
+        {{ pl.build(sig.payload, "signalPayload") | indent(8) }}
+        std::cout << "Received {{sig_name|CONST_CASE}} signal: " << signalPayload.ShortDebugString() << std::endl;
+    });
+    {%- else %}
     client.register{{sig_name | UpperCamelCase}}Callback([]({%for arg in sig.arg_list%}{{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
     {
         {%-for arg in sig.arg_list-%}
@@ -83,6 +93,7 @@ int main(int argc, char** argv)
                                         {%-endif-%}
                                      << {%if not loop.last %}" | " << {%endif%}{%endfor%}std::endl;
     });
+    {%- endif %}
     {%endfor%}
 
     // Register callbacks for property updates.
@@ -147,7 +158,7 @@ int main(int argc, char** argv)
         {%-for arg in method.arg_list%}{%if arg.arg_type.name.lower() == 'struct'%}
         {{arg.cpp.type}} {{arg.name|lowerCamelCase}}Arg = {{arg.get_random_example_value('c++')}};
         {%endif%}{%endfor-%}
-        auto {{method_name|camelCase}}ResultFuture = client.{{method_name | camelCase}}({%for arg in method.arg_list%}{%if arg.arg_type.name.lower() == 'struct'%}{{arg.name|lowerCamelCase}}Arg{%else%}{{arg.get_random_example_value('c++')}}{%endif%}{%if not loop.last%}, {%endif%}{%endfor%});
+        auto {{method_name|camelCase}}ResultFuture = client.{{method_name | camelCase}}({{ pl.example_args(method.request_payload, struct_locals=true) }});
         auto {{method_name|camelCase}}Status = {{method_name|camelCase}}ResultFuture.wait_for(std::chrono::seconds(5));
         if ({{method_name|camelCase}}Status == std::future_status::timeout)
         {
@@ -155,7 +166,17 @@ int main(int argc, char** argv)
         }
         else
         {
-        {%if method.return_value is not none%}
+        {%if method.response_payload.is_protobuf%}
+            // The future resolves to the response message itself.
+            try
+            {
+                auto returnValue = {{method_name|camelCase}}ResultFuture.get();
+                std::cout << "{{method_name|CONST_CASE}} Response: " << returnValue.ShortDebugString() << std::endl;
+            } catch (const stinger::error::StingerMethodException& ex)
+            {
+                std::cout << "{{method_name|CONST_CASE}} Exception: " << ex.what() << std::endl;
+            }
+        {%elif method.return_value is not none%}
             {{method.cpp.return_value_class}} returnValue;
             bool success = false;
             try
@@ -218,7 +239,7 @@ int main(int argc, char** argv)
         {%-for arg in command.arg_list%}{%if arg.arg_type.name.lower() == 'struct'%}
         {{arg.cpp.type}} {{arg.name|lowerCamelCase}}Arg = {{arg.get_random_example_value('c++')}};
         {%endif%}{%endfor-%}
-        client.send{{command_name | UpperCamelCase}}Command{%if command.payload.is_protobuf%}Payload({{codec.example_message(command.payload)}}){%else%}({%for arg in command.arg_list%}{%if arg.arg_type.name.lower() == 'struct'%}{{arg.name|lowerCamelCase}}Arg{%else%}{{arg.get_random_example_value('c++')}}{%endif%}{%if not loop.last%}, {%endif%}{%endfor%}){%endif%};
+        client.send{{command_name | UpperCamelCase}}Command({{ pl.example_args(command.payload, struct_locals=true) }});
     }
     {%-endfor%}
 

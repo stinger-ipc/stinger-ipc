@@ -20,7 +20,7 @@ from stinger_python_utils.message_creator import MessageCreator
 from {{stinger.name | loweronly}}ipc.interface_types import *
 from pyqttier.mock import MockConnection
 import json
-from typing import Dict, Any
+from typing import Dict, Any{% if stinger.uses_protobuf() %}, List, Optional{% endif %}
 
 def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
     """Convert a Pydantic model to a JSON-serializable dict."""
@@ -72,28 +72,28 @@ class TestClientSignals:
     def test_{{sig_name|snake_case}}_subscribes_when_handler_registered(self, mock_connection, client):
         before = mock_connection.get_subscription_count()
 
-        client.receive_{{sig_name|snake_case}}({%if sig.payload.is_protobuf%}lambda payload: None{%else%}lambda **kwargs: None{%endif%})
+        client.receive_{{sig_name|snake_case}}(lambda **kwargs: None)
         assert mock_connection.get_subscription_count() == before + 1, "Registering a '{{sig_name|snake_case}}' handler did not subscribe to the signal"
 
         # A second handler of either kind reuses the one subscription.
-        client.receive_{{sig_name|snake_case}}_payload(lambda payload: None)
+        client.receive_{{sig_name|snake_case}}{% if sig.payload.is_protobuf %}(lambda **kwargs: None){% else %}_payload(lambda payload: None){% endif %}
         assert mock_connection.get_subscription_count() == before + 1, "Registering a second '{{sig_name|snake_case}}' handler subscribed again"
     {%- if sig.payload.is_protobuf %}
 
-    def test_{{sig_name|snake_case}}_delivers_the_message_to_every_handler(self, mock_connection, client):
-        """A protobuf signal has no arguments to spread, so each handler is given the message."""
+    def test_{{sig_name|snake_case}}_delivers_the_fields_to_every_handler(self, mock_connection, client):
+        """A protobuf signal spreads into its message's fields, the way a JSON signal spreads into its arguments."""
         received = [] # type: list
-        client.receive_{{sig_name|snake_case}}(lambda payload: received.append(("recv", payload)))
-        client.receive_{{sig_name|snake_case}}_payload(lambda payload: received.append(("payload", payload)))
+        client.receive_{{sig_name|snake_case}}(lambda **kwargs: received.append(kwargs))
+        client.receive_{{sig_name|snake_case}}(lambda **kwargs: received.append(kwargs))
 
-        sent = {{sig.payload.python.class_name}}()
+        signal_data = {{ codec.example_kwargs_dict(sig.payload) }} # type: Dict[str, Any]
+        sent = {{sig.payload.python.class_name}}(**signal_data)
         topic = "{{sig.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
         mock_connection.simulate_message({{ codec.signal_message(sig.payload, "topic", "sent") }})
 
         assert len(received) == 2, f"Both '{{sig_name|snake_case}}' handlers should have been called, but got {received}"
-        for kind, payload in received:
-            assert isinstance(payload, {{sig.payload.python.class_name}}), f"The {kind} handler was called with {type(payload)} rather than the message"
-            assert payload == sent, f"The {kind} handler did not receive the message that was sent"
+        for kwargs in received:
+            assert {{sig.payload.python.class_name}}(**kwargs) == sent, f"A handler was given {kwargs} rather than the fields of the message that was sent"
     {%- endif %}
     {%endfor%}
 {%endif%}
@@ -183,9 +183,10 @@ class TestClientMethods:
     {%for method_name, method in stinger.methods.items()%}
     {%- if method.request_payload.is_protobuf %}
     def test_{{method_name|snake_case}}_method_call_sends_request(self, mock_connection, client):
-        """A protobuf method takes the request message itself and publishes it as bytes."""
-        request = {{method.request_payload.python.class_name}}()
-        client.{{method_name|snake_case}}(request)
+        """A protobuf method takes the request's fields and publishes the message it builds from them."""
+        request_data = {{ codec.example_kwargs_dict(method.request_payload) }} # type: Dict[str, Any]
+        request = {{method.request_payload.python.class_name}}(**request_data)
+        client.{{method_name|snake_case}}(**request_data)
         assert len(mock_connection.published_messages) == 1, "No message was published for '{{method_name|snake_case}}' method call"
         message = mock_connection.published_messages[0]
         expected_topic = "{{method.request_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
@@ -195,7 +196,7 @@ class TestClientMethods:
 
     def test_{{method_name|snake_case}}_response_resolves_to_the_message(self, mock_connection, client):
         """The future for a protobuf method resolves to the response message, not to a field of it."""
-        fut = client.{{method_name|snake_case}}({{method.request_payload.python.class_name}}())
+        fut = client.{{method_name|snake_case}}({{ codec.example_payload(method.request_payload, method.arg_list) }})
         request_msg = mock_connection.published_messages[0]
 
         expected = {{method.python.return_value_annotation}}()
@@ -229,7 +230,7 @@ class TestClientMethods:
         and leaves no entry behind in the pending-response map."""
         monkeypatch.setattr(client_module, "{{method_name | CONST_CASE}}_METHOD_TIMEOUT_SECONDS", 0.05)
         {%- if method.request_payload.is_protobuf %}
-        fut = client.{{method_name|snake_case}}({{method.request_payload.python.class_name}}())
+        fut = client.{{method_name|snake_case}}({{ codec.example_payload(method.request_payload, method.arg_list) }})
         {%- else %}
         fut = client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
         {%- endif %}
@@ -245,9 +246,10 @@ class TestClientCommands:
     {%for command_name, command in stinger.commands.items()%}
     {%- if command.payload.is_protobuf %}
     def test_send_{{command_name|snake_case}}_publishes_command(self, mock_connection, client):
-        """A protobuf command takes the message itself and publishes it as bytes."""
-        payload = {{command.python.payload_class_name}}()
-        client.send_{{command_name|snake_case}}(payload)
+        """A protobuf command takes the message's fields and publishes the message it builds from them."""
+        command_data = {{ codec.example_kwargs_dict(command.payload) }} # type: Dict[str, Any]
+        payload = {{command.python.payload_class_name}}(**command_data)
+        client.send_{{command_name|snake_case}}(**command_data)
 
         published_list = mock_connection.find_published("{{command.topic() | regex_replace("\{[A-Za-z_]+\}", "+") }}")
         assert len(published_list) == 1, f"No message was published for the '{{command_name|snake_case}}' command.  Messages: {mock_connection.published_messages}"

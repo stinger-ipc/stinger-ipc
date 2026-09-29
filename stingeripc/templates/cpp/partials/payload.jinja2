@@ -1,0 +1,173 @@
+{#
+    One definition of "the individual values a payload is made of", for C++.
+
+    A JSON payload spells those values out as `arg_list`; a protobuf payload has no
+    args at all and instead describes its message's fields.  Every generated
+    function that takes or hands over a payload's values -- a signal callback, a
+    command handler, a method call -- needs the same list in the same order, and it
+    appears in four templates (client.hpp, server.hpp, client.cpp, server.cpp) that
+    must agree exactly or the definitions will not match their declarations.  So the
+    list is written once, here, and each of those templates asks for it.
+
+    Import into a template with:
+        {% import "partials/payload.jinja2" as pl %}
+
+    Imported macros do not inherit the calling template's context, so anything they
+    need is passed in explicitly.
+
+    The JSON branches reproduce, character for character, the loops the templates
+    used to spell inline, so that routing a JSON payload through these macros
+    changes nothing in the generated output.  Some call sites spelled a parameter's
+    type as `temp_type` and others as `func_param_type`, which for an Arg differ
+    only in name; both spellings are offered rather than quietly unifying them.
+#}
+
+{# `Type name, Type name` -- a function's parameter list, types from `temp_type`. #}
+{%- macro params(payload) -%}
+{%- if payload.is_protobuf -%}
+{%- for field in payload.protobuf.param_fields %}{{ field.cpp.param_type }} {{ field.cpp.param_name }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- else -%}
+{%- for arg in payload.arg_list %}{{ arg.cpp.temp_type }} {{ arg.name|lowerCamelCase }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{# `Type name, Type name`, types from `func_param_type`. #}
+{%- macro func_params(payload) -%}
+{%- if payload.is_protobuf -%}
+{%- for field in payload.protobuf.param_fields %}{{ field.cpp.param_type }} {{ field.cpp.param_name }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- else -%}
+{%- for arg in payload.arg_list %}{{ arg.cpp.func_param_type }} {{ arg.name|lowerCamelCase }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{# `Type, Type` -- the parameter types alone, for a `std::function<>`. #}
+{%- macro param_types(payload) -%}
+{%- if payload.is_protobuf -%}
+{%- for field in payload.protobuf.param_fields %}{{ field.cpp.param_type }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- else -%}
+{%- for arg in payload.arg_list %}{{ arg.cpp.temp_type }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{# `Type, Type`, types from `func_param_type`. #}
+{%- macro func_param_types(payload) -%}
+{%- if payload.is_protobuf -%}
+{%- for field in payload.protobuf.param_fields %}{{ field.cpp.param_type }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- else -%}
+{%- for arg in payload.arg_list %}{{ arg.cpp.func_param_type }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{# `name, name` -- the parameters of the enclosing function, forwarded on. #}
+{%- macro param_names(payload) -%}
+{%- if payload.is_protobuf -%}
+{%- for field in payload.protobuf.param_fields %}{{ field.cpp.param_name }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- else -%}
+{%- for arg in payload.arg_list %}{{ arg.name|lowerCamelCase }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    Declares a local named `var` holding the payload, built from the enclosing
+    function's parameters.
+
+    A generated JSON payload struct is an aggregate, so it is brace-initialized in
+    one statement.  A protobuf message is not: protoc gives it setters, and the way
+    a field is set depends on its shape, so each field takes a statement of its own.
+#}
+{%- macro build(payload, var) -%}
+{%- if payload.is_protobuf -%}
+{{ payload.cpp.class_name }} {{ var }};
+{% for field in payload.protobuf.param_fields %}    {{ field.cpp.set_statement(var, field.cpp.param_name) }}
+{% endfor -%}
+{%- else -%}
+{{ payload.cpp.class_name }} {{ var }}{ {% for arg in payload.arg_list %}{{ arg.name|lowerCamelCase }}{% if not loop.last %}, {% endif %}{% endfor %} };
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    Declares one local per field of a protobuf payload, read off the message `obj`.
+
+    Renders nothing for a JSON payload: its values are members of the payload struct
+    already and are read straight off it (see `call_args`).
+#}
+{%- macro unpack_locals(payload, obj) -%}
+{%- if payload.is_protobuf -%}
+{%- for field in payload.protobuf.param_fields %}{{ field.cpp.value_type }} {{ field.cpp.param_name }} = {{ field.cpp.extract_expr(obj) }};
+{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    The arguments to hand a per-value handler, given the payload object `obj`.
+
+    A JSON payload's values are read straight off the struct; a protobuf payload's
+    are the locals `unpack_locals` declared, since reading them takes real work.
+#}
+{%- macro call_args(payload, obj) -%}
+{%- if payload.is_protobuf -%}
+{%- for field in payload.protobuf.param_fields %}{{ field.cpp.param_name }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- else -%}
+{%- for arg in payload.arg_list %}{{ obj }}.{{ arg.name|lowerCamelCase }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    Example values for every parameter, for a demo or an integration test.
+
+    `struct_locals` says that a JSON struct argument has already been built into a
+    local named `<arg>Arg`, which is how client_main.cpp does it.
+#}
+{%- macro example_args(payload, struct_locals=false, seed=2) -%}
+{%- if payload.is_protobuf -%}
+{%- for field in payload.protobuf.param_fields %}{{ field.cpp.example_value(seed) }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- else -%}
+{%- for arg in payload.arg_list %}{% if struct_locals and arg.arg_type.name.lower() == 'struct' %}{{ arg.name|lowerCamelCase }}Arg{% else %}{{ arg.get_random_example_value('c++', seed) }}{% endif %}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    A lambda's parameter list when the lambda ignores its arguments: the types, each
+    with a throwaway name built from `prefix`.
+#}
+{%- macro lambda_params(payload, prefix="unused") -%}
+{%- if payload.is_protobuf -%}
+{%- for field in payload.protobuf.param_fields %}{{ field.cpp.param_type }} {{ prefix }}{{ loop.index }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- else -%}
+{%- for arg in payload.arg_list %}{{ arg.cpp.temp_type }} {{ prefix }}{{ loop.index }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    The body of an integration-test handler: check the values it was handed against
+    the ones the far side was told to send.
+
+    Not every value can be checked.  A JSON argument qualifies when its kind is in
+    `comparable_types`; a protobuf field when `cpp.is_comparable` says so.  A payload
+    with nothing checkable still reports that it arrived, which is the part of the
+    round trip the test is really about.
+
+    `none_msg` and `unverifiable_msg` are the wordings the call site used before
+    these branches were shared, and differ between a signal, a method and a command.
+#}
+{%- macro value_checks(payload, label, comparable_types, none_msg, unverifiable_msg, seed=2) -%}
+{%- if payload.is_protobuf -%}
+{%- set items = payload.protobuf.param_fields -%}
+{%- set comparable = items | selectattr('cpp.is_comparable') | list -%}
+{%- else -%}
+{%- set items = payload.arg_list -%}
+{%- set comparable = items | selectattr('arg_type.name', 'in', comparable_types) | list -%}
+{%- endif -%}
+{%if items | length == 0%}
+tracker.Check("{{label}}", true, "{{none_msg}}");
+{%elif comparable | length > 0%}
+bool matches = true;
+{%for item in comparable%}
+{%if payload.is_protobuf%}{{ item.cpp.value_type }}{%else%}auto{%endif%} expected{{loop.index}} = {%if payload.is_protobuf%}{{ item.cpp.example_value(seed) }}{%else%}{{ item.get_random_example_value('c++', seed) }}{%endif%};
+if ({%if payload.is_protobuf%}{{ item.cpp.param_name }}{%else%}{{ item.name|lowerCamelCase }}{%endif%} != expected{{loop.index}}) { matches = false; }
+{%endfor%}
+tracker.Check("{{label}}", matches, matches ? "matches expected arguments" : "does not match expected arguments");
+{%else%}
+tracker.Check("{{label}}", true, "{{unverifiable_msg}}");
+{%endif%}
+{%- endmacro -%}

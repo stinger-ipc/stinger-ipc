@@ -1,6 +1,7 @@
 {%- set comparable_types = ['PRIMITIVE', 'ENUM', 'DURATION', 'BINARY'] -%}
 {%- import 'partials/properties.jinja2' as pr -%}
 {%- import 'partials/codec.jinja2' as codec -%}
+{%- import 'partials/payload.jinja2' as pl -%}
 /*
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
@@ -102,43 +103,19 @@ int main(int argc, char** argv) {
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
-    server->register{{method_name | UpperCamelCase}}Handler([&tracker]({%for arg in method.arg_list%}{{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.cpp.return_value_class}}
+    server->register{{method_name | UpperCamelCase}}Handler([&tracker]({{ pl.params(method.request_payload) }}) -> {{method.cpp.return_value_class}}
     {
-        {%- set comparable_args = method.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list -%}
-        {%if method.arg_list | length == 0%}
-        tracker.Check("method:{{method_name}}", true, "received request (no arguments)");
-        {%elif comparable_args | length > 0%}
-        bool matches = true;
-        {%for arg in comparable_args%}
-        auto expected{{loop.index}} = {{arg.get_random_example_value('c++')}};
-        if ({{arg.name|lowerCamelCase}} != expected{{loop.index}}) { matches = false; }
-        {%endfor%}
-        tracker.Check("method:{{method_name}}", matches, matches ? "matches expected arguments" : "does not match expected arguments");
-        {%else%}
-        tracker.Check("method:{{method_name}}", true, "received request (arguments not independently verifiable)");
-        {%endif%}
-        {%-if method.return_value_type is not false %}
-        return {{method.get_return_value_random_example_value('c++')}};
+        {{ pl.value_checks(method.request_payload, "method:" ~ method_name, comparable_types, "received request (no arguments)", "received request (arguments not independently verifiable)") | indent(8) }}
+        {%-if method.has_response %}
+        return {{ codec.example_return(method) }};
         {%-endif%}
     });
     {%endfor%}
 
     {%for command_name, command in stinger.commands.items()%}
-    server->receive{{command_name | UpperCamelCase}}Command([&tracker]({%for arg in command.arg_list%}{{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%})
+    server->receive{{command_name | UpperCamelCase}}Command([&tracker]({{ pl.params(command.payload) }})
     {
-        {%- set comparable_args = command.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list -%}
-        {%if command.arg_list | length == 0%}
-        tracker.Check("command:{{command_name}}", true, "received (no arguments)");
-        {%elif comparable_args | length > 0%}
-        bool matches = true;
-        {%for arg in comparable_args%}
-        auto expected{{loop.index}} = {{arg.get_random_example_value('c++')}};
-        if ({{arg.name|lowerCamelCase}} != expected{{loop.index}}) { matches = false; }
-        {%endfor%}
-        tracker.Check("command:{{command_name}}", matches, matches ? "matches expected arguments" : "does not match expected arguments");
-        {%else%}
-        tracker.Check("command:{{command_name}}", true, "received (arguments not independently verifiable)");
-        {%endif%}
+        {{ pl.value_checks(command.payload, "command:" ~ command_name, comparable_types, "received (no arguments)", "received (arguments not independently verifiable)") | indent(8) }}
     });
     {%endfor%}
 
@@ -179,7 +156,7 @@ int main(int argc, char** argv) {
         }
         {%for sig_name, sig in stinger.signals.items()%}
         {
-            auto future = server->emit{{sig_name | UpperCamelCase}}Signal{%if sig.payload.is_protobuf%}Payload({{ codec.example_message(sig.payload) }}){%else%}({%for arg in sig.arg_list%}{{arg.get_random_example_value('c++')}}{%if not loop.last%}, {%endif%}{%endfor%}){%endif%};
+            auto future = server->emit{{sig_name | UpperCamelCase}}Signal({{ pl.example_args(sig.payload) }});
             future.wait();
         }
         {%endfor%}

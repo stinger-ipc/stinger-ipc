@@ -81,6 +81,39 @@ implementation follows from that:
   `protobuf` features as signals and methods, and their versions are advertised in the
   discovery message's `commands` map alongside `methods`.
 
+## Protobuf payloads
+
+An element may declare `protobuf: <fully.qualified.Message>` instead of a JSON
+argument list (a method declares `protobuf:` and `returnProtobuf:` together). The
+message is resolved against the hand-written `.proto` sources named by
+`[protobuf] path`, using a descriptor set from `protoc` rather than by parsing
+`.proto` text — see [protobuf_compiler.py](stingeripc/protobuf_compiler.py).
+
+- **Model** — protobuf is modeled at the *payload* level, not the argument level:
+  a `Payload` ([payload.py](stingeripc/payload.py)) holds either `args` or a
+  `ProtobufMessageRef`, never both, and `arg_list` is empty in the protobuf case.
+  Resolving a reference fills in its descriptor and also resolves the message or
+  enum each of its fields is typed with, so a signature can name those types.
+- **The generated API takes the message's fields, not the message.** A signal,
+  command or method spreads its message's fields into individual parameters exactly
+  as a JSON payload spreads `arg_list`, and builds the message internally; receivers
+  are handed the same fields. A method handler still *returns* the response message
+  object, and a method caller's result is still that object, because a response is
+  one value rather than a parameter list. `ProtobufMessageRef.param_fields` fixes
+  the order every language uses: fields that must be supplied first, then those that
+  may be left unset (a proto3 `optional` or a `oneof` member), each in declaration
+  order. There is no whole-message entry point for a protobuf element.
+- **Field types** follow the target language's protobuf bindings: repeated becomes
+  `List`/`Vec`/`std::vector`, a map becomes `Dict`/`HashMap`/`std::map`, a
+  message-typed field keeps its generated type, and an unsettable field becomes
+  `Optional`/`Option`/`std::optional`. Rust is the one place a real `oneof` is a
+  single parameter, because prost generates it as one `Option<Enum>` struct member.
+  Per-language spellings live in `Python/Rust/CppProtobufFieldSymbols`.
+- **Properties are the exception**: a protobuf property's value *is* the message.
+  The getter returns it, the setter takes it, and change callbacks receive it.
+  Rust's signal and command receivers likewise still yield the whole message, since
+  a broadcast channel carries one item type.
+
 ## Schema validation
 
 An argument's optional `schema:` constraint flows through the whole pipeline:

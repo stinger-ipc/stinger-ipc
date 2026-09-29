@@ -1,3 +1,4 @@
+{%- from "partials/codec.jinja2" import payload_params, param_names -%}
 {%- set client_roles = [] -%}
 {%- if stinger.signals|length > 0 %}{% do client_roles.append("receives signals") %}{% endif -%}
 {%- if stinger.methods|length > 0 %}{% do client_roles.append("calls methods") %}{% endif -%}
@@ -62,13 +63,13 @@ the payload could not be handled, or the response did not arrive in time.
 
 ```ignore
 {%- for method_name, method in stinger.methods.items() %}
-let {% if method.return_value %}result{% else %}_{% endif %} = client.{{method_name|snake_case}}({% for arg in method.arg_list %}{{arg.name|snake_case}}{% if not loop.last %}, {% endif %}{% endfor %}).await?;
+let {% if method.return_value %}result{% else %}_{% endif %} = client.{{method_name|snake_case}}({{ param_names(method.request_payload, method.arg_list) }}).await?;
 {%- endfor %}
 ```
 
 The methods of this interface are:
 {% for method_name, method in stinger.methods.items() %}
-- **`{{method_name}}`** — `{{method_name|snake_case}}({% for arg in method.arg_list %}{{arg.name|snake_case}}: {{arg.rust.type}}{% if not loop.last %}, {% endif %}{% endfor %}) -> Result<{{method.rust.return_value_type}}, MethodReturnCode>`
+- **`{{method_name}}`** — `{{method_name|snake_case}}({{ payload_params(method.request_payload, method.arg_list, external=true) }}) -> Result<{{method.rust.external_return_value_type}}, MethodReturnCode>`
 {%- endfor %}
 {%- endif %}
 {%- if stinger.signals|length > 0 %}
@@ -115,13 +116,13 @@ interface should define a method instead.
 
 ```ignore
 {%- for cmd_name, cmd in stinger.commands.items() %}
-client.send_{{cmd_name|snake_case}}({% for arg in cmd.arg_list %}{{arg.name|snake_case}}{% if not loop.last %}, {% endif %}{% endfor %}).await;
+client.send_{{cmd_name|snake_case}}({{ param_names(cmd.payload, cmd.arg_list) }}).await;
 {%- endfor %}
 ```
 
 The commands of this interface are:
 {% for cmd_name, cmd in stinger.commands.items() %}
-- **`{{cmd_name}}`** — `send_{{cmd_name|snake_case}}({% for arg in cmd.arg_list %}{{arg.name|snake_case}}: {{arg.rust.type}}{% if not loop.last %}, {% endif %}{% endfor %})`
+- **`{{cmd_name}}`** — `send_{{cmd_name|snake_case}}({{ payload_params(cmd.payload, cmd.arg_list, external=true) }})`
 {%- endfor %}
 {%- endif %}
 {%- if stinger.properties|length > 0 %}

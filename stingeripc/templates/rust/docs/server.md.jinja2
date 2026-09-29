@@ -1,3 +1,4 @@
+{%- from "partials/codec.jinja2" import payload_params, param_names -%}
 {%- set server_roles = [] -%}
 {%- if stinger.signals|length > 0 %}{% do server_roles.append("emits signals") %}{% endif -%}
 {%- if stinger.methods|length > 0 %}{% do server_roles.append("answers method calls") %}{% endif -%}
@@ -93,7 +94,7 @@ impl {{stinger.name|UpperCamelCase}}MethodHandlers<MyMqttClient> for MyHandlers 
         Ok(())
     }
 {% for method_name, method in stinger.methods.items() %}
-    async fn handle_{{method_name|snake_case}}(&self{% for arg in method.arg_list %}, {{arg.name|snake_case}}: {{arg.rust.type}}{% endfor %}) -> Result<{{method.rust.return_value_type}}, MethodReturnCode> {
+    async fn handle_{{method_name|snake_case}}(&self{% if method.request_payload.rust.has_params %}, {% endif %}{{ payload_params(method.request_payload, method.arg_list, external=true) }}) -> Result<{{method.rust.external_return_value_type}}, MethodReturnCode> {
         todo!("{{method_name}}")
     }
 {% endfor %}
@@ -103,7 +104,7 @@ impl {{stinger.name|UpperCamelCase}}MethodHandlers<MyMqttClient> for MyHandlers 
 
 The methods of this interface are:
 {% for method_name, method in stinger.methods.items() %}
-- **`{{method_name}}`** → `handle_{{method_name|snake_case}}`{% if method.arg_list|length > 0 %} taking {% for arg in method.arg_list %}`{{arg.name|snake_case}}: {{arg.rust.type}}`{% if not loop.last %}, {% endif %}{% endfor %}{% else %} taking no arguments{% endif %}, returning `{{method.rust.return_value_type}}`.
+- **`{{method_name}}`** → `handle_{{method_name|snake_case}}`{% if method.request_payload.rust.has_params %} taking {{ payload_params(method.request_payload, method.arg_list, external=true, quote=true) }}{% else %} taking no arguments{% endif %}, returning `{{method.rust.external_return_value_type}}`.
 {%- endfor %}
 {%- endif %}
 {%- if stinger.signals|length > 0 %}
@@ -122,13 +123,13 @@ sent*; there is no replay for a client that connects later.
 
 ```ignore
 {%- for sig_name, sig in stinger.signals.items() %}
-server.emit_{{sig_name|snake_case}}({% for arg in sig.arg_list %}{{arg.name|snake_case}}{% if not loop.last %}, {% endif %}{% endfor %}).await;
+server.emit_{{sig_name|snake_case}}({{ param_names(sig.payload, sig.arg_list) }}).await;
 {%- endfor %}
 ```
 
 The signals of this interface are:
 {% for sig_name, sig in stinger.signals.items() %}
-- **`{{sig_name}}`** — `emit_{{sig_name|snake_case}}({% for arg in sig.arg_list %}{{arg.name|snake_case}}: {{arg.rust.type}}{% if not loop.last %}, {% endif %}{% endfor %})`
+- **`{{sig_name}}`** — `emit_{{sig_name|snake_case}}({{ payload_params(sig.payload, sig.arg_list, external=true) }})`
 {%- endfor %}
 {%- endif %}
 {%- if stinger.commands|length > 0 %}

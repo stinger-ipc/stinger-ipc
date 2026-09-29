@@ -2,7 +2,7 @@
 import signal
 from time import sleep
 import concurrent.futures as futures
-from typing import Optional, Union, List
+from typing import Optional, Union, List{% if stinger.uses_protobuf() %}, Dict{% endif %}
 from datetime import datetime, timedelta, UTC
 from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from {{stinger.python.module_name}}.client import {{stinger.python.client_class_name}}, {{stinger.python.client_class_name}}Builder

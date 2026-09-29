@@ -1,5 +1,6 @@
 {% import 'partials/properties.jinja2' as pr -%}
 {%- import 'partials/codec.jinja2' as codec -%}
+{%- import 'partials/payload.jinja2' as pl -%}
 /*
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
@@ -35,7 +36,8 @@ stinger-cpp-utils to drive the server without a real MQTT broker:
 #include <stinger/error/return_codes.hpp>
 
 #include "server.hpp"
-#include "structs.hpp"
+{%if stinger.uses_protobuf()%}#include "wire.hpp"
+{%endif%}#include "structs.hpp"
 #include "signal_payloads.hpp"
 #include "method_payloads.hpp"
 #include "command_payloads.hpp"
@@ -149,23 +151,28 @@ TEST_F({{stinger.cpp.server_class_name}}Test, SubscribesToExpectedTopics)
 }
 
 {%for sig_name, sig in stinger.signals.items()%}
-{%- if not sig.payload.is_protobuf %}{#- a protobuf payload has no example field values to round-trip yet #}
 // Emitting `{{sig_name}}` should publish the signal to the broker.
 TEST_F({{stinger.cpp.server_class_name}}Test, {{sig_name | UpperCamelCase}}EmitPublishes)
 {
     const std::string topic = stinger::utils::format("{{sig.topic()}}", topicArgs());
     _conn->ClearPublishedMessages();
 
-    auto pending = _server->emit{{sig_name | UpperCamelCase}}Signal({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
+    auto pending = _server->emit{{sig_name | UpperCamelCase}}Signal({{ pl.example_args(sig.payload) }});
 
     auto published = _conn->GetPublishedMessages(topic);
     ASSERT_EQ(published.size(), 1u);
+{%- if sig.payload.is_protobuf %}
+
+    EXPECT_EQ(published[0].properties.contentType.value_or(""), "{{ codec.content_type(sig.payload) }}");
+    // The body has to parse back into the message it was built from.
+    EXPECT_NO_THROW(Wire<{{sig.payload.cpp.class_name}}>::FromString(published[0].payload));
+{%- else %}
 
     rapidjson::Document doc;
     EXPECT_FALSE(doc.Parse(published[0].payload.c_str()).HasParseError()) << "Published signal payload is not valid JSON";
     EXPECT_TRUE(doc.IsObject());
-}
 {%- endif %}
+}
 {%endfor%}
 
 {%for method_name, method in stinger.methods.items()%}
@@ -179,8 +186,8 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{method_name | UpperCamelCase}}Re
     _server->register{{method_name | UpperCamelCase}}Handler([handlerCalled]({%for arg in method.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.cpp.return_value_class}}
     {
         *handlerCalled = true;
-        {%-if method.return_value_type is not false %}
-        return {{method.get_return_value_random_example_value('c++')}};
+        {%-if method.has_response %}
+        return {{ codec.example_return(method) }};
         {%-endif%}
     });
 
@@ -226,8 +233,8 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{method_name | UpperCamelCase}}Re
         {
             std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
-        {%-if method.return_value_type is not false %}
-        return {{method.get_return_value_random_example_value('c++')}};
+        {%-if method.has_response %}
+        return {{ codec.example_return(method) }};
         {%-endif%}
     });
 
@@ -293,14 +300,21 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{prop_name | UpperCamelCase}}Upda
 
 {%- if config.properties.version_tracking %}
     // A request carries the version the client last saw, and the server rejects one that
-    // does not match, so give the property a value first and request against that version.
+    // does not match.  One server is shared by every test in this suite, so the property's
+    // version is wherever earlier tests left it: give the property a value, then read the
+    // version back off the value message rather than assuming this is its first.
+    _conn->ClearPublishedMessages();
     _server->update{{prop.name | UpperCamelCase}}Property({{pr.example_value(prop)}});
+    const auto valueMessages = _conn->GetPublishedMessages(valueTopic);
+    ASSERT_FALSE(valueMessages.empty()) << "Updating '{{prop_name}}' published no value message to read a version from";
+    ASSERT_TRUE(valueMessages.back().properties.propertyVersion.has_value()) << "The published '{{prop_name}}' value carries no version";
+    const int currentVersion = *valueMessages.back().properties.propertyVersion;
 {%- endif %}
 
     {{prop.payload.cpp.class_name}} newValue{ {%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++", seed=99)}}{%if not loop.last%}, {%endif%}{%endfor%} };
     const std::string payload = serializeToString(newValue);
     const std::vector<std::byte> correlationData{ std::byte{0x01} };
-    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(updateTopic, payload, {%if config.properties.version_tracking%}{{ pr.first_property_version() }}{%else%}std::nullopt{%endif%}, correlationData, "test/response");
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(updateTopic, payload, {%if config.properties.version_tracking%}currentVersion{%else%}std::nullopt{%endif%}, correlationData, "test/response");
     msg.properties.contentType = "{{ codec.content_type(prop.payload) }}";
 
     _conn->ClearPublishedMessages();
@@ -325,11 +339,15 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{prop_name | UpperCamelCase}}Upda
     const std::string updateTopic = stinger::utils::format("{{prop.update_topic()}}", topicArgs());
     const std::string valueTopic = stinger::utils::format("{{prop.value_topic()}}", topicArgs());
 
+    _conn->ClearPublishedMessages();
     _server->update{{prop.name | UpperCamelCase}}Property({{pr.example_value(prop)}});
+    const auto valueMessages = _conn->GetPublishedMessages(valueTopic);
+    ASSERT_FALSE(valueMessages.empty()) << "Updating '{{prop_name}}' published no value message to read a version from";
+    const int currentVersion = valueMessages.back().properties.propertyVersion.value_or({{ pr.first_property_version() }});
 
     {{prop.payload.cpp.class_name}} newValue{ {%for arg in prop.arg_list%}{{arg.get_random_example_value(lang="c++", seed=99)}}{%if not loop.last%}, {%endif%}{%endfor%} };
     const std::vector<std::byte> correlationData{ std::byte{0x02} };
-    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(updateTopic, serializeToString(newValue), {{ pr.first_property_version() }} - 1, correlationData, "test/response");
+    auto msg = stinger::mqtt::Message::PropertyUpdateRequest(updateTopic, serializeToString(newValue), currentVersion - 1, correlationData, "test/response");
     msg.properties.contentType = "{{ codec.content_type(prop.payload) }}";
 
     _conn->ClearPublishedMessages();
@@ -349,17 +367,21 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{prop_name | UpperCamelCase}}Upda
 {%endfor%}
 
 {%for command_name, command in stinger.commands.items()%}
-{%- if not command.payload.is_protobuf %}{#- a protobuf payload has no example field values to round-trip yet #}
 // A simulated `{{command_name}}` command should be dispatched to the registered handler.
 TEST_F({{stinger.cpp.server_class_name}}Test, {{command_name | UpperCamelCase}}CommandInvokesHandler)
 {
     // Captured by value (shared_ptr) so the registered handler stays valid for the
     // lifetime of the shared server, even after this test returns.
     auto handlerCalled = std::make_shared<bool>(false);
-    _server->receive{{command_name | UpperCamelCase}}Command([handlerCalled]({%for arg in command.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})
+    _server->receive{{command_name | UpperCamelCase}}Command([handlerCalled]({{ pl.param_types(command.payload) }})
     {
         *handlerCalled = true;
     });
+{%- if command.payload.is_protobuf %}
+
+    auto commandPayload = {{ codec.example_message(command.payload) }};
+    const std::string payload = Wire<{{command.payload.cpp.class_name}}>::ToString(commandPayload);
+{%- else %}
 
     {%if command.arg_list | length > 0 %}
     {{command.cpp.payload_struct_name}} commandPayload{ {%for arg in command.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
@@ -367,11 +389,12 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{command_name | UpperCamelCase}}C
     {%else%}
     const std::string payload = "{}";
     {%endif%}
+{%- endif %}
 
     const std::string commandTopic = stinger::utils::format("{{command.topic()}}", topicArgs());
     // Commands are published without a response topic or correlation data.
     stinger::mqtt::Properties commandProperties;
-    commandProperties.contentType = "application/json";
+    commandProperties.contentType = "{{ codec.content_type(command.payload) }}";
     auto msg = stinger::mqtt::Message(commandTopic, payload, {{stinger.command_qos}}, false, commandProperties);
 
     _conn->ClearPublishedMessages();
@@ -381,5 +404,4 @@ TEST_F({{stinger.cpp.server_class_name}}Test, {{command_name | UpperCamelCase}}C
     // Commands have no response channel, so the server must not publish anything back.
     EXPECT_EQ(_conn->GetPublishedMessages(commandTopic).size(), 0u);
 }
-{%- endif %}
 {%endfor%}

@@ -1,9 +1,11 @@
+import keyword
 from typing import Any
 
 from jacobsjinjatoo import stringmanip
 
 from stingeripc.args import ArgPrimitiveType
 from stingeripc.config import StingerConfig
+from stingeripc.exceptions import ProtobufError
 from stingeripc.lang_symb import ISymbolsProvider
 
 
@@ -17,6 +19,8 @@ class PythonSymbolsProvider(ISymbolsProvider):
     def for_model(self, model_class_name: str, model) -> object | None:
         if model_class_name == "ProtobufMessageRef":
             return PythonProtobufRefSymbols(model, self.config)
+        elif model_class_name == "ProtobufField":
+            return PythonProtobufFieldSymbols(model, self.config)
         elif model_class_name == "Payload":
             return PythonPayloadSymbols(model, self.config)
         elif model_class_name == "StingerSpec":
@@ -144,6 +148,16 @@ class PythonArgSymbols(PythonSymbols):
     def __init__(self, arg):
         super().__init__()
         self._arg = arg
+
+    @property
+    def param_name(self) -> str:
+        """Name of the generated parameter that carries this argument.
+
+        Spelled the same way for a JSON argument and for a protobuf field, so a
+        template that documents or forwards "whatever a payload's parameters are"
+        needs only the one attribute whichever encoding the payload uses.
+        """
+        return stringmanip.snake_case(self._arg.name)
 
     @property
     def type(self) -> str:
@@ -493,6 +507,42 @@ class PythonPayloadSymbols(PythonSymbols):
         """Alias for :attr:`class_name`, so templates can use one spelling across languages."""
         return self.class_name
 
+    @property
+    def params(self) -> list:
+        """What the generated API takes, or hands over, for this payload.
+
+        A JSON payload spreads into its declared arguments; a protobuf payload
+        spreads into the fields of its message, ordered so that the ones a caller
+        may leave out come last.  Either way the entries answer to
+        ``param_name`` and ``annotation``, so a template writes the parameter
+        list once.
+        """
+        if self._payload.is_protobuf:
+            return self._payload.protobuf.param_fields
+        return self._payload.args
+
+    @property
+    def example_params(self) -> list:
+        """The parameters an example call fills in, in :attr:`params` order.
+
+        At most one member of any real ``oneof`` is offered: setting a second
+        would silently clear the first, so an example that passed both would not
+        round-trip.  A proto3 ``optional`` field is exempt -- its one-member
+        oneof is protobuf's own bookkeeping rather than a choice the .proto file
+        declared -- and a JSON payload has no such grouping at all.
+        """
+        if not self._payload.is_protobuf:
+            return self._payload.args
+        chosen: list = []
+        claimed_oneofs: set = set()
+        for field in self._payload.protobuf.param_fields:
+            if field.oneof_name is not None:
+                if field.oneof_name in claimed_oneofs:
+                    continue
+                claimed_oneofs.add(field.oneof_name)
+            chosen.append(field)
+        return chosen
+
 
 class PythonProtobufRefSymbols(PythonSymbols):
     """Python symbols for a :class:`ProtobufMessageRef`."""
@@ -531,3 +581,145 @@ class PythonProtobufRefSymbols(PythonSymbols):
         from the module down through every enclosing message is what names it.
         """
         return f"{self.module}.{self._ref.scoped_name}"
+
+
+# The Python type each protobuf scalar kind maps to.  protoc's generated classes
+# accept and hand back exactly these, so a per-field API that spells anything else
+# would not type-check against the message it builds.
+_PYTHON_FIELD_TYPES = {
+    "double": "float",
+    "float": "float",
+    "int32": "int",
+    "int64": "int",
+    "uint32": "int",
+    "uint64": "int",
+    "sint32": "int",
+    "sint64": "int",
+    "fixed32": "int",
+    "fixed64": "int",
+    "sfixed32": "int",
+    "sfixed64": "int",
+    "bool": "bool",
+    "string": "str",
+    "bytes": "bytes",
+    # protoc's Python runtime represents an enum value as a plain int, and the
+    # generated module exposes the names as module-level constants rather than as
+    # a type a signature could name.
+    "enum": "int",
+}
+
+
+class PythonProtobufFieldSymbols(PythonSymbols):
+    """Python symbols for one field of a protobuf message.
+
+    These are what turns a protobuf payload into the same kind of per-field API a
+    JSON payload has always had: the parameter a generated function takes for the
+    field, the constructor keyword that puts it back on the message, and the
+    expression that reads it off again.
+    """
+
+    def __init__(self, field, config: StingerConfig | None = None):
+        super().__init__(config)
+        self._field = field
+
+    @property
+    def param_name(self) -> str:
+        """Name of the generated parameter that carries this field.
+
+        The proto field name itself, because protoc's constructor takes the field
+        names as keywords and a renamed parameter would have to be translated back
+        at every call site.  A name Python reserves gets a trailing underscore,
+        which is the only case where the two differ.
+        """
+        name = self._field.name
+        if keyword.iskeyword(name) or name == "self":
+            return f"{name}_"
+        return name
+
+    @property
+    def base_type(self) -> str:
+        """The Python type of one value of this field, ignoring repetition.
+
+        A group is proto2's abandoned nesting syntax; protoc still parses it but
+        no supported generator models it, so a field that uses one is rejected
+        here rather than mis-generated.
+        """
+        if self._field.kind == "group":
+            raise ProtobufError(f"Protobuf field '{self._field.name}' uses a 'group', which stinger does not support; use a nested message instead.")
+        if self._field.is_message or self._field.is_enum:
+            # protoc's stubs type an enum field as the enum, not as a plain int, and
+            # reject an int where one is expected -- so the generated annotation has
+            # to name it too, or the generated code fails its own type check.
+            return self._field.type_ref.python.qualified_name
+        return _PYTHON_FIELD_TYPES[self._field.kind]
+
+    @property
+    def annotation(self) -> str:
+        """Python type annotation for this field's parameter.
+
+        A map becomes a ``Dict``, a repeated field a ``List`` and a field a caller
+        may leave unset an ``Optional`` -- the ``typing`` spellings rather than the
+        builtin generics, since the generated package still supports Python 3.7.
+        """
+        if self._field.is_map:
+            return f"Dict[{self._field.map_key.python.annotation}, {self._field.map_value.python.annotation}]"
+        if self._field.repeated:
+            return f"List[{self.base_type}]"
+        if self._field.is_optional_param:
+            return f"Optional[{self.base_type}]"
+        return self.base_type
+
+    @property
+    def ctor_kwarg(self) -> str:
+        """This field's contribution to a protobuf message constructor call.
+
+        A field whose parameter had to be renamed cannot be passed as a keyword at
+        all -- ``Msg(from=x)`` does not parse -- so it goes through a mapping
+        unpacking instead.  Passing ``None`` is how a field is left unset: the
+        protobuf runtime treats a ``None`` keyword as "not given", for repeated and
+        map fields as much as for singular ones, so an optional parameter needs no
+        guard around it.
+        """
+        name = self._field.name
+        if self.param_name != name:
+            return f'**{{"{name}": {self.param_name}}}'
+        return f"{name}={self.param_name}"
+
+    def read_expr(self, obj_expr: str) -> str:
+        """Expression reading this field back off the message ``obj_expr``.
+
+        A repeated or map field is copied out of its protobuf container into a
+        plain ``list``/``dict``, so a handler is given an ordinary Python value it
+        can keep after the message goes away.  A field with explicit presence
+        reports ``None`` when it is unset, which is the difference between "not
+        given" and "given as the default" that its ``Optional`` parameter promises.
+        """
+        name = self._field.name
+        access = f'getattr({obj_expr}, "{name}")' if self.param_name != name else f"{obj_expr}.{name}"
+        if self._field.is_map:
+            return f"dict({access})"
+        if self._field.repeated:
+            return f"list({access})"
+        if self._field.is_optional_param:
+            return f'{access} if {obj_expr}.HasField("{name}") else None'
+        return access
+
+    def example_value(self, seed: int = 2) -> str:
+        """An example value for this field, as a Python literal.
+
+        Only a scalar has an example that can be made up from the descriptor
+        alone; anything else gets its empty value, which is still a value the
+        generated parameter accepts.
+        """
+        if self._field.is_map:
+            return "{}"
+        if self._field.repeated:
+            return "[]"
+        if self._field.is_message:
+            return f"{self.base_type}()"
+        if self._field.is_enum:
+            # The wrapper object protoc generates for an enum is not callable, so an
+            # example names one of the enum's own values rather than casting a number.
+            values = self._field.type_ref.enum_values
+            return f"{self.base_type}.{values[0]}" if values else "0"
+        return self._field.get_random_example_value(lang="python", seed=seed)

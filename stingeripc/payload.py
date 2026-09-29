@@ -14,6 +14,7 @@ import random
 from enum import Enum
 from typing import Any, Optional
 
+from google.protobuf.descriptor_pb2 import EnumDescriptorProto
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from .arg_models import _BOOLEAN_EXAMPLES, _FLOAT_EXAMPLES, _INTEGER_EXAMPLES, _STRING_EXAMPLES, Arg
@@ -57,6 +58,10 @@ _FIELD_KINDS: dict[int, str] = {
     18: "sint64",
 }
 
+# protoc's FieldDescriptorProto.Label numbers.  In proto2 `optional` is a label a
+# field carries explicitly; in proto3 every singular field carries it, which is why
+# reading presence off it needs to know the file's syntax.
+_LABEL_OPTIONAL = 1
 _LABEL_REPEATED = 3
 
 # The field kinds an example value can be made up for.  A message, group or enum
@@ -76,8 +81,16 @@ class ProtobufField(BaseModel):
     number: int = Field(..., description="The field's wire tag number")
     kind: str = Field(..., description="The field's protobuf type, e.g. 'string', 'uint32' or 'message'")
     repeated: bool = Field(default=False, description="True for a repeated field")
-    optional: bool = Field(default=False, description="True for a proto3 'optional' field, which tracks presence explicitly")
+    optional: bool = Field(default=False, description="True for a field that tracks presence explicitly: a proto3 'optional', or any singular proto2 'optional'")
     type_name: str = Field(default="", description="Fully-qualified name of the message or enum type, empty for a scalar")
+    type_ref: Optional["ProtobufMessageRef"] = Field(default=None, description="The message or enum this field's type names, so a generated signature can spell it in any language")
+    is_map: bool = Field(default=False, description="True for a map field, which protoc lowers to a repeated synthetic entry message")
+    map_key: Optional["ProtobufField"] = Field(default=None, description="A map field's key, read off the synthetic entry message")
+    map_value: Optional["ProtobufField"] = Field(default=None, description="A map field's value, read off the synthetic entry message")
+    oneof_name: Optional[str] = Field(default=None, description="The real oneof this field belongs to, or None -- including for a proto3 'optional', whose one-member oneof is protobuf's own bookkeeping")
+
+    def model_post_init(self, __context) -> None:
+        LanguageSymbolMixin.enhance(self)
 
     @property
     def is_scalar(self) -> bool:
@@ -87,6 +100,32 @@ class ProtobufField(BaseModel):
         know its shape, which is why such a field carries a :attr:`type_name`.
         """
         return self.kind not in ("message", "group", "enum")
+
+    @property
+    def is_message(self) -> bool:
+        """True when the field's type is another message.
+
+        A map field is a repeated message field as far as the descriptor is
+        concerned, so callers that care about maps ask :attr:`is_map` first.
+        """
+        return self.kind in ("message", "group")
+
+    @property
+    def is_enum(self) -> bool:
+        """True when the field's type is an enum."""
+        return self.kind == "enum"
+
+    @property
+    def is_optional_param(self) -> bool:
+        """True for a field a caller may leave unset.
+
+        That is a field with explicit presence -- a proto3 ``optional`` or a proto2
+        ``optional`` -- or a member of a real ``oneof``, where setting one member
+        clears the others so no member can be mandatory.  A repeated or map field is
+        never one of these: it has no presence to track, and its empty value is
+        simply no entries.
+        """
+        return self.optional or self.oneof_name is not None
 
     def get_random_example_value(self, lang: str = "python", seed: int = 2) -> Optional[str]:
         """Return an example value for this field as a snippet of ``lang``.
@@ -126,6 +165,79 @@ class ProtobufField(BaseModel):
         return f"ProtobufField<{self.name}: {'repeated ' if self.repeated else ''}{self.type_name or self.kind}>"
 
 
+class ProtobufOneof(BaseModel):
+    """A real ``oneof`` declared by a protobuf message.
+
+    Only one member may be set at a time, which is why a generated API treats the
+    whole group as a single optional thing rather than as independent fields.  A
+    proto3 ``optional`` field is not one of these: protoc wraps it in a synthetic
+    one-member oneof that is bookkeeping rather than a choice the .proto declared.
+    """
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
+
+    name: str = Field(..., description="The oneof's name, exactly as the .proto file spells it")
+    fields: list[ProtobufField] = Field(default_factory=list, description="The members of the oneof, in declaration order")
+
+    _parent: Any = PrivateAttr(default=None)
+
+    def model_post_init(self, __context) -> None:
+        LanguageSymbolMixin.enhance(self)
+
+    @property
+    def parent(self) -> "ProtobufMessageRef":
+        """The message that declares this oneof.
+
+        Languages that give the group a type of its own name it below the parent,
+        so the group cannot be spelled without knowing which message it came from.
+        """
+        return self._parent
+
+    def __str__(self) -> str:
+        return f"ProtobufOneof<{self.name}: {', '.join(field.name for field in self.fields)}>"
+
+
+def _field_from_descriptor(
+    descriptor: Any,
+    syntax: str,
+    oneof_names: dict[int, str],
+    map_entries: dict[str, Any],
+) -> ProtobufField:
+    """Model one field off its ``FieldDescriptorProto``.
+
+    ``map_entries`` maps the fully-qualified name of each synthetic map-entry message
+    the declaring message holds to its descriptor, which is how a map field is told
+    apart from an ordinary repeated message field.
+    """
+    kind = _FIELD_KINDS.get(descriptor.type, "message")
+    repeated = descriptor.label == _LABEL_REPEATED
+    entry = map_entries.get(descriptor.type_name)
+    oneof_name = None
+    if descriptor.HasField("oneof_index") and not descriptor.proto3_optional:
+        oneof_name = oneof_names.get(descriptor.oneof_index)
+    # proto3 marks explicit presence with `optional`; in proto2 every singular
+    # non-required field has it, which is what the `optional` label means there.
+    explicit_presence = bool(descriptor.proto3_optional) or (syntax != "proto3" and not repeated and descriptor.label == _LABEL_OPTIONAL)
+    field = ProtobufField(
+        name=descriptor.name,
+        number=descriptor.number,
+        kind=kind,
+        repeated=repeated,
+        optional=explicit_presence,
+        type_name=descriptor.type_name.lstrip("."),
+        oneof_name=oneof_name,
+        is_map=entry is not None,
+    )
+    if entry is not None:
+        # A map entry always declares exactly `key = 1` and `value = 2`, and is
+        # itself a proto3 message whatever the syntax of the file around it.
+        field.map_key = _field_from_descriptor(entry.field[0], "proto3", {}, {})
+        field.map_value = _field_from_descriptor(entry.field[1], "proto3", {}, {})
+    elif field.type_name and kind in ("message", "group", "enum"):
+        field.type_ref = ProtobufMessageRef(full_name=field.type_name)
+    return field
+
+
 class ProtobufMessageRef(BaseModel):
     """A reference to a hand-written protobuf message, by fully-qualified name.
 
@@ -141,6 +253,9 @@ class ProtobufMessageRef(BaseModel):
     _descriptor: Any = PrivateAttr(default=None)
     _proto_file: Optional[str] = PrivateAttr(default=None)
     _package: Optional[str] = PrivateAttr(default=None)
+    _syntax: str = PrivateAttr(default="proto3")
+    _fields: Optional[list[ProtobufField]] = PrivateAttr(default=None)
+    _oneofs: Optional[list[ProtobufOneof]] = PrivateAttr(default=None)
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
@@ -192,6 +307,15 @@ class ProtobufMessageRef(BaseModel):
         return self._descriptor is not None
 
     @property
+    def is_enum(self) -> bool:
+        """True when this reference names an enum rather than a message.
+
+        Only a field's :attr:`ProtobufField.type_ref` is ever one: a payload is
+        always a message, since an enum has no wire body of its own.
+        """
+        return self._descriptor is not None and isinstance(self._descriptor, EnumDescriptorProto)
+
+    @property
     def is_well_known(self) -> bool:
         """True for one of protobuf's own well-known types, e.g. ``google.protobuf.Empty``.
 
@@ -210,25 +334,101 @@ class ProtobufMessageRef(BaseModel):
         return self._proto_file
 
     @property
+    def syntax(self) -> str:
+        """The syntax of the declaring file, ``proto2`` or ``proto3``.
+
+        It decides whether a singular field tracks presence, which changes the type
+        a generated per-field API gives that field.
+        """
+        return self._syntax
+
+    def _build_fields(self) -> list[ProtobufField]:
+        """Model every field off the descriptor, once."""
+        descriptor = self._descriptor
+        if descriptor is None or isinstance(descriptor, EnumDescriptorProto):
+            return []
+        map_entries = {f".{self.full_name}.{nested.name}": nested for nested in descriptor.nested_type if nested.options.map_entry}
+        oneof_names = {index: oneof.name for index, oneof in enumerate(descriptor.oneof_decl)}
+        return [_field_from_descriptor(field, self._syntax, oneof_names, map_entries) for field in descriptor.field]
+
+    @property
     def fields(self) -> list[ProtobufField]:
         """The message's fields, in declaration order.
 
         Empty until the reference has been resolved against the .proto sources,
-        since the field list comes off the descriptor that resolving fills in.
+        since the field list comes off the descriptor that resolving fills in, and
+        empty for a reference that names an enum.
+
+        Built once and kept: resolving a field's own type writes back to the
+        :class:`ProtobufField` objects handed out here, and each of them carries
+        language symbols that are not worth rebuilding on every access.
         """
         if self._descriptor is None:
             return []
-        return [
-            ProtobufField(
-                name=field.name,
-                number=field.number,
-                kind=_FIELD_KINDS.get(field.type, "message"),
-                repeated=field.label == _LABEL_REPEATED,
-                optional=field.proto3_optional,
-                type_name=field.type_name.lstrip("."),
-            )
-            for field in self._descriptor.field
-        ]
+        if self._fields is None:
+            self._fields = self._build_fields()
+        return self._fields
+
+    @property
+    def oneofs(self) -> list[ProtobufOneof]:
+        """The real oneofs the message declares, in declaration order.
+
+        A proto3 ``optional`` field's synthetic one-member oneof is left out: it is
+        protobuf's way of recording presence, not a choice between fields.
+        """
+        if self._descriptor is None or isinstance(self._descriptor, EnumDescriptorProto):
+            return []
+        if self._oneofs is None:
+            groups: dict[str, ProtobufOneof] = {}
+            for field in self.fields:
+                if field.oneof_name is None:
+                    continue
+                group = groups.get(field.oneof_name)
+                if group is None:
+                    group = ProtobufOneof(name=field.oneof_name)
+                    group._parent = self
+                    groups[field.oneof_name] = group
+                group.fields.append(field)
+            self._oneofs = list(groups.values())
+        return self._oneofs
+
+    @property
+    def enum_values(self) -> list[str]:
+        """The names this enum declares, in declaration order; empty for a message.
+
+        An enum's generated type is usually not constructible from a number -- in
+        Python it is a wrapper object rather than a class -- so code that needs a
+        value of it has to name one.
+        """
+        if self._descriptor is None or not isinstance(self._descriptor, EnumDescriptorProto):
+            return []
+        return [value.name for value in self._descriptor.value]
+
+    @property
+    def param_fields(self) -> list[ProtobufField]:
+        """The message's fields in the order a generated function takes them.
+
+        Fields a caller must supply come first and those it may leave out come
+        after, each group in declaration order.  A language that gives an optional
+        parameter a default needs them last, and every language orders them the same
+        way so that one element's parameters line up across the generated APIs.
+        """
+        fields = self.fields
+        return [field for field in fields if not field.is_optional_param] + [field for field in fields if field.is_optional_param]
+
+    @property
+    def referenced_types(self) -> list["ProtobufMessageRef"]:
+        """Every message and enum this message's own fields name, de-duplicated.
+
+        These are the declarations a generated signature mentions besides the
+        message itself, so they are what its module has to import or include.
+        """
+        by_name: dict[str, ProtobufMessageRef] = {}
+        for field in self.fields:
+            for ref in (field.type_ref, field.map_value.type_ref if field.map_value else None):
+                if ref is not None:
+                    by_name.setdefault(ref.full_name, ref)
+        return [by_name[name] for name in sorted(by_name)]
 
     @property
     def example_fields(self) -> list[ProtobufField]:
@@ -244,22 +444,23 @@ class ProtobufMessageRef(BaseModel):
         first; a proto3 ``optional`` field is exempt, its one-member oneof being
         protobuf's own bookkeeping rather than a choice the .proto file declared.
         """
-        if self._descriptor is None:
-            return []
         chosen: list[ProtobufField] = []
-        claimed_oneofs: set[int] = set()
-        for field, modeled in zip(self._descriptor.field, self.fields):
-            if not modeled.is_scalar or modeled.repeated:
+        claimed_oneofs: set[str] = set()
+        for field in self.fields:
+            if not field.is_scalar or field.repeated:
                 continue
-            if field.HasField("oneof_index") and not field.proto3_optional:
-                if field.oneof_index in claimed_oneofs:
+            if field.oneof_name is not None:
+                if field.oneof_name in claimed_oneofs:
                     continue
-                claimed_oneofs.add(field.oneof_index)
-            chosen.append(modeled)
+                claimed_oneofs.add(field.oneof_name)
+            chosen.append(field)
         return chosen
 
     def __str__(self) -> str:
         return f"ProtobufMessageRef<{self.full_name}>"
+
+
+ProtobufField.model_rebuild()
 
 
 class Payload(BaseModel):

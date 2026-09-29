@@ -32,7 +32,8 @@ from pydantic import BaseModel
 logging.basicConfig(level=logging.DEBUG)
 
 {%for sig_name, sig in stinger.signals.items()-%}
-{{sig_name | UpperCamelCase}}SignalCallbackType = {% if sig.payload.is_protobuf %}Union[Callable[[{{sig.payload.python.class_name}}], None], Callable[[Any, {{sig.payload.python.class_name}}], None]]{% else %}Union[Callable[[{%for arg in sig.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None], Callable[[Any{%for arg in sig.arg_list%}{%if loop.first%}, {%endif%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]]{% endif %}
+{%- set sig_param_types = codec.param_types(sig.payload, sig.arg_list) -%}
+{{sig_name | UpperCamelCase}}SignalCallbackType = Union[Callable[[{{sig_param_types}}], None], Callable[[Any{%if sig_param_types%}, {{sig_param_types}}{%endif%}], None]]
 {%endfor%}
 {%-for method_name, method in stinger.methods.items()-%}
 {{method_name | UpperCamelCase}}MethodResponseCallbackType = Union[Callable[[{%if method.return_value%}{{method.python.return_value_annotation}}{%endif%}], None], Callable[[Any{%if method.return_value%}, {{method.python.return_value_annotation}}{%endif%}], None]]
@@ -112,7 +113,9 @@ class {{stinger.python.client_class_name}}:
         {%-for sig_name, sig in stinger.signals.items()-%}
         # Signal: {{sig_name}}
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}: List[{{sig_name | UpperCamelCase}}SignalCallbackType] = []
+        {%- if not sig.payload.is_protobuf %}
         self._signal_payload_callbacks_for_{{sig_name | snake_case }}: List[Callable[[{{sig.payload.python.class_name}}], None]] = []
+        {%- endif %}
 
         {%endfor-%}
 
@@ -275,14 +278,20 @@ class {{stinger.python.client_class_name}}:
         {% endif %}
 
         model = {{ codec.decode(sig.payload, "message.payload") }}
+        {% if sig.payload.is_protobuf -%}
+        # Read the fields off the message rather than passing it along, so handlers are
+        # given the signal's individual values the way a JSON signal's handlers are.
+        for handler in self._signal_recv_callbacks_for_{{sig_name | snake_case}}:
+{%- if sig.payload.python.params %}
+            handler(  # type: ignore[call-arg]
+                {{ codec.handler_keywords(sig.payload, sig.arg_list, "model") }}
+            ) # type: ignore[call-arg]
+{%- else %}
+            handler()  # type: ignore[call-arg]
+{%- endif %}
+        {% else -%}
         for payload_handler in self._signal_payload_callbacks_for_{{sig_name | snake_case}}:
             payload_handler(model)
-        {% if sig.payload.is_protobuf -%}
-        # A protobuf signal has no named arguments to spread, so both callback lists are
-        # called the same way: with the message itself.
-        for handler in self._signal_recv_callbacks_for_{{sig_name | snake_case}}:
-            handler(model) # type: ignore[call-arg]
-        {% else -%}
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name | snake_case}}, **kwargs)
@@ -291,24 +300,24 @@ class {{stinger.python.client_class_name}}:
 
     {% for sig_name, sig in stinger.signals.items() %}
     def receive_{{sig_name | snake_case }}(self, handler: {{sig_name | UpperCamelCase}}SignalCallbackType):
-        """ {{ docstrings.google_docstring(sig.documentation, 8, args=sig.arg_list, extra="Used as a decorator for methods which handle the '" ~ sig_name ~ "' signal; the handler receives the signal's arguments as keyword arguments.") }}
+        """ {{ docstrings.google_docstring(sig.documentation, 8, args=sig.payload.python.params, extra="Used as a decorator for methods which handle the '" ~ sig_name ~ "' signal; the handler receives the signal's arguments as keyword arguments.") }}
         """
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}.append(handler)
         self._subscribe_to_{{sig_name | snake_case}}_signal()
         return handler
-
+{% if not sig.payload.is_protobuf %}
     def receive_{{sig_name | snake_case }}_payload(self, handler: Callable[[{{sig.payload.python.class_name}}], None]):
         """ {{ docstrings.google_docstring(sig.documentation, 8, extra="Equivalent to `receive_" ~ (sig_name|snake_case) ~ "()`, but the handler receives the whole `" ~ sig.payload.python.class_name ~ "` payload rather than its individual arguments. Can be used as a decorator. Any number of handlers of either kind may be registered.") }}
         """
         self._signal_payload_callbacks_for_{{sig_name | snake_case }}.append(handler)
         self._subscribe_to_{{sig_name | snake_case}}_signal()
         return handler
-
+{% endif %}
     def _subscribe_to_{{sig_name | snake_case}}_signal(self):
         """ Subscribes to the '{{sig_name}}' signal topic once, when its first handler of
         either kind is registered.
         """
-        if len(self._signal_recv_callbacks_for_{{sig_name | snake_case}}) + len(self._signal_payload_callbacks_for_{{sig_name | snake_case}}) == 1:
+        if len(self._signal_recv_callbacks_for_{{sig_name | snake_case}}){% if not sig.payload.is_protobuf %} + len(self._signal_payload_callbacks_for_{{sig_name | snake_case}}){% endif %} == 1:
             {{sig_name|snake_case}}_topic = "{{sig.topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format] 
             self._logger.debug("Subscribing to '{{sig_name}}' signal topic %s", {{sig_name|snake_case}}_topic)
             self._conn.subscribe({{sig_name|snake_case}}_topic, self._receive_{{sig_name|snake_case}}_signal_message)
@@ -327,18 +336,20 @@ class {{stinger.python.client_class_name}}:
 
     {%for method_name, method in stinger.methods.items()%}
     {%- set method_returns = ("concurrent.futures.Future", "Resolves to a " ~ method.python.return_value_annotation ~ " message once the server responds.") if method.response_payload.is_protobuf else (("concurrent.futures.Future", "Resolves to " ~ (method.return_value.description or method.python.return_value_annotation) ~ " once the server responds.") if method.return_value else ("concurrent.futures.Future", "Resolves to None once the server responds.")) %}
-    {%- if not method.request_payload.is_protobuf %}
-    def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
-        """ {{ docstrings.google_docstring(method.documentation, 8, args=method.arg_list, returns=method_returns, extra="Calling this method with individual arguments initiates a `" ~ method_name ~ "` IPC method call.") }}
+    def {{method_name | snake_case}}(self, {{ codec.handler_params(method.request_payload, method.arg_list) }}) -> futures.Future:
+        """ {{ docstrings.google_docstring(method.documentation, 8, args=method.request_payload.python.params, returns=method_returns, extra="Calling this method with individual arguments initiates a `" ~ method_name ~ "` IPC method call.") }}
         """
+        {%- if method.request_payload.is_protobuf %}
+        payload = {{ codec.build_message(method.request_payload) }}
+        {%- else %}
         payload = {{method.request_payload.python.class_name}}( {%-for arg in method.arg_list%}
             {{arg.name}}={{arg.name|snake_case}},{%endfor%}
         )
-        return self.call_{{method_name | snake_case}}(payload)
-    {%- endif %}
+        {%- endif %}
+        return self.{%if method.request_payload.is_protobuf%}_{%endif%}call_{{method_name | snake_case}}(payload)
 
-    def {%if not method.request_payload.is_protobuf %}call_{%endif%}{{method_name | snake_case}}(self, payload: {{method.request_payload.python.class_name}}) -> futures.Future:
-        """ {{ docstrings.google_docstring(method.documentation, 8, returns=method_returns, extra=("Initiates a `" ~ method_name ~ "` IPC method call with an already-built `" ~ method.request_payload.python.class_name ~ "` payload." if method.request_payload.is_protobuf else "Equivalent to `" ~ (method_name|snake_case) ~ "()`, but takes an already-built `" ~ method.request_payload.python.class_name ~ "` payload instead of individual arguments.")) }}
+    def {%if method.request_payload.is_protobuf%}_{%endif%}call_{{method_name | snake_case}}(self, payload: {{method.request_payload.python.class_name}}) -> futures.Future:
+        """ {{ docstrings.google_docstring(method.documentation, 8, returns=method_returns, extra="Equivalent to `" ~ (method_name|snake_case) ~ "()`, but takes an already-built `" ~ method.request_payload.python.class_name ~ "` payload instead of individual arguments.") }}
         """
         fut = futures.Future() # type: futures.Future
         correlation_id = str(uuid4())
@@ -506,17 +517,19 @@ class {{stinger.python.client_class_name}}:
     # COMMANDS
 
     {%for command_name, command in stinger.commands.items()%}
-    {%- if not command.payload.is_protobuf %}
-    def send_{{command_name | snake_case}}(self, {%for arg in command.arg_list%}{{arg.name|snake_case}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
-        """ {{ docstrings.google_docstring(command.documentation, 8, args=command.arg_list, extra="Client application code should call this method to send the '" ~ command_name ~ "' command to the server. A command is fire-and-forget: the server sends nothing back, so this returns nothing and the client does not learn whether the server acted on it.") }}
+    def send_{{command_name | snake_case}}(self, {{ codec.handler_params(command.payload, command.arg_list) }}):
+        """ {{ docstrings.google_docstring(command.documentation, 8, args=command.payload.python.params, extra="Client application code should call this method to send the '" ~ command_name ~ "' command to the server. A command is fire-and-forget: the server sends nothing back, so this returns nothing and the client does not learn whether the server acted on it.") }}
         """
+        {%- if command.payload.is_protobuf %}
+        payload = {{ codec.build_message(command.payload) }}
+        {%- else %}
         payload = {{command.python.payload_class_name}}({%-for arg in command.arg_list%}
             {{arg.name|snake_case}}={{arg.name|snake_case}}{%if arg.optional%} if {{arg.name|snake_case}} is not None else None{%endif%},
         {%endfor%})
-        return self.send_{{command_name | snake_case}}_payload(payload)
-    {%- endif %}
+        {%- endif %}
+        return self.{%if command.payload.is_protobuf%}_{%endif%}send_{{command_name | snake_case}}_payload(payload)
 
-    def send_{{command_name | snake_case}}{% if not command.payload.is_protobuf %}_payload{%endif%}(self, payload: {{command.python.payload_class_name}}):
+    def {%if command.payload.is_protobuf%}_{%endif%}send_{{command_name | snake_case}}_payload(self, payload: {{command.python.payload_class_name}}):
         """ {{ docstrings.google_docstring(command.documentation, 8, extra="Equivalent to `send_" ~ (command_name|snake_case) ~ "()`, but takes an already-built `" ~ command.python.payload_class_name ~ "` payload instead of individual arguments.") }}
         """
         self._logger.debug("Sending '{{command_name}}' command with payload %s", payload)
@@ -593,10 +606,14 @@ class {{stinger.python.client_class_name}}Builder:
             else:
                 client.unmatched_signal_handler(unmatched_signal_cb)
         {%for prop_name, prop in stinger.properties.items()%}
-        for {{prop_name | snake_case}}_cb in self._property_updated_callbacks_for_{{prop_name | snake_case}}:
+        {#- A signal and a property may share a name, and their callbacks then have
+            different types; one loop variable for both would be two conflicting
+            declarations of the same local. #}
+        {%- set prop_cb = (prop_name | snake_case) ~ ("_property_cb" if prop_name in stinger.signals else "_cb") %}
+        for {{prop_cb}} in self._property_updated_callbacks_for_{{prop_name | snake_case}}:
             if binding:
-                client.{{prop_name | snake_case}}_changed({{prop_name | snake_case}}_cb.__get__(binding, binding.__class__))
+                client.{{prop_name | snake_case}}_changed({{prop_cb}}.__get__(binding, binding.__class__))
             else:
-                client.{{prop_name | snake_case}}_changed({{prop_name | snake_case}}_cb)
+                client.{{prop_name | snake_case}}_changed({{prop_cb}})
         {%endfor%}
         return client

@@ -1,5 +1,6 @@
 {% import 'partials/properties.jinja2' as pr %}
 {%- import 'partials/codec.jinja2' as codec %}
+{%- import 'partials/payload.jinja2' as pl %}
 #include <iostream>
 #include <syslog.h>
 #include <thread>
@@ -28,18 +29,18 @@ int main(int argc, char** argv) {
     {%endfor%}{# property initialization -#}
 
     {%-for sig_name, sig in stinger.signals.items() %}
-    auto {{sig_name}}Future = server->emit{{sig_name | UpperCamelCase}}Signal{%if sig.payload.is_protobuf%}Payload({{codec.example_message(sig.payload)}}){%else%}({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%}){%endif%};
+    auto {{sig_name}}Future = server->emit{{sig_name | UpperCamelCase}}Signal({{ pl.example_args(sig.payload) }});
     {%-endfor%}
     {%-for sig_name in stinger.signals.keys() %}
     {{sig_name}}Future.wait();
     {%-endfor%}
 
     {%-for method_name, method in stinger.methods.items() %}
-    server->register{{method_name | UpperCamelCase}}Handler([]({%for arg in method.arg_list%}{{arg.cpp.temp_type}} unused{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.cpp.return_value_class}}
+    server->register{{method_name | UpperCamelCase}}Handler([]({{ pl.lambda_params(method.request_payload) }}) -> {{method.cpp.return_value_class}}
     {
         std::cout << "Received call for {{method_name}}\n";
-        {%-if method.return_value_type is not false %}
-        return {{method.get_return_value_random_example_value('c++')}};
+        {%-if method.has_response %}
+        return {{ codec.example_return(method) }};
         {%-endif%}
     });
     {%endfor%}
@@ -47,7 +48,7 @@ int main(int argc, char** argv) {
     {%-for command_name, command in stinger.commands.items() %}
     // Commands are fire-and-forget, so the handler returns nothing.  Any number of
     // handlers can be registered for the same command.
-    server->receive{{command_name | UpperCamelCase}}Command([]({%for arg in command.arg_list%}{{arg.cpp.temp_type}} unused{{loop.index}}{%if not loop.last%}, {%endif%}{%endfor%})
+    server->receive{{command_name | UpperCamelCase}}Command([]({{ pl.lambda_params(command.payload) }})
     {
         std::cout << "Received {{command_name}} command\n";
     });
@@ -64,7 +65,7 @@ int main(int argc, char** argv) {
             try
             {
                 {%-for sig_name, sig in stinger.signals.items() %}
-                auto {{sig_name}}Future = server->emit{{sig_name | UpperCamelCase}}Signal{%if sig.payload.is_protobuf%}Payload({{codec.example_message(sig.payload)}}){%else%}({%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%}){%endif%};
+                auto {{sig_name}}Future = server->emit{{sig_name | UpperCamelCase}}Signal({{ pl.example_args(sig.payload) }});
                 std::this_thread::sleep_for(std::chrono::seconds(1));
                 {%-endfor%}
                 {%-for sig_name in stinger.signals.keys() %}

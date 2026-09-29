@@ -38,9 +38,10 @@ from stinger_python_utils.return_codes import (
     stinger_exception_factory,
 )
 from .interface_types import *
-{%macro method_type_annotation(method) %}Callable[[{%if method.request_payload.is_protobuf%}{{method.request_payload.python.class_name}}{%else%}{%for arg in method.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%}], Union[{{method.python.return_value_annotation}}, Coroutine[Any, Any, {{method.python.return_value_annotation}}]]]{%endmacro%}
+{%macro method_type_annotation(method) %}Callable[[{{ codec.param_types(method.request_payload, method.arg_list) }}], Union[{{method.python.return_value_annotation}}, Coroutine[Any, Any, {{method.python.return_value_annotation}}]]]{%endmacro%}
 {%for command_name, command in stinger.commands.items()-%}
-{{command.python.callback_type_name}} = {% if command.payload.is_protobuf %}Callable[[{{command.python.payload_class_name}}], None]{% else %}Union[Callable[[{%for arg in command.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None], Callable[[Any{%for arg in command.arg_list%}{%if loop.first%}, {%endif%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]]{% endif %}
+{%- set cmd_param_types = codec.param_types(command.payload, command.arg_list) -%}
+{{command.python.callback_type_name}} = Union[Callable[[{{cmd_param_types}}], None], Callable[[Any{%if cmd_param_types%}, {{cmd_param_types}}{%endif%}], None]]
 {%endfor%}
 {%if stinger.properties | length > 0 %}
 {%if config.properties.stinger_owned_values%}
@@ -144,7 +145,9 @@ class {{stinger.python.server_class_name}}:
         {%endfor%}
         {%-for command_name, command in stinger.commands.items()%}
         self._command_recv_callbacks_for_{{command_name|snake_case}}: List[{{command.python.callback_type_name}}] = []
+        {%- if not command.payload.is_protobuf %}
         self._command_payload_callbacks_for_{{command_name|snake_case}}: List[Callable[[{{command.python.payload_class_name}}], None]] = []
+        {%- endif %}
         self._conn.subscribe("{{command.topic()}}".format(**self._topic_template_kwargs), self._receive_{{command_name | snake_case}}_command_message) # type: ignore[str-format]
         {%endfor%}
         {%-if stinger.properties|length > 0 %}
@@ -389,10 +392,12 @@ class {{stinger.python.server_class_name}}:
         self._logger.warning("Received unexpected message: %s", message)
 
     {%for sig_name, sig in stinger.signals.items()-%}
-{%- if not sig.payload.is_protobuf -%}
-    def emit_{{sig_name|snake_case}}(self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
-        """ {{ docstrings.google_docstring(sig.documentation, 8, args=sig.arg_list, extra="Server application code should call this method to emit the '" ~ sig_name ~ "' signal.") }}
+    def emit_{{sig_name|snake_case}}(self, {{ codec.handler_params(sig.payload, sig.arg_list) }}):
+        """ {{ docstrings.google_docstring(sig.documentation, 8, args=sig.payload.python.params, extra="Server application code should call this method to emit the '" ~ sig_name ~ "' signal.") }}
         """
+        {%- if sig.payload.is_protobuf %}
+        payload = {{ codec.build_message(sig.payload) }}
+        {%- else %}
         {%for arg in sig.arg_list%}
         assert isinstance({{arg.name|snake_case}}, {{arg.python.type}}){%if arg.optional%} or {{arg.name|snake_case}} is None{%endif%}, f"The '{{arg.name}}' argument must be of type {{arg.python.annotation}}, but was {type({{arg.name|snake_case}})}"
         {%endfor%}
@@ -400,10 +405,10 @@ class {{stinger.python.server_class_name}}:
         payload = {{sig.payload.python.class_name}}({%-for arg in sig.arg_list%}
             {{arg.name|snake_case}}={{arg.name|snake_case}}{%if arg.optional%} if {{arg.name|snake_case}} is not None else None{%endif%},
         {%endfor%})
-        self.emit_{{sig_name|snake_case}}_payload(payload)
-{%- endif %}
+        {%- endif %}
+        self.{%if sig.payload.is_protobuf%}_{%endif%}emit_{{sig_name|snake_case}}_payload(payload)
 
-    def emit_{{sig_name|snake_case}}_payload(self, payload: {{sig.payload.python.class_name}}):
+    def {%if sig.payload.is_protobuf%}_{%endif%}emit_{{sig_name|snake_case}}_payload(self, payload: {{sig.payload.python.class_name}}):
         """ {{ docstrings.google_docstring(sig.documentation, 8, extra="Equivalent to `emit_" ~ (sig_name|snake_case) ~ "()`, but takes an already-built `" ~ sig.payload.python.class_name ~ "` payload instead of individual arguments.") }}
         """
         signal_topic = "{{sig.topic()}}".format(**self._topic_template_kwargs)
@@ -414,17 +419,17 @@ class {{stinger.python.server_class_name}}:
 
     {%for command_name, command in stinger.commands.items()%}
     def receive_{{command_name | snake_case}}(self, handler: {{command.python.callback_type_name}}):
-        """ {{ docstrings.google_docstring(command.documentation, 8, args=command.arg_list, extra="Registers a callback to be called when the '" ~ command_name ~ "' command is received. Can be used as a decorator. Any number of callbacks may be registered.") }}
+        """ {{ docstrings.google_docstring(command.documentation, 8, args=command.payload.python.params, extra="Registers a callback to be called when the '" ~ command_name ~ "' command is received. Can be used as a decorator. Any number of callbacks may be registered.") }}
         """
         self._command_recv_callbacks_for_{{command_name|snake_case}}.append(handler)
         return handler
-
+{% if not command.payload.is_protobuf %}
     def receive_{{command_name | snake_case}}_payload(self, handler: Callable[[{{command.python.payload_class_name}}], None]):
         """ {{ docstrings.google_docstring(command.documentation, 8, extra="Equivalent to `receive_" ~ (command_name|snake_case) ~ "()`, but the handler receives the whole `" ~ command.python.payload_class_name ~ "` payload rather than its individual arguments. Can be used as a decorator. Any number of callbacks may be registered.") }}
         """
         self._command_payload_callbacks_for_{{command_name|snake_case}}.append(handler)
         return handler
-
+{% endif %}
     def _receive_{{command_name | snake_case}}_command_message(self, message: Message):
         """ This processes a received '{{command_name}}' command.  It deserializes the payload to find
         the command arguments, then calls every registered handler with those arguments.
@@ -442,30 +447,29 @@ class {{stinger.python.server_class_name}}:
         except (json.JSONDecodeError, ValidationError) as e:
             self._logger.warning("Deserialization error while handling the '{{command_name}}' command: %s", e)
             return
-        if not self._command_recv_callbacks_for_{{command_name|snake_case}} and not self._command_payload_callbacks_for_{{command_name|snake_case}}:
+        if not self._command_recv_callbacks_for_{{command_name|snake_case}}{% if not command.payload.is_protobuf %} and not self._command_payload_callbacks_for_{{command_name|snake_case}}{% endif %}:
             self._logger.warning("Received '{{command_name}}' command, but no handler is registered for it")
             return
+        {%- if not command.payload.is_protobuf %}
         for payload_handler in self._command_payload_callbacks_for_{{command_name|snake_case}}:
             payload_handler(payload)
-        {%if command.payload.is_protobuf-%}
-        # A protobuf command has no named arguments to spread, so both callback lists are
-        # called the same way: with the message itself.
-        for handler in self._command_recv_callbacks_for_{{command_name|snake_case}}:
-            handler(payload) # type: ignore[call-arg]
-        {%else-%}
+        {%- endif %}
         # Read the fields off the model rather than dumping it, so handlers are given the
         # native Python values (bytes, structs, enums) instead of their JSON encodings.
         for handler in self._command_recv_callbacks_for_{{command_name|snake_case}}:
-            handler({%-for arg in command.arg_list%}
-                {{arg.name|snake_case}}=payload.{{arg.name|snake_case}},{%endfor%}
+{%- if command.payload.python.params %}
+            handler(  # type: ignore[call-arg]
+                {{ codec.handler_keywords(command.payload, command.arg_list, "payload") }}
             ) # type: ignore[call-arg]
-        {%-endif%}
+{%- else %}
+            handler()  # type: ignore[call-arg]
+{%- endif %}
     {%endfor%}
 
     {%for method_name, method in stinger.methods.items()%}
     {%- set handler_returns = (method.python.return_value_annotation, "The message to send back to the client.") if method.response_payload.is_protobuf else ((method.python.return_value_annotation, method.return_value.description or "The result to send back to the client.") if method.return_value else ("None", "Nothing; an empty response is sent back to the client.")) %}
     def handle_{{method_name | snake_case}}(self, handler: {{method_type_annotation(method)}}):
-        """ {{ docstrings.google_docstring(method.documentation, 8, args=method.arg_list, returns=handler_returns, extra="This is a decorator to decorate a method that will handle the '" ~ method_name ~ "' method calls. The decorated handler is called with the method's arguments and must return the value described below.") }}
+        """ {{ docstrings.google_docstring(method.documentation, 8, args=method.request_payload.python.params, returns=handler_returns, extra="This is a decorator to decorate a method that will handle the '" ~ method_name ~ "' method calls. The decorated handler is called with the method's arguments and must return the value described below.") }}
         """
         if self._method_{{method_name|snake_case}}_handler is None and handler is not None:
             self._method_{{method_name|snake_case}}_handler = handler

@@ -45,7 +45,7 @@ is missed.
    * - Name
      - Type
      - Description
-   {%- for arg in signal.arg_list %}
+   {%- for arg in signal.payload.python.params %}
    * - ``{{ arg.name }}``
      - ``{{ arg.python.annotation }}``
      - {{ arg.description or "" }}
@@ -66,7 +66,7 @@ Methods are requests from a client to a server; the server sends a response back
 
 Request parameters:
 
-{%if method.arg_list | length == 0 -%}
+{%if method.request_payload.python.params | length == 0 -%}
 There are no arguments for this request.
 {%else%}
 .. list-table::
@@ -76,7 +76,7 @@ There are no arguments for this request.
    * - Name
      - Type
      - Description
-   {%- for arg in method.arg_list %}
+   {%- for arg in method.request_payload.python.params %}
    * - ``{{ arg.name }}``
      - ``{{ arg.python.annotation }}``
      - {{ arg.description or "" }}
@@ -85,7 +85,9 @@ There are no arguments for this request.
 
 Return value:
 
-{%if method.return_value is none -%}
+{%if method.response_payload.is_protobuf -%}
+The response is a ``{{ method.python.return_value_annotation }}`` message; the handler returns it and the caller's future resolves to it.
+{%elif method.return_value is none -%}
 There is no return value for this method call. An empty response object is still sent from server to client.
 {%else%}
 .. list-table::
@@ -119,7 +121,7 @@ a signal, or a method with no response.
 * Topic: ``{{ command.topic() }}``
 * Declared version: {%if command.version%}``{{command.version}}``{%else%}*none declared*{%endif%}
 
-{%if command.arg_list | length == 0 -%}
+{%if command.payload.python.params | length == 0 -%}
 There are no arguments for this command.
 {%else%}
 .. list-table:: Parameters
@@ -129,7 +131,7 @@ There are no arguments for this command.
    * - Name
      - Type
      - Description
-   {%- for arg in command.arg_list %}
+   {%- for arg in command.payload.python.params %}
    * - ``{{ arg.name }}``
      - ``{{ arg.python.annotation }}``
      - {{ arg.description or "" }}
@@ -166,6 +168,9 @@ does the same, waiting for the server's current value before the update request 
 This property is **read-only**. It can only be modified by the server.
 {%endif%}
 
+{%if prop.payload.is_protobuf -%}
+The value is a ``{{ prop.python.annotation }}`` message, read and written whole.
+{%- else -%}
 .. list-table:: Value
    :header-rows: 1
    :widths: 20 20 60
@@ -178,6 +183,7 @@ This property is **read-only**. It can only be modified by the server.
      - ``{{ arg.python.annotation }}``
      - {{ arg.description or "" }}
    {%- endfor %}
+{%- endif %}
 {%endfor%}
 {%endif%}
 

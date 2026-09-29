@@ -1,6 +1,7 @@
 {%- set comparable_types = ['PRIMITIVE', 'ENUM', 'DURATION', 'BINARY'] -%}
 {%- import 'partials/properties.jinja2' as pr -%}
 {%- import 'partials/codec.jinja2' as codec -%}
+{%- import 'partials/payload.jinja2' as pl -%}
 /*
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
@@ -148,26 +149,14 @@ int main(int argc, char** argv) {
     // Signal: {{sig_name}}
     auto {{sig_name|lowerCamelCase}}Flag = std::make_shared<WaitFlag>();
     auto {{sig_name|lowerCamelCase}}Checked = std::make_shared<std::atomic<bool>>(false);
-    client.register{{sig_name | UpperCamelCase}}Callback([&tracker, {{sig_name|lowerCamelCase}}Flag, {{sig_name|lowerCamelCase}}Checked]({%for arg in sig.arg_list%}{{arg.cpp.temp_type}} {{arg.name|lowerCamelCase}}{%if not loop.last%}, {%endif%}{%endfor%}) {
+    client.register{{sig_name | UpperCamelCase}}Callback([&tracker, {{sig_name|lowerCamelCase}}Flag, {{sig_name|lowerCamelCase}}Checked]({{ pl.params(sig.payload) }}) {
         // The server re-emits every signal on an interval; only the first
         // delivery is checked, since this test exercises each signal once.
         bool alreadyChecked = false;
         if (!{{sig_name|lowerCamelCase}}Checked->compare_exchange_strong(alreadyChecked, true)) {
             return;
         }
-        {%- set comparable_args = sig.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list %}
-        {%if sig.arg_list | length == 0%}
-        tracker.Check("signal:{{sig_name}}", true, "received (no arguments)");
-        {%elif comparable_args | length > 0%}
-        bool matches = true;
-        {%for arg in comparable_args%}
-        auto expected{{loop.index}} = {{arg.get_random_example_value('c++')}};
-        if ({{arg.name|lowerCamelCase}} != expected{{loop.index}}) { matches = false; }
-        {%endfor%}
-        tracker.Check("signal:{{sig_name}}", matches, matches ? "matches expected arguments" : "does not match expected arguments");
-        {%else%}
-        tracker.Check("signal:{{sig_name}}", true, "received (arguments not independently verifiable)");
-        {%endif%}
+        {{ pl.value_checks(sig.payload, "signal:" ~ sig_name, comparable_types, "received (no arguments)", "received (arguments not independently verifiable)") | indent(8) }}
         {{sig_name|lowerCamelCase}}Flag->Set();
     });
     {%endfor%}
@@ -200,15 +189,20 @@ int main(int argc, char** argv) {
     {%for method_name, method in stinger.methods.items()%}
     // Method: {{method_name}}
     {
-        auto resultFuture = client.{{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.get_random_example_value('c++')}}{%if not loop.last%}, {%endif%}{%endfor%});
+        auto resultFuture = client.{{method_name | camelCase}}({{ pl.example_args(method.request_payload) }});
         auto status = resultFuture.wait_for(std::chrono::seconds(checkTimeout));
         if (status == std::future_status::timeout) {
             tracker.Check("method:{{method_name}}", false, "no response within timeout");
         } else {
             try {
-                {%if method.return_value is none%}
+                {%if not method.has_response%}
                 resultFuture.get();
                 tracker.Check("method:{{method_name}}", true, "call completed (no return value)");
+                {%elif method.response_payload.is_protobuf%}
+                auto result = resultFuture.get();
+                auto expected = {{ codec.example_message(method.response_payload) }};
+                bool matches = (result.SerializeAsString() == expected.SerializeAsString());
+                tracker.Check("method:{{method_name}}", matches, matches ? "matches expected response" : "does not match expected response");
                 {%else%}
                 auto result = resultFuture.get();
                 {%if method.return_value.arg_type.name in comparable_types%}
@@ -227,7 +221,7 @@ int main(int argc, char** argv) {
 
     {%for command_name, command in stinger.commands.items()%}
     // Command: {{command_name}} (fire-and-forget by design - see server's own log for receipt)
-    client.send{{command_name | UpperCamelCase}}Command{%if command.payload.is_protobuf%}Payload({{ codec.example_message(command.payload) }}){%else%}({%for arg in command.arg_list%}{{arg.get_random_example_value('c++')}}{%if not loop.last%}, {%endif%}{%endfor%}){%endif%};
+    client.send{{command_name | UpperCamelCase}}Command({{ pl.example_args(command.payload) }});
     tracker.Check("command:{{command_name}}", true, "sent");
     {%endfor%}
 

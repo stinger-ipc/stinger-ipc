@@ -432,9 +432,10 @@ class Test{{stinger.name|UpperCamelCase}}ServerSignals:
     {%for signal_name, signal in stinger.signals.items()%}
     {%- if signal.payload.is_protobuf %}
     def test_server_emit_{{signal_name|snake_case}}(self, server, mock_connection):
-        """Test that the server can emit the protobuf '{{signal_name|snake_case}}' signal."""
-        payload = {{signal.payload.python.class_name}}()
-        server.emit_{{signal_name|snake_case}}_payload(payload)
+        """Test that the server can emit the protobuf '{{signal_name|snake_case}}' signal from its fields."""
+        signal_data = {{ codec.example_kwargs_dict(signal.payload) }} # type: Dict[str, Any]
+        payload = {{signal.payload.python.class_name}}(**signal_data)
+        server.emit_{{signal_name|snake_case}}(**signal_data)
 
         published_list = mock_connection.find_published("{{signal.topic() | regex_replace("\{[A-Za-z_]+\}", "+") }}")
         assert len(published_list) == 1, "No message was published for signal '{{signal_name|snake_case}}'.  Messages: {mock_connection.published_messages}"
@@ -476,17 +477,17 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
     {%for method_name, method in stinger.methods.items()%}
     {%- if method.request_payload.is_protobuf %}
     def test_server_handle_{{method_name|snake_case}}_method(self, server, mock_connection):
-        """Test that a protobuf '{{method_name|snake_case}}' request reaches the handler whole and its reply is sent back."""
-        handler_callback_data = {{method.python.return_value_annotation}}()
+        """Test that a protobuf '{{method_name|snake_case}}' request reaches the handler as its fields and the reply is sent back."""
+        handler_callback_data = {{ codec.example_message(method.response_payload) }}
         received_request = None # type: Any
-        def handler(request: {{method.request_payload.python.class_name}}) -> {{method.python.return_value_annotation}}:
+        def handler({{ codec.handler_params(method.request_payload, method.arg_list) }}) -> {{method.python.return_value_annotation}}:
             nonlocal received_request
-            received_request = request
+            received_request = {{ codec.build_message(method.request_payload) }}
             return handler_callback_data
 
         server.handle_{{method_name|snake_case}}(handler)
 
-        request_obj = {{method.request_payload.python.class_name}}()
+        request_obj = {{ codec.example_message(method.request_payload) }}
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
         incoming_msg = Message(
@@ -503,8 +504,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
         # The dispatch thread handles the request, so wait for it to publish the response.
         assert wait_for(lambda: len(mock_connection.find_published(response_topic)) > 0), f"No response message was published for method '{{method_name|snake_case}}'."
         assert received_request is not None, "Handler for method '{{method_name|snake_case}}' was not called"
-        assert isinstance(received_request, {{method.request_payload.python.class_name}}), f"Handler was called with {type(received_request)} rather than the request message"
-        assert received_request == request_obj, "Handler did not receive the request that was sent"
+        assert received_request == request_obj, "Handler was not given the fields of the request that was sent"
 
         published_list = mock_connection.find_published(response_topic)
         assert len(published_list) == 1, f"No response message was published for method '{{method_name|snake_case}}'."
@@ -648,23 +648,22 @@ class Test{{stinger.name|UpperCamelCase}}ServerCommands:
         )
 
     def test_server_receive_{{command_name|snake_case}}_command(self, server, mock_connection):
-        """Test that a received protobuf '{{command_name|snake_case}}' command reaches every registered handler whole."""
+        """Test that a received protobuf '{{command_name|snake_case}}' command reaches every registered handler as its fields."""
         received = [] # type: List[Any]
-        def handler(payload) -> None:
-            received.append(payload)
+        def handler({{ codec.handler_params(command.payload, command.arg_list) }}) -> None:
+            received.append({{ codec.build_message(command.payload) }})
 
         # A command allows any number of handlers, so register two of them.
         server.receive_{{command_name|snake_case}}(handler)
         server.receive_{{command_name|snake_case}}(handler)
 
-        command_obj = {{command.python.payload_class_name}}()
+        command_obj = {{ codec.example_message(command.payload) }}
         mock_connection.clear_published_messages() # ignore the property values and interface info published at startup
         mock_connection.simulate_message(self._{{command_name|snake_case}}_message(command_obj))
 
         assert len(received) == 2, f"Both handlers for the '{{command_name|snake_case}}' command should have been called, but got {len(received)} call(s)"
         for payload in received:
-            assert isinstance(payload, {{command.python.payload_class_name}}), f"Handler was called with {type(payload)} rather than the command message"
-            assert payload == command_obj, "Handler did not receive the command that was sent"
+            assert payload == command_obj, "Handler was not given the fields of the command that was sent"
 
         # A command is fire-and-forget, so nothing at all may be published in response.
         assert len(mock_connection.published_messages) == 0, f"The '{{command_name|snake_case}}' command must not publish a response, but published {mock_connection.published_messages}"

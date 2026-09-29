@@ -14,6 +14,7 @@ from stingeripc.loading import parse_yaml_file
 
 from stingeripc import filtering
 from stingeripc.asyncapi import stinger_to_asyncapi
+from stingeripc.tools.generic_generator import resolve_protobuf_messages
 from stingeripc.config import StingerConfig, load_config
 from stingeripc.interface import StingerInterface
 
@@ -94,6 +95,11 @@ def asyncapi(
     else:
         stinger_yaml = input_obj
     stinger = StingerInterface.from_dict(stinger_yaml, config_obj)
+
+    # A protobuf payload is only a name until it is matched against the .proto
+    # sources, and the document has to describe the message it names, so resolve
+    # before rendering just as code generation does.
+    resolve_protobuf_messages(stinger, config_obj, input_file)
 
     result = stinger_to_asyncapi(stinger, config_obj)
 

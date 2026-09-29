@@ -43,9 +43,23 @@
 #}
 {%- macro example_message(payload, seed=2) -%}
 {%- if payload.protobuf.example_fields -%}
-[] { {{ payload.cpp.class_name }} example; {% for field in payload.protobuf.example_fields %}example.set_{{ field.name|lower }}({{ field.get_random_example_value(lang="c++", seed=seed) }}); {% endfor %}return example; }()
+[] { {{ payload.cpp.class_name }} example; {% for field in payload.protobuf.example_fields %}example.{{ field.cpp.setter }}({{ field.get_random_example_value(lang="c++", seed=seed) }}); {% endfor %}return example; }()
 {%- else -%}
 {{ payload.cpp.class_name }}{}
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    What a generated example handler returns for `method`.
+
+    A JSON method returns the single value its `returnValue` declares; a protobuf
+    one returns the whole response message, which the handler builds itself.
+#}
+{%- macro example_return(method, seed=2) -%}
+{%- if method.response_payload.is_protobuf -%}
+{{ example_message(method.response_payload, seed) }}
+{%- else -%}
+{{ method.get_return_value_random_example_value('c++', seed) }}
 {%- endif -%}
 {%- endmacro -%}
 

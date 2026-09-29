@@ -106,7 +106,7 @@ tasks:
     cmds:
       - mkdir -p {{.GENERATED_DIR}}/{{.IFACE}}/python37/
       - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/python37.toml --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python37/
-      - uv run black --target-version py37 --exclude '.venv' {{.GENERATED_DIR}}/{{.IFACE}}/python37/
+      - uv run black --target-version py37 --exclude '.venv|/build/|\.egg-info' {{.GENERATED_DIR}}/{{.IFACE}}/python37/
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -130,6 +130,31 @@ tasks:
         task: python37:unittest:{{ .ITEM }}
       - for: { var: PROTO_INTERFACES }
         task: python37:unittest:{{ .ITEM }}
+
+  # The 3.7 target runs the last mypy that supports 3.7, which knows a different set
+  # of error codes and a different typing module than the modern one -- so a generated
+  # project can type-check cleanly on one and not the other.  Checked here rather than
+  # assumed.
+  python37:mypy:*:
+    desc: Type check generated Python 3.7 code for an interface in Docker
+    dir: "{{.GENERATED_DIR}}/{{.IFACE}}/python37/"
+    deps:
+      - task: python37:generate:{{index .MATCH 0}}
+    sources:
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/python37/tests/**"
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/python37/src/**"
+    cmds:
+      - task lint
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  python37:mypy:
+    desc: Type check generated Python 3.7 code for all interfaces in Docker
+    deps:
+      - for: { var: INTERFACES }
+        task: python37:mypy:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: python37:mypy:{{ .ITEM }}
 
   python-alt1:generate:*:
     desc: Generate Python code for an interface with alternative settings
@@ -394,16 +419,12 @@ tasks:
     sources:
       - ./**
     cmds:
-      - cargo check
-      - cargo check --example {{.IFACE_SNAKE}}_client_demo --features client
-      - cargo check --example {{.IFACE_SNAKE}}_server_demo --features server
-      - cargo check --all-features
-      - cargo check --example {{.IFACE_SNAKE}}_client_demo --features client,lwt
-      - cargo check --example {{.IFACE_SNAKE}}_server_demo --features server,lwt
-      - cargo doc --all-features --no-deps
+      # Delegated to the generated crate's own Taskfile, which knows what its
+      # examples are called: they are named after the interface, which is not always
+      # what the directory is called (ProtoWeather lives in protoweather/).
+      - task check
     vars:
       IFACE: '{{index .MATCH 0}}'
-      IFACE_SNAKE: '{{index .MATCH 0 | replace "-" "_"}}'
 
   rust:check:
     desc: Check Rust code for all interfaces

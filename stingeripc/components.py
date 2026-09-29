@@ -285,12 +285,14 @@ class StingerSpec:
         return mime_type if isinstance(mime_type, str) else "application/protobuf"
 
     def uses_well_known_protobuf(self) -> bool:
-        """True if any payload is one of protobuf's well-known types.
+        """True if any protobuf message the interface names is one of protobuf's well-known types.
 
         Those come from the protobuf runtime rather than from this interface's own
         .proto files, and some languages need an extra dependency to reach them.
+        A message a payload's field merely refers to counts, since a generated
+        signature naming that field spells its type.
         """
-        return any(ref.is_well_known for ref in self.all_protobuf_refs())
+        return any(ref.is_well_known for ref in self.protobuf_messages())
 
     def uses_json(self) -> bool:
         """True if any payload in the interface is a JSON argument list."""
@@ -306,12 +308,18 @@ class StingerSpec:
         return [payload.protobuf for payload in self.all_payloads() if payload.protobuf]
 
     def protobuf_messages(self) -> list["ProtobufMessageRef"]:
-        """Every distinct protobuf message referenced by the interface, sorted by name.
+        """Every distinct protobuf declaration the interface's generated code names, sorted by name.
 
-        De-duplicated because two elements may share one message, and generated
-        imports and compiler invocations must mention it only once.
+        The payloads' own messages, plus the messages and enums their fields are
+        typed with: a generated API that takes a message apart field by field
+        mentions those types too, so an import or include list built from this has
+        to cover them.  De-duplicated because two elements may share one message,
+        and generated imports and compiler invocations must mention it only once.
         """
         by_name = {ref.full_name: ref for ref in self.all_protobuf_refs()}
+        for ref in list(by_name.values()):
+            for referenced in ref.referenced_types:
+                by_name.setdefault(referenced.full_name, referenced)
         return [by_name[name] for name in sorted(by_name)]
 
     def protobuf_files(self) -> list[str]:

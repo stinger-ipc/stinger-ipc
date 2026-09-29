@@ -5,9 +5,42 @@
 {%-endif%}{%if arg.optional%} (optional){%endif%}|
 {{- arg.description or ''}}|
 {%- endmacro -%}
+{#- How a protobuf field's type is written in the .proto file it came from. -#}
+{%- macro fieldtype(field) -%}
+{%- if field.is_map -%}
+map&lt;{{ field.map_key.kind }}, {{ field.map_value.type_name or field.map_value.kind }}&gt;
+{%- elif field.repeated -%}
+repeated {{ field.type_name or field.kind }}
+{%- else -%}
+{{ field.type_name or field.kind }}
+{%- endif -%}
+{%- endmacro -%}
+{%- macro fieldrow(field) -%}
+|{{field.name|center(15)}}|{{ fieldtype(field)|center(10) }}|
+{%- if field.oneof_name %}One of `{{ field.oneof_name }}`; at most one member of the group is set.
+{%- elif field.optional %}Optional.
+{%- endif -%}|
+{%- endmacro -%}
+{#-
+    A protobuf payload, described by the message it carries and by that message's
+    fields.  The fields are listed because the generated API takes them one by one
+    rather than taking the message whole, so they are the parameters a caller passes.
+-#}
+{%- macro fieldtable(ref) -%}
+| Field         | Type     |Notes|
+|---------------|----------|-----|
+{%-for field in ref.param_fields%}
+{{fieldrow(field)}}
+{%- endfor %}
+{%- endmacro -%}
 {%- macro payloadtable(payload) -%}
 {%- if payload.is_protobuf -%}
 Carried as the protobuf message **`{{ payload.protobuf.full_name }}`**, defined in `{{ payload.protobuf.proto_file }}`.
+{% if payload.protobuf.param_fields %}
+{{ fieldtable(payload.protobuf) }}
+{%- else %}
+The message has no fields.
+{%- endif -%}
 {% else -%}
 {{ argtable(payload.arg_list) }}
 {%- endif -%}
@@ -199,7 +232,7 @@ These return codes are used in method responses.  The string representation of t
 {{method.documentation or "_No documentation for this method_"}}
 
 #### Request Parameters
-{%if method.arg_list | length == 0%}
+{%if method.request_payload.is_empty%}
 There are no arguments for this request.
 {%else-%}
 {{payloadtable(method.request_payload)}}
@@ -224,7 +257,7 @@ There are no arguments for this request.
 
 #### Return Value
 
-{%if method.return_value is none -%}
+{%if not method.has_response -%}
 There is no return value for this method call.  An empty response object will still be sent from server to client.
 {%else-%}
 {{payloadtable(method.response_payload)}}
@@ -289,7 +322,7 @@ Client ->> Server : Command(Parameters)
 {{command.documentation or "_No documentation for this command_"}}
 
 #### Command Parameters for `{{command_name}}`
-{%if command.arg_list | length == 0%}
+{%if command.payload.is_empty%}
 There are no arguments for this command.
 {%else-%}
 {{payloadtable(command.payload)}}

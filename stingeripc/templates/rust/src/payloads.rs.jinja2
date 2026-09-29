@@ -17,7 +17,10 @@ use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::FromPrimitive;
 use std::fmt;
 {%endif%}
+{#- Only the interface's own enums and structs and its JSON payload structs derive serde; an all-protobuf interface declaring neither derives nothing. -#}
+{%- if stinger.uses_json() or stinger.enums | length > 0 or stinger.structs | length > 0 %}
 use serde::{Deserialize, Serialize};
+{%- endif %}
 use bytes::Bytes;
 {%- if stinger.uses_protobuf() %}
 use bytes::BytesMut;

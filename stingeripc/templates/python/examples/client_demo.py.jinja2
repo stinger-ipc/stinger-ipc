@@ -3,7 +3,7 @@ import os
 import signal
 from time import sleep
 import concurrent.futures as futures
-from typing import Optional, Union, List
+from typing import Optional, Union, List{% if stinger.uses_protobuf() %}, Dict{% endif %}
 from datetime import datetime, timedelta, UTC
 from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from {{stinger.python.module_name}}.lwt import StingerPresence
@@ -59,14 +59,11 @@ if __name__ == '__main__':
     @client_builder.receive_{{sig_name | snake_case }}
     def print_{{sig_name}}_receipt({{ codec.handler_params(sig.payload, sig.arg_list) }}):
         """{{sig.description}}
-        {%if sig.payload.is_protobuf-%}
-        @param payload {{sig.payload.python.class_name}} The signal's protobuf message.
-        {%else-%}
-        {%for arg in sig.arg_list-%}
-        @param {{arg.name|snake_case}} {{arg.python.annotation}} {{arg.description or ''}}
-        {%endfor%}
-        {%-endif%}"""
-        print(f"Got a '{{sig_name}}' signal: {%if sig.payload.is_protobuf%}{payload}{%else%}{%for arg in sig.arg_list%}{{arg.name}}={ {{arg.name|snake_case}}{% if 'bytes' in arg.python.annotation %}!r{%endif-%} } {%endfor%}{%endif%}")
+        {%for arg in sig.payload.python.params-%}
+        @param {{arg.python.param_name}} {{arg.python.annotation}} {{arg.description or ''}}
+        {%endfor-%}
+        """
+        print(f"Got a '{{sig_name}}' signal: {{ codec.example_print(sig.payload, sig.arg_list, lead=" ", sep=" ", end=" ") }}")
     {%endfor%}
     {%for prop_name, prop in stinger.properties.items()%}
     @client_builder.{{prop_name | snake_case}}_updated

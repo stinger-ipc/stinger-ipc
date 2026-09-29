@@ -21,7 +21,7 @@ MQTT_PORT) in another process.
 import os
 import sys
 import asyncio
-from typing import Optional, Union, List
+from typing import Optional, Union, List{% if stinger.uses_protobuf() %}, Dict{% endif %}
 from datetime import datetime, timedelta, UTC
 from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
 from {{stinger.python.module_name}}.lwt import StingerPresence
@@ -80,7 +80,7 @@ async def main(server):
     deadline = loop.time() + MAX_LIFETIME
     while loop.time() < deadline and not _server_satisfied():
         {%for sig_name, sig in stinger.signals.items()-%}
-        server.emit_{{sig_name|snake_case}}{{ codec.payload_suffix(sig.payload) }}({{ codec.example_payload(sig.payload, sig.arg_list, named=False) }})
+        server.emit_{{sig_name|snake_case}}({{ codec.example_payload(sig.payload, sig.arg_list, named=False) }})
         {%endfor%}
         await asyncio.sleep(SIGNAL_EMIT_INTERVAL)
 
@@ -128,9 +128,11 @@ if __name__ == "__main__":
 
     {%for method_name, method in stinger.methods.items()%}
     @server.handle_{{method_name | snake_case}}
-    async def _handle_{{method_name | snake_case}}({{ codec.handler_params(method.request_payload, method.arg_list, name="request") }}) -> {{method.python.return_value_annotation}}:
+    async def _handle_{{method_name | snake_case}}({{ codec.handler_params(method.request_payload, method.arg_list) }}) -> {{method.python.return_value_annotation}}:
         {%if method.request_payload.is_protobuf%}
-        _check("method:{{method_name}}", True, "received request (protobuf payload; arguments not independently verified)")
+        _expected = {{ codec.example_message(method.request_payload) }}
+        _actual = {{ codec.build_message(method.request_payload) }}
+        _check("method:{{method_name}}", _actual == _expected, f"expected={_expected!r} actual={_actual!r}")
         {%else%}
         {%- set comparable_args = method.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list -%}
         {%if method.arg_list | length == 0%}
@@ -149,7 +151,9 @@ if __name__ == "__main__":
     @server.receive_{{command_name | snake_case}}
     def _on_{{command_name | snake_case}}({{ codec.handler_params(command.payload, command.arg_list) }}):
         {%if command.payload.is_protobuf%}
-        _check("command:{{command_name}}", True, "received (protobuf payload; arguments not independently verified)")
+        _expected = {{ codec.example_message(command.payload) }}
+        _actual = {{ codec.build_message(command.payload) }}
+        _check("command:{{command_name}}", _actual == _expected, f"expected={_expected!r} actual={_actual!r}")
         {%else%}
         {%- set comparable_args = command.arg_list | selectattr('arg_type.name', 'in', comparable_types) | list -%}
         {%if command.arg_list | length == 0%}

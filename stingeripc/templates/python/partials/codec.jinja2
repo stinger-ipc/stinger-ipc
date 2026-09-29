@@ -1,10 +1,16 @@
 {#
-    The wire codec for one payload.
+    The wire codec for one payload, and the shape of the API it gives.
 
-    Every macro here takes a `Payload` and answers one question about how that
-    payload crosses the wire.  Each contains exactly one `is_protobuf` test, so
-    the publish and receive code in client.py/server.py is written once and does
-    not branch on the encoding itself.
+    Every macro here takes a `Payload` and answers one question about that
+    payload: how it crosses the wire, or what the generated functions carrying it
+    take and hand over.  Each contains exactly one `is_protobuf` test, so the
+    publish and receive code in client.py/server.py is written once and does not
+    branch on the encoding itself.
+
+    A JSON payload spreads into its declared arguments and a protobuf payload
+    into the fields of its message; `payload.python.params` is that list either
+    way, so the parameter-shaped macros below iterate it rather than the
+    (protobuf-empty) `arg_list`.
 
     Import into a template with:
         {% import "partials/codec.jinja2" as codec %}
@@ -67,56 +73,100 @@ from {{ module_name }}.proto import {{ ref.python.module }}
 {%- endmacro -%}
 
 {#
-    How a decoded payload is handed to application code.
+    The parameter list of a generated function carrying this payload -- what an
+    application handler declares, and what a caller passes.
 
-    A JSON payload is spread into the handler's individual keyword arguments,
-    which is the API generated clients and servers have always had.  A protobuf
-    payload is passed as the message object itself, since taking it apart is
-    exactly what callers asked not to happen.
-#}
-{%- macro deliver(payload, handler_expr, obj_expr) -%}
-{%- if payload.is_protobuf -%}
-{{ handler_expr }}({{ obj_expr }})
-{%- else -%}
-{{ handler_expr }}(**{{ obj_expr }}.model_dump())
-{%- endif -%}
-{%- endmacro -%}
+    One annotated parameter per declared argument for a JSON payload, and one per
+    field of the message for a protobuf payload.  A protobuf field a caller may
+    leave unset (a proto3 `optional`, or a member of a real `oneof`) defaults to
+    `None`; those come last in `params`, so the defaults land where Python needs
+    them.
 
-{#
-    The parameter list of an application handler for this payload.
-
-    A JSON payload spreads into one annotated parameter per argument, which is
-    the API generated code has always had.  A protobuf payload has none to
-    spread: the handler takes the message itself, since keeping the message
-    whole is exactly what declaring a protobuf payload asks for.  `name` is the
-    parameter the protobuf form uses.
-
-    Parameter names are snake_cased, matching the field names `model_dump()`
+    JSON parameter names are snake_cased, matching the field names `model_dump()`
     produces -- the client's signal dispatch calls a handler with
     `**model.model_dump()`, whose keys are the model's (snake_case) Python
     field names, not the arg's original (possibly camelCase) declared name.  A
     handler declared with the raw name would raise a `TypeError` for any
-    argument whose declared name is not already snake_case.
+    argument whose declared name is not already snake_case.  A protobuf
+    parameter keeps the proto field name, since that is the keyword its message
+    constructor takes.
 #}
-{%- macro handler_params(payload, arg_list, name="payload") -%}
+{%- macro handler_params(payload, arg_list) -%}
 {%- if payload.is_protobuf -%}
-{{ name }}: {{ payload.python.class_name }}
+{%- for field in payload.python.params %}{{ field.python.param_name }}: {{ field.python.annotation }}{% if field.is_optional_param %} = None{% endif %}{% if not loop.last %}, {% endif %}{% endfor -%}
 {%- else -%}
 {%- for arg in arg_list %}{{ arg.name|snake_case }}: {{ arg.python.annotation }}{% if not loop.last %}, {% endif %}{% endfor -%}
 {%- endif -%}
 {%- endmacro -%}
 
 {#
+    The same parameters as bare types, for the `Callable[[...]]` of a callback
+    type alias.  An optional parameter's default has no place in a `Callable`,
+    so only the annotations appear.
+#}
+{%- macro param_types(payload, arg_list) -%}
+{%- if payload.is_protobuf -%}
+{%- for field in payload.python.params %}{{ field.python.annotation }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- else -%}
+{%- for arg in arg_list %}{{ arg.python.annotation }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{#
+    Building a protobuf message out of the parameters `handler_params` declared.
+
+    Every parameter is passed as a constructor keyword, including the optional
+    ones: the protobuf runtime reads a `None` keyword as "not given", so there is
+    nothing to guard.  A message with no fields -- `google.protobuf.Empty`, say --
+    is simply default-constructed.
+#}
+{%- macro build_message(payload) -%}
+{{ payload.python.class_name }}({% for field in payload.python.params %}{{ field.python.ctor_kwarg }}{% if not loop.last %}, {% endif %}{% endfor %})
+{%- endmacro -%}
+
+{#
+    The keyword arguments a dispatcher calls a handler with: one indented line
+    each, so a call site writes `handler(` before it and a closing `)` on its own
+    line after it.
+
+    A JSON payload reads its fields off the decoded model; a protobuf payload
+    reads them off the message, copying repeated and map fields out of their
+    protobuf containers and reporting an unset optional field as `None`.
+#}
+{%- macro handler_keywords(payload, arg_list, obj_expr) -%}
+{%- if payload.is_protobuf -%}
+{%- for field in payload.python.params %}
+                {{ field.python.param_name }}={{ field.python.read_expr(obj_expr) }},{% endfor -%}
+{%- else -%}
+{%- for arg in arg_list %}
+                {{ arg.name|snake_case }}={{ obj_expr }}.{{ arg.name|snake_case }},{% endfor -%}
+{%- endif -%}
+{%- endmacro -%}
+
+{#
     The positional arguments a dispatcher calls a handler with, as a trailing-
-    comma list ready to sit inside brackets.  The protobuf form is the message;
-    the JSON form is one field read off it per declared argument.
+    comma list ready to sit inside brackets.  One entry per declared argument for
+    a JSON payload, one per message field for a protobuf payload.
 #}
 {%- macro handler_positional(payload, arg_list, obj_expr) -%}
 {%- if payload.is_protobuf -%}
-{{ obj_expr }}, 
+{%- for field in payload.python.params %}{{ field.python.read_expr(obj_expr) }}, {% endfor -%}
 {%- else -%}
 {%- for arg in arg_list %}{{ obj_expr }}.{{ arg.name|snake_case }}, {% endfor -%}
 {%- endif -%}
+{%- endmacro -%}
+
+{#
+    The interpolations a demo's print statement shows a payload's parameters with,
+    inside an f-string.
+
+    `labeled` prefixes each with the name the interface declares (as opposed to
+    the generated parameter's own spelling); `lead` goes inside the brace, and
+    `sep`/`end` are the separator between entries and the text after the last.
+    A `bytes` parameter is shown with `!r`, since its value is not text.
+#}
+{%- macro example_print(payload, arg_list, labeled=True, lead="", sep=", ", end="") -%}
+{%- for param in payload.python.params %}{% if labeled %}{{ param.name }}={% endif %}{{ "{" }}{{ lead }}{{ param.python.param_name }}{% if 'bytes' in param.python.annotation %}!r{% endif %}}{% if not loop.last %}{{ sep }}{% endif %}{% endfor %}{% if payload.python.params %}{{ end }}{% endif -%}
 {%- endmacro -%}
 
 {#
@@ -227,46 +277,50 @@ MessageCreator.property_response_message({{ topic_expr }}, {{ obj_expr }}, {{ ve
 {%- endmacro -%}
 
 {#
-    An example instance of a payload's protobuf message.
+    The example arguments of a protobuf message, as constructor keywords.
 
     A message left at its defaults serializes to zero bytes, and a zero-byte
     retained publish tells the broker to drop a property's retained value rather
-    than store an empty one, so the example fills in what it can.  A message with
-    nothing to fill in (`google.protobuf.Empty`, say) is simply default-constructed.
+    than store an empty one, so the example fills in what it can.  A field whose
+    shape the descriptor does not describe -- a repeated field, a map, a message
+    or an enum -- gets its empty value, which is still a value its parameter
+    accepts.
+#}
+{%- macro example_kwargs(payload, seed=2) -%}
+{%- for field in payload.python.example_params %}{{ field.python.param_name }}={{ field.python.example_value(seed) }}{% if not loop.last %}, {% endif %}{% endfor -%}
+{%- endmacro -%}
+
+{#
+    The same example arguments as a dict literal, for a generated test that wants
+    to pass them to the API and rebuild the expected message from the same values.
+#}
+{%- macro example_kwargs_dict(payload, seed=2) -%}
+{% raw %}{{% endraw %}{% for field in payload.python.example_params %}"{{ field.python.param_name }}": {{ field.python.example_value(seed) }}{% if not loop.last %}, {% endif %}{% endfor %}{% raw %}}{% endraw %}
+{%- endmacro -%}
+
+{#
+    An example instance of a payload's protobuf message.  A message with nothing
+    to fill in (`google.protobuf.Empty`, say) is simply default-constructed.
 #}
 {%- macro example_message(payload, seed=2) -%}
-{{ payload.python.class_name }}({% for field in payload.protobuf.example_fields %}{{ field.name }}={{ field.get_random_example_value(seed=seed) }}{% if not loop.last %}, {% endif %}{% endfor %})
+{{ payload.python.class_name }}({{ example_kwargs(payload, seed) }})
 {%- endmacro -%}
 
 {#
     The argument list of an example call, for demos and generated tests.
 
-    A JSON payload spreads into the individual arguments the generated API takes,
-    with example values.  A protobuf payload has no `arg_list` to spread -- the
-    generated API takes the message itself -- so the example is the message,
-    populated as `example_message` describes.
-
-    `named` picks between `name=value` and bare positional values, since the demo
-    templates call the generated API both ways.
+    Both encodings spread into the individual parameters the generated API takes,
+    with example values.  `named` picks between `name=value` and bare positional
+    values, since the demo templates call the generated API both ways; a protobuf
+    field a caller may leave unset is always named, because such parameters come
+    last and an example does not necessarily fill in every one of them.
 #}
 {%- macro example_payload(payload, arg_list, named=True) -%}
 {%- if payload.is_protobuf -%}
-{{ example_message(payload) }}
+{%- for field in payload.python.example_params %}{% if named or field.is_optional_param %}{{ field.python.param_name }}={% endif %}{{ field.python.example_value() }}{% if not loop.last %}, {% endif %}{% endfor -%}
 {%- else -%}
 {%- for arg in arg_list %}{% if named %}{{ arg.name|snake_case }}={% endif %}{{ arg.get_random_example_value() }}{% if not loop.last %}, {% endif %}{% endfor -%}
 {%- endif -%}
-{%- endmacro -%}
-
-{#
-    The `_payload` suffix on a generated emit/send method name.
-
-    A JSON element gets both `emit_x(args...)` and `emit_x_payload(payload)`; a
-    protobuf element gets only the payload-taking form, under the *unsuffixed*
-    name for a client `send_`/method call but the suffixed one for a server
-    `emit_`.  Call sites that pass a whole payload use this to name the right one.
-#}
-{%- macro payload_suffix(payload) -%}
-{%- if payload.is_protobuf %}_payload{% endif -%}
 {%- endmacro -%}
 
 {# An example value for a property, for demos and generated tests.

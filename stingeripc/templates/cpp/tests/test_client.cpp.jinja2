@@ -1,6 +1,7 @@
 {% import 'partials/args.jinja2' as ar %}
 {%- import 'partials/properties.jinja2' as pr %}
 {%- import 'partials/codec.jinja2' as codec %}
+{%- import 'partials/payload.jinja2' as pl %}
 /*
 DO NOT MODIFY THIS FILE.  It is automatically generated and changes will be over-written
 on the next generation.
@@ -32,7 +33,8 @@ stinger-cpp-utils to drive the client without a real MQTT broker:
 #include <stinger/mqtt/message.hpp>
 
 #include "client.hpp"
-#include "discovery.hpp"
+{%if stinger.uses_protobuf()%}#include "wire.hpp"
+{%endif%}#include "discovery.hpp"
 #include "structs.hpp"
 #include "signal_payloads.hpp"
 #include "method_payloads.hpp"
@@ -125,37 +127,46 @@ TEST_F({{stinger.cpp.client_class_name}}Test, {{sig_name | UpperCamelCase}}Callb
     const std::string signalTopic = stinger::utils::format("{{sig.topic()}}", topicParams());
     ASSERT_FALSE(_conn->IsSubscribed(signalTopic));
 
-    _client->register{{sig_name | UpperCamelCase}}Callback([]({{ar.declarationParams(sig.arg_list)}}) {});
+    _client->register{{sig_name | UpperCamelCase}}Callback([]({{ pl.param_types(sig.payload) }}) {});
 
     EXPECT_TRUE(_conn->IsSubscribed(signalTopic)) << "Registering a {{sig_name}} callback did not subscribe to the signal";
 
     // A second callback reuses the one subscription.
     const std::size_t subscriptionCount = _conn->GetSubscriptions().size();
-    _client->register{{sig_name | UpperCamelCase}}Callback([]({{ar.declarationParams(sig.arg_list)}}) {});
+    _client->register{{sig_name | UpperCamelCase}}Callback([]({{ pl.param_types(sig.payload) }}) {});
     EXPECT_EQ(_conn->GetSubscriptions().size(), subscriptionCount) << "Registering a second {{sig_name}} callback subscribed again";
 }
 
-{%- if not sig.payload.is_protobuf %}{#- a protobuf payload has no example field values to round-trip yet #}
 // A simulated incoming `{{sig_name}}` signal should be dispatched to the registered callback.
 TEST_F({{stinger.cpp.client_class_name}}Test, {{sig_name | UpperCamelCase}}SignalInvokesCallback)
 {
     bool callbackInvoked = false;
-    _client->register{{sig_name | UpperCamelCase}}Callback([&callbackInvoked]({%for arg in sig.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})
+    _client->register{{sig_name | UpperCamelCase}}Callback([&callbackInvoked]({{ pl.param_types(sig.payload) }})
     {
         callbackInvoked = true;
     });
+{%- if sig.payload.is_protobuf %}
+
+    auto payload = {{ codec.example_message(sig.payload) }};
+    const std::string topic = stinger::utils::format("{{sig.topic()}}", topicParams());
+    // The MockConnection routes the message by topic and stamps the matching
+    // subscription id, which is how the client dispatches it to the callback.
+    auto msg = stinger::mqtt::Message::Signal(topic, Wire<{{sig.payload.cpp.class_name}}>::ToString(payload));
+    // `Message::Signal` labels every message as JSON; this one is not.
+    {{ codec.stamp_content_type(sig.payload) }}
+{%- else %}
 
     {{sig.payload.cpp.class_name}} payload{ {%for arg in sig.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%} };
     const std::string topic = stinger::utils::format("{{sig.topic()}}", topicParams());
     // The MockConnection routes the message by topic and stamps the matching
     // subscription id, which is how the client dispatches it to the callback.
     auto msg = stinger::mqtt::Message::Signal(topic, serializeToString(payload));
+{%- endif %}
 
     _conn->SimulateIncomingMessage(msg);
 
     EXPECT_TRUE(callbackInvoked);
 }
-{%- endif %}
 {%endfor%}
 
 {%for method_name, method in stinger.methods.items()%}

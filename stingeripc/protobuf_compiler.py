@@ -23,9 +23,9 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Any, Optional, Sequence
 
-from google.protobuf.descriptor_pb2 import DescriptorProto, FileDescriptorProto, FileDescriptorSet
+from google.protobuf.descriptor_pb2 import DescriptorProto, EnumDescriptorProto, FileDescriptorProto, FileDescriptorSet
 
 from .exceptions import ProtobufError
 from .payload import ProtobufMessageRef
@@ -92,6 +92,31 @@ def _message_names(proto_file: FileDescriptorProto) -> list[tuple[str, Descripto
     return found
 
 
+def _enum_names(proto_file: FileDescriptorProto) -> list[tuple[str, EnumDescriptorProto]]:
+    """Every enum a file declares, as (fully-qualified name, descriptor) pairs.
+
+    Enums are never payloads -- an enum has no wire body of its own -- but a field
+    of a payload's message may have one as its type, and naming that type in a
+    generated signature needs the same lookup a message gets.
+    """
+    found: list[tuple[str, EnumDescriptorProto]] = []
+
+    def walk(prefix: str, messages, enums) -> None:
+        for enum in enums:
+            found.append((f"{prefix}.{enum.name}" if prefix else enum.name, enum))
+        for message in messages:
+            full_name = f"{prefix}.{message.name}" if prefix else message.name
+            walk(full_name, message.nested_type, message.enum_type)
+
+    walk(proto_file.package, proto_file.message_type, proto_file.enum_type)
+    return found
+
+
+def _syntax_of(proto_file: FileDescriptorProto) -> str:
+    """The file's declared syntax; protoc leaves the field empty for proto2."""
+    return proto_file.syntax or "proto2"
+
+
 # The .proto files the protobuf project ships as its "well-known types".  Every
 # protobuf runtime carries them, so a message from one of these resolves without
 # the interface declaring anything, and nothing here is ever copied or compiled
@@ -111,7 +136,12 @@ _WELL_KNOWN_MODULES = (
     "wrappers_pb2",
 )
 
-_well_known_index: Optional[dict[str, tuple[str, str, DescriptorProto]]] = None
+# Fully-qualified name -> (declaring file, package, descriptor, syntax).  The
+# descriptor is a DescriptorProto for a message and an EnumDescriptorProto for an
+# enum, which is what tells the two apart downstream.
+_TypeIndex = dict[str, tuple[str, str, Any, str]]
+
+_well_known_index: Optional[_TypeIndex] = None
 _well_known_files: Optional[dict[str, FileDescriptorProto]] = None
 
 
@@ -136,14 +166,15 @@ def well_known_file_descriptors() -> dict[str, FileDescriptorProto]:
     return _well_known_files
 
 
-def well_known_message_index() -> dict[str, tuple[str, str, DescriptorProto]]:
-    """Fully-qualified name -> (declaring file, package, descriptor) for the well-known types."""
+def well_known_message_index() -> _TypeIndex:
+    """Fully-qualified name -> (declaring file, package, descriptor, syntax) for the well-known types."""
     global _well_known_index
     if _well_known_index is None:
-        index: dict[str, tuple[str, str, DescriptorProto]] = {}
+        index: _TypeIndex = {}
         for file_name, file_proto in well_known_file_descriptors().items():
-            for full_name, descriptor in _message_names(file_proto):
-                index[full_name] = (file_name, file_proto.package, descriptor)
+            syntax = _syntax_of(file_proto)
+            for full_name, descriptor in [*_message_names(file_proto), *_enum_names(file_proto)]:
+                index[full_name] = (file_name, file_proto.package, descriptor, syntax)
         _well_known_index = index
     return _well_known_index
 
@@ -154,7 +185,8 @@ class ProtobufSources:
     def __init__(self, proto_dir: Path, protoc: Optional[str] = None, python37: bool = False):
         self.proto_dir = Path(proto_dir)
         self._protoc = find_protoc(protoc, python37=python37)
-        self._index: Optional[dict[str, tuple[str, str, DescriptorProto]]] = None
+        self._index: Optional[_TypeIndex] = None
+        self._enum_index: Optional[_TypeIndex] = None
 
     @property
     def proto_files(self) -> list[Path]:
@@ -226,31 +258,54 @@ class ProtobufSources:
 
         return [files[name] for name in sorted(files)]
 
-    def _message_index(self) -> dict[str, tuple[str, str, DescriptorProto]]:
-        """Fully-qualified message name -> (declaring file, package, descriptor), compiled once."""
+    def _build_indexes(self) -> None:
+        """Compile the sources once and index every message and enum they declare."""
+        messages: _TypeIndex = {}
+        enums: _TypeIndex = {}
+        if self.has_sources:
+            for proto_file in self.descriptor_set().file:
+                syntax = _syntax_of(proto_file)
+                for full_name, descriptor in _message_names(proto_file):
+                    messages[full_name] = (proto_file.name, proto_file.package, descriptor, syntax)
+                for full_name, enum_descriptor in _enum_names(proto_file):
+                    enums[full_name] = (proto_file.name, proto_file.package, enum_descriptor, syntax)
+        self._index = messages
+        self._enum_index = enums
+
+    def _message_index(self) -> _TypeIndex:
+        """Fully-qualified message name -> (declaring file, package, descriptor, syntax), compiled once."""
         if self._index is None:
-            index: dict[str, tuple[str, str, DescriptorProto]] = {}
-            if self.has_sources:
-                for proto_file in self.descriptor_set().file:
-                    for full_name, descriptor in _message_names(proto_file):
-                        index[full_name] = (proto_file.name, proto_file.package, descriptor)
-            self._index = index
+            self._build_indexes()
+        assert self._index is not None
         return self._index
+
+    def _type_index(self) -> _TypeIndex:
+        """The same, plus the enums, which a field's type may name."""
+        if self._enum_index is None:
+            self._build_indexes()
+        assert self._enum_index is not None
+        return {**self._message_index(), **self._enum_index}
 
     @property
     def message_names(self) -> list[str]:
         """Every message the sources declare, sorted."""
         return sorted(self._message_index())
 
-    def resolve(self, ref: ProtobufMessageRef) -> None:
-        """Match a reference to a message in the sources, filling in its descriptor.
+    def resolve(self, ref: ProtobufMessageRef, _seen: Optional[set[str]] = None) -> None:
+        """Match a reference to a declaration in the sources, filling in its descriptor.
 
         A well-known type is matched against the protobuf runtime instead of the
         sources, since it is not the interface's to declare.  Otherwise this raises
         with the closest matching names, since a typo in a fully-qualified name is
         tedious to spot.
+
+        The types the message's own fields name are resolved too: a generated
+        signature that takes a message apart field by field spells those types, so
+        they have to be as completely known as the message itself.
         """
-        index = well_known_message_index() if ref.is_well_known else self._message_index()
+        seen = _seen if _seen is not None else set()
+
+        index = well_known_message_index() if ref.is_well_known else self._type_index()
         found = index.get(ref.full_name)
         if found is None:
             known = sorted(index)
@@ -258,10 +313,29 @@ class ProtobufSources:
             hint = f"  Did you mean: {', '.join(suggestions)}?" if suggestions else f"  Available messages: {', '.join(known) or '(none)'}"
             where = "protobuf's well-known types" if ref.is_well_known else str(self.proto_dir)
             raise ProtobufError(f"Protobuf message '{ref.full_name}' was not found in {where}.{hint}")
-        proto_file, package, descriptor = found
+        proto_file, package, descriptor, syntax = found
         ref._proto_file = proto_file
         ref._package = package
         ref._descriptor = descriptor
+        ref._syntax = syntax
+
+        # Every reference to a type gets its descriptor, however many times that
+        # type comes up; what is done only once is walking its fields, which is
+        # where a cycle would otherwise recurse forever.
+        if ref.full_name in seen:
+            return
+        seen.add(ref.full_name)
+        self._resolve_field_types(ref, seen)
+
+    def _resolve_field_types(self, ref: ProtobufMessageRef, seen: set[str]) -> None:
+        """Resolve the message or enum each of this message's fields names as its type."""
+        for field in ref.fields:
+            type_refs = [field.type_ref]
+            if field.map_value is not None:
+                type_refs.append(field.map_value.type_ref)
+            for type_ref in type_refs:
+                if type_ref is not None and not type_ref.is_resolved:
+                    self.resolve(type_ref, seen)
 
     def resolve_all(self, refs: Sequence[ProtobufMessageRef]) -> None:
         """Resolve every reference, so a bad name fails at generation rather than at compile time."""
