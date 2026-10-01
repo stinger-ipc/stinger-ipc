@@ -507,25 +507,21 @@ _CPP_TRIVIAL_KINDS = frozenset(_CPP_SCALAR_TYPES) - {"string", "bytes"}
 
 # Reserved words of C++ itself.  protoc appends an underscore to an accessor whose
 # field name is one of these, and a generated parameter has to dodge them too.
-_CPP_KEYWORDS = frozenset(
-    """alignas alignof and and_eq asm auto bitand bitor bool break case catch char char8_t char16_t char32_t class
+_CPP_KEYWORDS = frozenset("""alignas alignof and and_eq asm auto bitand bitor bool break case catch char char8_t char16_t char32_t class
     compl concept const consteval constexpr constinit const_cast continue co_await co_return co_yield decltype default
     delete do double dynamic_cast else enum explicit export extern false float for friend goto if inline int long
     mutable namespace new noexcept not not_eq nullptr operator or or_eq private protected public register
     reinterpret_cast requires return short signed sizeof static static_assert static_cast struct switch template this
     thread_local throw true try typedef typeid typename union unsigned using virtual void volatile wchar_t while xor
-    xor_eq""".split()
-)
+    xor_eq""".split())
 
 # Locals the generated client and server declare around a per-field parameter list.
 # A parameter that shadowed one of these would compile but would not mean what the
 # surrounding statement says, so it gets the same trailing underscore a keyword does.
-_CPP_TEMPLATE_LOCALS = frozenset(
-    """msg errMsg topic topicArgs topicParams payload payloadStr payloadHandler payloadHandlers signalPayload
+_CPP_TEMPLATE_LOCALS = frozenset("""msg errMsg topic topicArgs topicParams payload payloadStr payloadHandler payloadHandlers signalPayload
     commandPayload commandProperties requestArgs returnPayload returnValue correlationData responseTopic responseFuture
     promise lock cb handler handlers value doc e out kv item itr ok future server client conn broker instanceId
-    instanceInfo subscriptionId noSubId optContentType optCorrelationData optResponseTopic""".split()
-)
+    instanceInfo subscriptionId noSubId optContentType optCorrelationData optResponseTopic""".split())
 
 
 class CppProtobufFieldSymbols(CppSymbols):

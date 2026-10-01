@@ -87,7 +87,9 @@ class ProtobufField(BaseModel):
     is_map: bool = Field(default=False, description="True for a map field, which protoc lowers to a repeated synthetic entry message")
     map_key: Optional["ProtobufField"] = Field(default=None, description="A map field's key, read off the synthetic entry message")
     map_value: Optional["ProtobufField"] = Field(default=None, description="A map field's value, read off the synthetic entry message")
-    oneof_name: Optional[str] = Field(default=None, description="The real oneof this field belongs to, or None -- including for a proto3 'optional', whose one-member oneof is protobuf's own bookkeeping")
+    oneof_name: Optional[str] = Field(
+        default=None, description="The real oneof this field belongs to, or None -- including for a proto3 'optional', whose one-member oneof is protobuf's own bookkeeping"
+    )
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)

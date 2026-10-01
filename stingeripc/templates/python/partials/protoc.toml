@@ -12,6 +12,9 @@ out_dir = "src/{python_package}/proto"
 
 flags = ["--python_out={out}", "--pyi_out={out}"]
 
+# Used when legacy_protobuf is set: protoc 3.8 predates --pyi_out.
+legacy_flags = ["--python_out={out}"]
+
 # protoc does not make the output a package, so the import in interface_types works
 # only once this exists.
 [write]

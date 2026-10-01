@@ -42,8 +42,29 @@ PROTOC_WRAPPER_VERSION = "33.0"
 # stamp.
 PROTOC_WRAPPER_VERSION_PYTHON37 = "22.0.0"
 
+# Bindings from protoc 3.20 and later import `google.protobuf.internal.builder`,
+# which protobuf runtimes before 3.20 do not have, and bindings from protoc 3.12 to
+# 3.19 pass a `create_key` that runtimes before 3.12 reject.  A legacy_protobuf
+# target (runtime 3.9 and up) therefore needs protoc 3.8, the newest one whose
+# bindings load there.  PyPI carries it only inside grpcio-tools, whose wheels for
+# that release need an older interpreter than this one, hence the pinned python.
+# Such a protoc predates --pyi_out, so no type stubs are produced.
+LEGACY_PROTOC_COMMAND = [
+    "uvx",
+    "--python",
+    "3.8",
+    "--from=grpcio-tools==1.26.0",
+    "--with",
+    "setuptools<70",
+    "python",
+    "-W",
+    "ignore",
+    "-m",
+    "grpc_tools.protoc",
+]
 
-def find_protoc(configured: Optional[str] = None, python37: bool = False) -> list[str]:
+
+def find_protoc(configured: Optional[str] = None, python37: bool = False, legacy: bool = False) -> list[str]:
     """Return the command that runs ``protoc``, as an argv prefix.
 
     Prefers an explicitly configured executable, then one on ``PATH``, and
@@ -54,6 +75,11 @@ def find_protoc(configured: Optional[str] = None, python37: bool = False) -> lis
         if resolved is None:
             raise ProtobufError(f"Configured protoc executable not found: '{configured}'.  Check [protobuf] protoc in your config.")
         return [resolved]
+
+    if legacy:
+        if shutil.which("uvx"):
+            return list(LEGACY_PROTOC_COMMAND)
+        raise ProtobufError("legacy_protobuf needs protoc 3.8, which is fetched through 'uvx'.  Install 'uv', " 'or set [protobuf] protoc = "/path/to/protoc" to a protoc 3.8 binary.')
 
     # A python37 target needs a specific protoc version -- whatever happens to be
     # on PATH is not good enough, since its gencode must match the pinned,
@@ -182,10 +208,10 @@ def well_known_message_index() -> _TypeIndex:
 class ProtobufSources:
     """The ``.proto`` files an interface draws its messages from."""
 
-    def __init__(self, proto_dir: Path, protoc: Optional[str] = None, python37: bool = False):
+    def __init__(self, proto_dir: Path, protoc: Optional[str] = None, python37: bool = False, legacy: bool = False):
         self.proto_dir = Path(proto_dir)
-        self._protoc = find_protoc(protoc, python37=python37)
-        self._index: Optional[_TypeIndex] = None
+        self._protoc = find_protoc(protoc, python37=python37, legacy=legacy)
+        self._index: Optional[dict[str, tuple[str, str, DescriptorProto]]] = None
         self._enum_index: Optional[_TypeIndex] = None
 
     @property

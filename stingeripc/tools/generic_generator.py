@@ -85,7 +85,10 @@ def emit_protobuf_bindings(template_dir: Path, outdir: Path, stinger, config_obj
 
     out_dir = outdir / recipe["out_dir"].format(**placeholders)
     out_dir.mkdir(parents=True, exist_ok=True)
-    sources.run(*[flag.format(out=out_dir, **placeholders) for flag in recipe["flags"]])
+    flags = recipe["flags"]
+    if config_obj.python.legacy_protobuf and "legacy_flags" in recipe:
+        flags = recipe["legacy_flags"]
+    sources.run(*[flag.format(out=out_dir, **placeholders) for flag in flags])
     print(f"🧬    PROTO: compiled bindings into {recipe['out_dir'].format(**placeholders)}")
 
     # protoc names an import after the .proto file it came from, which resolves
@@ -152,7 +155,7 @@ def protobuf_sources(config_obj, inname: Path) -> ProtobufSources:
     """
     protobuf_config = config_obj.protobuf or ProtobufConfig()
     proto_dir = (inname.parent / protobuf_config.path).resolve()
-    return ProtobufSources(proto_dir, protobuf_config.protoc, python37=config_obj.python.python37)
+    return ProtobufSources(proto_dir, protobuf_config.protoc, python37=config_obj.python.python37, legacy=config_obj.python.legacy_protobuf)
 
 
 def _protobufjs_bundle_builder(stinger, config_obj, inname: Path) -> Callable[[], str]:

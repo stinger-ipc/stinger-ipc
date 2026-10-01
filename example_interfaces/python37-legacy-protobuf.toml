@@ -1,0 +1,3 @@
+[python]
+python37 = true
+legacy_protobuf = true

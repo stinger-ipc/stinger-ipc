@@ -219,7 +219,7 @@ def payload_to_schema(payload) -> Schema:
 
 
 def payload_encoding(payload) -> str:
-    """How to finish the sentence "the payload ... is encoded as ...".""" 
+    """How to finish the sentence "the payload ... is encoded as ..."."""
     if payload.is_protobuf:
         return f"the protobuf message `{payload.protobuf.full_name}`"
     return "a JSON object"

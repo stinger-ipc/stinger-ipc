@@ -23,6 +23,7 @@ Changes in `0.3.0`:
 * A method returns at most one value.  The `returnValues` list was replaced by a single `returnValue` argument (see [Methods](#methods)).
 * A property holds exactly one value.  The `values` list was replaced by a single `value` argument (see [Properties](#properties)).
 * A structure's list of arguments is named `values` (previously `members`), and a signal's list of arguments is named `values` (previously `payload`).
+* A new 'configuration' section for specifying topic templates and the payload mime type. (Topic templates were previously specified in a config toml file)
 
 Changes in `0.2.0`:
 

@@ -32,6 +32,10 @@ class PythonConfig(BaseModel):
     """Python-specific configuration options."""
 
     python37: bool = Field(default=False, description="Generate Python 3.7 compatible code")
+    legacy_protobuf: bool = Field(
+        default=False,
+        description="Generate protobuf bindings for the old protobuf 3.x runtime (3.9 and later, before 4). For targets whose installed protobuf predates 3.20",
+    )
     package_suffix: str = Field(default="ipc", description="Suffix to append to generated Python package names")
 
 

@@ -62,6 +62,10 @@ properties:
         type: string
         default: "application/json"
         enum: ["application/json", "application/protobuf", "application/x-fory"]
+        description: >
+          Describes how to encode messages.  All messages will be encoded into this mime type.
+          If "application/json", any protobuf objects will be turned into JSON payloads and
+          will be sent with "application/protobuf+json" in the content-type header.
       topics:
         type: object
         description: >
@@ -120,6 +124,7 @@ properties:
             default: "client/{client_id}/online"
             description: "Topic template for Last Will and Testament (online/offline) messages."
         additionalProperties: false
+    additionalProperties: false
 
   topics: false # Topic templates belong under 'configuration'
   topic: false # Topic templates belong under 'configuration'

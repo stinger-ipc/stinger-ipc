@@ -7,7 +7,6 @@ from stingeripc.config import StingerConfig
 from stingeripc.exceptions import InvalidStingerStructure
 from stingeripc.lang_symb import ISymbolsProvider
 
-
 # The keywords prost escapes by turning the identifier into a raw one.  A protobuf
 # field is free to be called `type` or `match`; Rust's is not, and generated code has
 # to spell the member exactly the way prost named it.  Kept in step with
@@ -15,17 +14,55 @@ from stingeripc.lang_symb import ISymbolsProvider
 _RUST_RAW_KEYWORDS = frozenset(
     {
         # 2015 strict keywords.
-        "as", "break", "const", "continue", "else", "enum", "false",
-        "fn", "for", "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut",
-        "pub", "ref", "return", "static", "struct", "trait", "true",
-        "type", "unsafe", "use", "where", "while",
+        "as",
+        "break",
+        "const",
+        "continue",
+        "else",
+        "enum",
+        "false",
+        "fn",
+        "for",
+        "if",
+        "impl",
+        "in",
+        "let",
+        "loop",
+        "match",
+        "mod",
+        "move",
+        "mut",
+        "pub",
+        "ref",
+        "return",
+        "static",
+        "struct",
+        "trait",
+        "true",
+        "type",
+        "unsafe",
+        "use",
+        "where",
+        "while",
         # 2018 strict keywords.
         "dyn",
         # 2015 reserved keywords.
-        "abstract", "become", "box", "do", "final", "macro", "override", "priv", "typeof",
-        "unsized", "virtual", "yield",
+        "abstract",
+        "become",
+        "box",
+        "do",
+        "final",
+        "macro",
+        "override",
+        "priv",
+        "typeof",
+        "unsized",
+        "virtual",
+        "yield",
         # 2018 reserved keywords.
-        "async", "await", "try",
+        "async",
+        "await",
+        "try",
     }
 )
 

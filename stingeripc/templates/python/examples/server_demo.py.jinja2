@@ -120,7 +120,7 @@ if __name__ == '__main__':
     @server.on_{{prop_name | snake_case}}_updated
     async def on_{{prop_name | snake_case}}_update({{prop.python.value_param_name}}: {{prop.python.annotation}}):
         """ Example callback for when the '{{prop_name}}' property is updated. """
-        print(f"~~> Received update for '{{prop_name}}' property: { {{prop.python.value_param_name}}= }")
+        print(f"~~> Received update for '{{prop_name}}' property: {% if config.python.python37 %}{{prop.python.value_param_name}}={ {{prop.python.value_param_name}} }{% else %}{ {{prop.python.value_param_name}}= }{% endif %}")
     {%endif%}
     {%endfor%}
     {%endif%}
