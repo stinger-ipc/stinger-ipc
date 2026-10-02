@@ -1,3 +1,4 @@
+import re
 import keyword
 from typing import Any
 
@@ -561,6 +562,8 @@ class PythonProtobufRefSymbols(PythonSymbols):
         stem = self._ref.proto_file.rsplit("/", 1)[-1]
         if stem.endswith(".proto"):
             stem = stem[: -len(".proto")]
+        # protoc turns characters invalid in a module name into underscores.
+        stem = re.sub(r"\W", "_", stem)
         return f"{stem}_pb2"
 
     @property
