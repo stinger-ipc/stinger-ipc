@@ -705,6 +705,21 @@ class PythonProtobufFieldSymbols(PythonSymbols):
         return _PYTHON_FIELD_TYPES[self._field.kind]
 
     @property
+    def _annotated_type(self) -> str:
+        """:attr:`base_type`, spelled so it is safe inside a ``typing`` subscript at import time.
+
+        protoc's stubs declare an enum as a class, which is what a type checker
+        needs, but at runtime it is an ``EnumTypeWrapper`` *instance*.  A bare
+        parameter annotation never inspects it, yet ``Callable[[...]]``, ``List[...]``
+        and ``Optional[...]`` do, and Python before 3.11 rejects anything that is not
+        a type -- which crashes the import of a module holding such an alias.  As a
+        string it becomes a forward reference that is never evaluated at runtime,
+        and a type checker reads it as the same type.  A message is a real class,
+        so it stays as it is.
+        """
+        return f'"{self.base_type}"' if self._field.is_enum else self.base_type
+
+    @property
     def annotation(self) -> str:
         """Python type annotation for this field's parameter.
 
@@ -715,10 +730,10 @@ class PythonProtobufFieldSymbols(PythonSymbols):
         if self._field.is_map:
             return f"Dict[{self._field.map_key.python.annotation}, {self._field.map_value.python.annotation}]"
         if self._field.repeated:
-            return f"List[{self.base_type}]"
+            return f"List[{self._annotated_type}]"
         if self._field.is_optional_param:
-            return f"Optional[{self.base_type}]"
-        return self.base_type
+            return f"Optional[{self._annotated_type}]"
+        return self._annotated_type
 
     @property
     def ctor_kwarg(self) -> str:

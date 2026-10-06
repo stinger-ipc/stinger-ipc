@@ -12,6 +12,7 @@ from pathlib import Path
 
 from google.protobuf.descriptor_pb2 import FileDescriptorSet
 
+from stingeripc.lang_symb import LanguageSymbolMixin
 from stingeripc.payload import Payload, PayloadRole, ProtobufField, ProtobufMessageRef
 from stingeripc.protobuf_compiler import ProtobufSources
 
@@ -54,9 +55,34 @@ class TestPythonFieldSymbols(unittest.TestCase):
         """protoc's stubs reject a plain int where an enum is expected.
 
         The value is an int at runtime, but the generated code has to type-check
-        against those stubs, so the annotation names the enum protoc generated.
+        against those stubs, so the annotation names the enum protoc generated.  It
+        does so as a string: at runtime the enum is an EnumTypeWrapper instance, and
+        a module-level ``Callable[[...]]`` or ``List[...]`` holding it as a bare name
+        fails to import on Python before 3.11 ("each arg must be a type").
         """
-        self.assertEqual(self._field("severity").python.annotation, "traps_pb2.Severity")
+        self.assertEqual(self._field("severity").python.annotation, '"traps_pb2.Severity"')
+
+    def test_an_enum_is_quoted_wherever_typing_would_inspect_it(self):
+        """Every spelling that puts the enum inside a typing subscript has to be a string."""
+        severity = self._field("severity")
+        for label, field, expected in (
+            ("repeated", severity.model_copy(update={"repeated": True}), 'List["traps_pb2.Severity"]'),
+            ("optional", severity.model_copy(update={"optional": True}), 'Optional["traps_pb2.Severity"]'),
+            ("map value", self._field("labels").model_copy(update={"map_value": severity}), 'Dict[str, "traps_pb2.Severity"]'),
+        ):
+            with self.subTest(label):
+                # model_copy skips model_post_init, so the symbols are attached again.
+                LanguageSymbolMixin.enhance(field)
+                self.assertEqual(field.python.annotation, expected)
+
+    def test_a_message_is_not_quoted(self):
+        """A message class is a real type at runtime, so it is named directly."""
+        self.assertNotIn('"', self._field("history").python.annotation)
+        self.assertNotIn('"', self._field("nested_by_name").python.annotation)
+
+    def test_an_enum_example_still_names_the_enum_unquoted(self):
+        """The quoting is for annotations; an example value is an expression."""
+        self.assertNotIn('"', self._field("severity").python.example_value())
 
     def test_annotation_of_bytes_and_int64(self):
         self.assertEqual(self._field("blob").python.annotation, "bytes")
@@ -81,7 +107,7 @@ class TestPythonFieldSymbols(unittest.TestCase):
             signature,
             "labels: Dict[str, int], "
             "nested_by_name: Dict[str, traps_pb2.Reading.Nested], "
-            "severity: traps_pb2.Severity, "
+            'severity: "traps_pb2.Severity", '
             "history: List[traps_pb2.Reading.Nested], "
             "blob: bytes, "
             "big: int, "
