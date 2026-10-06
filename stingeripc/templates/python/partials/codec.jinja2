@@ -40,17 +40,14 @@
 {#
     The same imports, for a file that lives outside the generated package (an
     example script or a test module). `imports()` above uses a relative import
-    for this interface's own messages, which only resolves from inside the
+    for this interface's own bundled messages, which only resolves from inside the
     package itself, so this spells the same module out by its absolute name
-    instead.
+    instead. Messages whose bindings the host supplies are already imported
+    absolutely, so they come out the same either way.
 #}
 {%- macro example_imports(stinger, module_name) -%}
 {%- for ref in stinger.protobuf_messages() | unique(attribute='python.module') | sort(attribute='python.module') %}
-{%- if ref.is_well_known %}
-from google.protobuf import {{ ref.python.module }}
-{%- else %}
-from {{ module_name }}.proto import {{ ref.python.module }}
-{%- endif %}
+{{ ref.python.absolute_import_statement(module_name) }}
 {%- endfor -%}
 {%- endmacro -%}
 

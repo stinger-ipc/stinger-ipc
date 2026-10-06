@@ -15,7 +15,7 @@ from stingeripc.loading import parse_yaml_file
 from stingeripc import filtering
 from stingeripc.asyncapi import stinger_to_asyncapi
 from stingeripc.tools.generic_generator import resolve_protobuf_messages
-from stingeripc.config import StingerConfig, load_config
+from stingeripc.config import StingerConfig, load_configs
 from stingeripc.interface import StingerInterface
 
 from . import generic_generator
@@ -74,16 +74,9 @@ def asyncapi(
     """
     input_obj = parse_yaml_file(input_file)
 
-    config_obj = StingerConfig()
-    if config:
-        for config_file in config:
-            print(f"⚙️  [bold cyan]CONFIG:[/bold cyan] {config_file}")
-            file_config = load_config(config_file)
-            # Merge configs - later files override earlier ones
-            # Use model_validate to ensure nested models are properly instantiated
-            merged_dict = config_obj.model_dump(exclude_unset=True)
-            merged_dict.update(file_config.model_dump(exclude_unset=True))
-            config_obj = StingerConfig.model_validate(merged_dict)
+    for config_file in config or []:
+        print(f"⚙️  [bold cyan]CONFIG:[/bold cyan] {config_file}")
+    config_obj = load_configs(config)
     assert isinstance(config_obj, StingerConfig), "Config not a Stinger Config"
     for k, v in config_obj.model_dump().items():
         print(f"🔧{k:>10.10}: {v}")
@@ -148,11 +141,7 @@ def validate(
         error_count += 1
         print(f"Error: {error}")
         print(f"Location: {error.instance_path}")
-    config_obj = StingerConfig()
-    for config_file in config or []:
-        merged = config_obj.model_dump(exclude_unset=True)
-        merged.update(load_config(config_file).model_dump(exclude_unset=True))
-        config_obj = StingerConfig.model_validate(merged)
+    config_obj = load_configs(config)
 
     try:
         # from_dict parses the whole interface -- signals, methods, commands and

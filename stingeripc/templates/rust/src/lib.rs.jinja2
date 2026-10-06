@@ -25,7 +25,7 @@
 ///
 /// - [`server_guide`](docs::server_guide) — providing the interface.
 /// - [`client_guide`](docs::client_guide) — consuming the interface.
-{%- if stinger.uses_protobuf() %}
+{%- if stinger.uses_protobuf() and config.protobuf.mode == "bundled" %}
 pub mod proto;
 {%- endif %}
 pub mod docs {

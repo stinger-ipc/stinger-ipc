@@ -42,6 +42,9 @@ prost = "0.13" # Only needed because this interface carries protobuf payloads.
 {%- if stinger.uses_well_known_protobuf() %}
 prost-types = "0.13" # Only needed because this interface carries protobuf well-known types.
 {%- endif %}
+{%- if stinger.uses_protobuf() and config.protobuf.mode == "external" and config.protobuf.external.rust_dependency %}
+{{ config.protobuf.external.rust_dependency }} # Supplies the protobuf bindings; [protobuf] mode is "external".
+{%- endif %}
 {%- if stinger.uses_binary() %}
 base64 = "0.22.1" # Only needed because this interface has binary fields.
 {%- endif %}

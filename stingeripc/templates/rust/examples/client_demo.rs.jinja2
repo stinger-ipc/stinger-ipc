@@ -17,7 +17,7 @@ use {{stinger.rust.package_name}}::discovery::{{stinger.name|UpperCamelCase}}Dis
 #[cfg(feature = "lwt")]
 use {{stinger.rust.package_name}}::lwt::StingerAvailability;
 use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection, TcpConnection};
-{%- if stinger.uses_protobuf() %}
+{%- if stinger.uses_protobuf() and config.protobuf.mode == "bundled" %}
 use {{stinger.rust.package_name}}::proto;
 {%- endif %}
 use tokio::time::{sleep, Duration};

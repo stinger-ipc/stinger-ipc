@@ -35,9 +35,16 @@ ignore_missing_imports = True
 # Type checking does not install the test dependencies.
 [mypy-pytest.*]
 ignore_missing_imports = True
-{%- if stinger.uses_protobuf() %}
+{%- if stinger.uses_protobuf() and config.protobuf.mode == "bundled" %}
 
 # protoc writes these; they are not type-checked because they are not hand-maintained.
 [mypy-{{stinger.python.package_directory}}.proto.*]
 ignore_errors = True
+{%- elif stinger.uses_protobuf() %}
+{%- for module_path in stinger.protobuf_messages() | selectattr('python.is_external') | map(attribute='python.external_module_path') | unique | sort %}
+
+# The host supplies the protobuf bindings, so they may not be installed where this is type-checked.
+[mypy-{{ module_path }}]
+ignore_missing_imports = True
+{%- endfor %}
 {%- endif %}

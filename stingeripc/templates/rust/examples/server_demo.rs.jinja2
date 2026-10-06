@@ -11,7 +11,7 @@ use std::any::Any;
 use std::sync::Arc;
 
 use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection, TcpConnection};
-{%- if stinger.uses_protobuf() %}
+{%- if stinger.uses_protobuf() and config.protobuf.mode == "bundled" %}
 use {{stinger.rust.package_name}}::proto;
 {%- endif %}
 use {{stinger.rust.package_name}}::server::{ {{stinger.rust.server_struct_name}}{%if stinger.methods|length>0%}, {{stinger.name | UpperCamelCase }}MethodHandlers{%endif%} };

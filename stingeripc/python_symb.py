@@ -5,7 +5,7 @@ from typing import Any
 from jacobsjinjatoo import stringmanip
 
 from stingeripc.args import ArgPrimitiveType
-from stingeripc.config import StingerConfig
+from stingeripc.config import ExternalProtobufConfig, StingerConfig
 from stingeripc.exceptions import ProtobufError
 from stingeripc.lang_symb import ISymbolsProvider
 
@@ -567,14 +567,62 @@ class PythonProtobufRefSymbols(PythonSymbols):
         return f"{stem}_pb2"
 
     @property
+    def module_package(self) -> str:
+        """Dotted path of the directories between the source root and the .proto file, or ''.
+
+        protoc mirrors the directory a .proto file sits in under its output
+        directory, so ``sub/lens.proto`` becomes the module ``sub.lens_pb2``.
+        """
+        directory = self._ref.proto_file.rsplit("/", 1)[0] if "/" in self._ref.proto_file else ""
+        return ".".join(re.sub(r"\W", "_", part) for part in directory.split("/") if part)
+
+    @property
+    def _external(self) -> ExternalProtobufConfig | None:
+        """Where the host's bindings live, or None when this package bundles this message's."""
+        if self.config is None or self.config.protobuf.mode != "external" or self._ref.is_well_known:
+            return None
+        return self.config.protobuf.external
+
+    @property
+    def is_external(self) -> bool:
+        """True when the host supplies this message's bindings rather than the package bundling them."""
+        return self._external is not None
+
+    @property
+    def external_module_path(self) -> str:
+        """Dotted path the host's copy of this message's module is imported by, e.g. ``generated.camera_pb2``."""
+        package = self.config.protobuf.external.python_package if self.config is not None else ""
+        return ".".join(part for part in (package, self.module_package, self.module) if part)
+
+    def _import_from(self, package: str) -> str:
+        return f"from {package} import {self.module}" if package else f"import {self.module}"
+
+    @property
     def import_statement(self) -> str:
         """The import that brings this message's module into a generated module.
 
-        A well-known type comes from the installed protobuf runtime; everything
-        else from the bindings protoc wrote beside the generated package.
+        A well-known type comes from the installed protobuf runtime.  Everything
+        else comes from the bindings protoc wrote beside the generated package,
+        or, when the host supplies them, from the configured ``python_package``
+        by absolute import so the host's own copy is the only one in the process.
         """
-        package = "google.protobuf" if self._ref.is_well_known else ".proto"
-        return f"from {package} import {self.module}"
+        if self._ref.is_well_known:
+            return f"from google.protobuf import {self.module}"
+        external = self._external
+        if external is not None:
+            return self._import_from(".".join(part for part in (external.python_package, self.module_package) if part))
+        return self._import_from("." + ".".join(part for part in ("proto", self.module_package) if part))
+
+    def absolute_import_statement(self, package_name: str) -> str:
+        """The same import, for a file that lives outside the generated package.
+
+        An example script or a test module cannot reach the bundled bindings
+        relatively, so it names them below the generated package.  Everything
+        else is already spelled absolutely.
+        """
+        if self._ref.is_well_known or self.is_external:
+            return self.import_statement
+        return self._import_from(".".join(part for part in (package_name, "proto", self.module_package) if part))
 
     @property
     def qualified_name(self) -> str:

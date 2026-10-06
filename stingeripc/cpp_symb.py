@@ -1,6 +1,7 @@
 from jacobsjinjatoo import stringmanip
 
 from stingeripc.args import ArgPrimitiveType
+from stingeripc.config import StingerConfig
 from stingeripc.lang_symb import ISymbolsProvider
 
 
@@ -13,7 +14,7 @@ class CppSymbolsProvider(ISymbolsProvider):
 
     def for_model(self, model_class_name: str, model) -> object | None:
         if model_class_name == "ProtobufMessageRef":
-            return CppProtobufRefSymbols(model)
+            return CppProtobufRefSymbols(model, self.config)
         elif model_class_name == "ProtobufField":
             return CppProtobufFieldSymbols(model)
         elif model_class_name == "Payload":
@@ -52,8 +53,8 @@ class CppSymbolsProvider(ISymbolsProvider):
 class CppSymbols:
     """Base class for C++ symbol providers."""
 
-    def __init__(self):
-        pass
+    def __init__(self, config: StingerConfig | None = None):
+        self.config = config
 
 
 class CppInterfaceSymbols(CppSymbols):
@@ -444,8 +445,8 @@ class CppPayloadSymbols(CppSymbols):
 class CppProtobufRefSymbols(CppSymbols):
     """C++ symbols for a :class:`ProtobufMessageRef`."""
 
-    def __init__(self, ref):
-        super().__init__()
+    def __init__(self, ref, config: StingerConfig | None = None):
+        super().__init__(config)
         self._ref = ref
 
     @property
@@ -459,10 +460,17 @@ class CppProtobufRefSymbols(CppSymbols):
 
         A well-known type's header ships with libprotobuf and is found on the
         include path; the interface's own headers protoc wrote into the generated
-        library are quoted and relative to it.
+        library are quoted and relative to it.  When the host supplies the
+        bindings the header is instead found on the include path, under the
+        configured ``cpp_include_dir``.
         """
         header = self._ref.proto_file.replace(".proto", ".pb.h")
-        return f"<{header}>" if self._ref.is_well_known else f'"proto/{header}"'
+        if self._ref.is_well_known:
+            return f"<{header}>"
+        if self.config is not None and self.config.protobuf.mode == "external":
+            include_dir = self.config.protobuf.external.cpp_include_dir.strip("/")
+            return f'"{include_dir}/{header}"' if include_dir else f'"{header}"'
+        return f'"proto/{header}"'
 
     @property
     def scoped_name(self) -> str:

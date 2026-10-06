@@ -16,7 +16,7 @@ from stingeripc.loading import parse_yaml_file
 from stevedore import ExtensionManager
 from stingeripc import StingerInterface, __version__, topic_util
 from stingeripc.filtering import filter_by_consumer
-from stingeripc.config import load_config, ProtobufConfig, StingerConfig
+from stingeripc.config import load_configs, ProtobufConfig, StingerConfig
 from stingeripc.exceptions import ProtobufError
 from stingeripc.protobuf_compiler import ProtobufSources
 from stingeripc.protobufjs import descriptor_set_to_protobufjs
@@ -68,6 +68,15 @@ def emit_protobuf_bindings(template_dir: Path, outdir: Path, stinger, config_obj
     # so there is nothing to copy and nothing to compile.
     if not sources.has_sources:
         print("🧬    PROTO: no .proto sources to compile (well-known types only)")
+        return
+
+    # In external mode the host supplies its own compiled bindings, and a second
+    # copy built here would collide with them (protobuf's descriptor pool is keyed
+    # by file name), so nothing is copied, compiled or rewritten.  The messages were
+    # still resolved against the sources, which is what the generated code's field
+    # handling is built from.
+    if config_obj.protobuf.mode == "external":
+        print("🧬    PROTO: external mode, bindings are supplied by the host and not bundled")
         return
 
     # The .proto files travel with the generated code, so the output is
@@ -193,6 +202,8 @@ def resolve_protobuf_messages(stinger, config_obj, inname: Path) -> None:
     sources = protobuf_sources(config_obj, inname)
     print(f"🧬 [bold cyan]PROTOS:[/bold cyan] {sources.proto_dir}")
     sources.resolve_all(refs)
+    for ref in refs:
+        ref.bind_config(config_obj)
     for ref in stinger.protobuf_messages():
         print(f"🧬    MSG: {ref.full_name} ({ref.proto_file})")
 
@@ -217,16 +228,9 @@ def main(
         raise typer.BadParameter("At least one of: --language, --template-pkg, or --template-path must be provided")
 
     # Load and merge configuration files
-    config_obj = StingerConfig()
-    if config:
-        for config_file in config:
-            print(f"⚙️  [bold cyan]CONFIG:[/bold cyan] {config_file}")
-            file_config = load_config(config_file)
-            # Merge configs - later files override earlier ones
-            # Use model_validate to ensure nested models are properly instantiated
-            merged_dict = config_obj.model_dump(exclude_unset=True)
-            merged_dict.update(file_config.model_dump(exclude_unset=True))
-            config_obj = StingerConfig.model_validate(merged_dict)
+    for config_file in config or []:
+        print(f"⚙️  [bold cyan]CONFIG:[/bold cyan] {config_file}")
+    config_obj = load_configs(config)
     assert isinstance(config_obj, StingerConfig), "Config not a Stinger Config"
     for k, v in config_obj.model_dump().items():
         print(f"🔧{k:>10.10}: {v}")

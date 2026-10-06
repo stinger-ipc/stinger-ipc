@@ -2,7 +2,8 @@
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Any, List, Literal, Optional, Union
+import re
 import tomllib
 
 
@@ -61,8 +62,60 @@ class LanguagePluginConfig(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
+_DOTTED_IDENTIFIER = re.compile(r"^[A-Za-z_]\w*(\.[A-Za-z_]\w*)*$")
+_RUST_PATH = re.compile(r"^(::)?[A-Za-z_]\w*(::[A-Za-z_]\w*)*$")
+
+
+class ExternalProtobufConfig(BaseModel):
+    """Where each language finds protobuf bindings that the host supplies, used when ``[protobuf] mode = "external"``."""
+
+    python_package: str = Field(
+        default="",
+        description="Python package the externally supplied _pb2 modules are imported from. Empty means they are top-level modules on sys.path",
+    )
+    cpp_include_dir: str = Field(
+        default="",
+        description="Directory prefix of the externally supplied .pb.h headers, as used in an #include. Empty means the headers are at the top of the include path",
+    )
+    cpp_cmake_target: str = Field(
+        default="",
+        description="CMake target providing the externally supplied C++ bindings, linked PUBLIC to the generated library. Empty means the consumer links them",
+    )
+    rust_module: str = Field(
+        default="",
+        description="Rust module path holding the externally supplied prost types, e.g. 'camera_protos'",
+    )
+    rust_dependency: str = Field(
+        default="",
+        description="A Cargo.toml dependency line, written verbatim, that makes rust_module available to the generated crate. Optional",
+    )
+
+    @field_validator("python_package")
+    @classmethod
+    def validate_python_package(cls, v: str) -> str:
+        if v and not _DOTTED_IDENTIFIER.match(v):
+            raise ValueError(f"python_package '{v}' is not a dotted Python module path")
+        return v
+
+    @field_validator("rust_module")
+    @classmethod
+    def validate_rust_module(cls, v: str) -> str:
+        if v and not _RUST_PATH.match(v):
+            raise ValueError(f"rust_module '{v}' is not a Rust module path (expected something like 'camera_protos' or 'crate::bindings')")
+        return v
+
+
 class ProtobufConfig(BaseModel):
     """Configuration for the hand-written protocol buffer definitions an interface draws on."""
+
+    mode: Literal["bundled", "external"] = Field(
+        default="bundled",
+        description="'bundled' copies the .proto files into the generated output and compiles them there. 'external' leaves that to the host, which supplies the bindings itself (see 'external')",
+    )
+    external: ExternalProtobufConfig = Field(
+        default_factory=ExternalProtobufConfig,
+        description="Where the externally supplied bindings live, per language. Used only when mode is 'external'",
+    )
 
     path: str = Field(
         default="protos",
@@ -132,3 +185,33 @@ def load_config(config_path: Path) -> StingerConfig:
         raise ValueError(f"{config_path}: topic templates are declared in the interface's .stinger.yaml file (under a top-level 'topics:' key), not in a config file")
 
     return StingerConfig(**config_dict)
+
+
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    """Merge ``override`` into ``base``, descending into tables both sides define."""
+    merged = dict(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def merge_configs(configs: List[StingerConfig]) -> StingerConfig:
+    """Combine configs in order, later ones overriding earlier ones.
+
+    The merge descends into each section, so a later file that sets one key of a
+    section (say ``[protobuf] mode``) leaves the other keys an earlier file set
+    for that section (``[protobuf] path``) alone.  Only keys a file actually set
+    take part, so a file never resets a value to its default.
+    """
+    merged: dict[str, Any] = {}
+    for config in configs:
+        merged = _deep_merge(merged, config.model_dump(exclude_unset=True))
+    return StingerConfig.model_validate(merged)
+
+
+def load_configs(config_paths: Optional[List[Path]]) -> StingerConfig:
+    """Load each config file and merge them, later files overriding earlier ones."""
+    return merge_configs([load_config(path) for path in config_paths or []])

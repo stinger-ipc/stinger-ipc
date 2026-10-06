@@ -3,7 +3,7 @@ from typing import Any
 from jacobsjinjatoo import stringmanip
 
 from stingeripc.args import ArgPrimitiveType
-from stingeripc.config import StingerConfig
+from stingeripc.config import ExternalProtobufConfig, StingerConfig
 from stingeripc.exceptions import InvalidStingerStructure
 from stingeripc.lang_symb import ISymbolsProvider
 
@@ -93,7 +93,7 @@ class RustSymbolsProvider(ISymbolsProvider):
 
     def for_model(self, model_class_name: str, model) -> object | None:
         if model_class_name == "ProtobufMessageRef":
-            return RustProtobufRefSymbols(model)
+            return RustProtobufRefSymbols(model, self.config)
         elif model_class_name == "ProtobufField":
             return RustProtobufFieldSymbols(model)
         elif model_class_name == "ProtobufOneof":
@@ -542,9 +542,21 @@ _RUST_WELL_KNOWN_EXCEPTIONS = {
 class RustProtobufRefSymbols(RustSymbols):
     """Rust symbols for a :class:`ProtobufMessageRef`."""
 
-    def __init__(self, ref):
-        super().__init__()
+    def __init__(self, ref, config: StingerConfig | None = None):
+        super().__init__(config)
         self._ref = ref
+
+    @property
+    def _external(self) -> ExternalProtobufConfig | None:
+        """Where the host's bindings live, or None when this crate bundles this message's."""
+        if self.config is None or self.config.protobuf.mode != "external" or self._ref.is_well_known:
+            return None
+        return self.config.protobuf.external
+
+    @property
+    def is_external(self) -> bool:
+        """True when the host supplies this message's bindings rather than the crate bundling them."""
+        return self._external is not None
 
     @property
     def module_path(self) -> str:
@@ -556,9 +568,19 @@ class RustProtobufRefSymbols(RustSymbols):
 
         A well-known type is the exception: prost generates nothing for one,
         substituting the ready-made definition in ``prost-types``.
+
+        When the host supplies the bindings the path starts at the configured
+        ``rust_module`` instead, and a protobuf package nests below it one module
+        per segment, which is how prost-build lays out its output.
         """
         if self._ref.is_well_known:
             return "::prost_types"
+        external = self._external
+        if external is not None:
+            base = external.rust_module
+            if not base:
+                raise InvalidStingerStructure(f"[protobuf] mode is 'external' but [protobuf.external] rust_module is not set, so the Rust path of '{self._ref.full_name}' is unknown.")
+            return "::".join([base, *(_rust_ident(segment) for segment in self._ref.package.split(".") if segment)])
         return "crate::proto"
 
     @property
@@ -587,9 +609,10 @@ class RustProtobufRefSymbols(RustSymbols):
         Examples and integration tests are separate crates, so they import the
         library's ``proto`` module rather than reaching through ``crate::``.  A
         well-known type is spelled the same way everywhere, since it comes from
-        neither.
+        neither, and so is a message whose bindings the host supplies, since the
+        configured ``rust_module`` is reachable from the crate and from outside it.
         """
-        if self._ref.is_well_known:
+        if self._ref.is_well_known or self.is_external:
             return self.qualified_name
         return f"proto::{self.scoped_name}"
 

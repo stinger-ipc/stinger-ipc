@@ -262,6 +262,25 @@ class ProtobufMessageRef(BaseModel):
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
 
+    def bind_config(self, config: Any) -> None:
+        """Give this reference's language symbols the generation config.
+
+        A reference is created while the interface file is parsed, and the
+        messages its fields name are created later still, when the sources are
+        resolved, so none of them is handed the config at construction.  Binding
+        happens once resolution is done, and also reaches every message and enum
+        this one's fields name, because generated code spells their imports too.
+        """
+        self._bind_config(config, set())
+
+    def _bind_config(self, config: Any, seen: set[int]) -> None:
+        if id(self) in seen:
+            return
+        seen.add(id(self))
+        LanguageSymbolMixin.enhance(self, config)
+        for referenced in self.referenced_types:
+            referenced._bind_config(config, seen)
+
     @property
     def package(self) -> str:
         """The message's protobuf package, or '' for a message at the top level.

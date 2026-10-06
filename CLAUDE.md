@@ -114,6 +114,33 @@ message is resolved against the hand-written `.proto` sources named by
   Rust's signal and command receivers likewise still yield the whole message, since
   a broadcast channel carries one item type.
 
+### Bundled vs external bindings
+
+By default (`[protobuf] mode = "bundled"`) each language's `partials/protoc.toml` recipe
+copies the `.proto` sources into the output and compiles them there. That breaks a host
+process that already loads its own bindings for the same files: protobuf's descriptor
+pool is process-wide and keyed by `.proto` file name, so Python raises "duplicate file
+name", C++ fails to link or aborts at startup, and Rust gets two incompatible copies of
+each type.
+
+`mode = "external"` leaves the bindings to the host. The messages are still resolved
+against the `[protobuf] path` sources, since the generated field handling is built from
+their descriptors, but `emit_protobuf_bindings` copies, compiles and rewrites nothing, and
+the generated code references the host's bindings instead. `[protobuf.external]` says where
+each language finds them (see [external-protobuf.toml](example_interfaces/external-protobuf.toml)):
+
+- `python_package` — `from <pkg> import x_pb2`; empty means a top-level `import x_pb2`.
+- `cpp_include_dir` / `cpp_cmake_target` — the `#include` prefix, and a CMake target linked
+  to the generated library (through `BUILD_LOCAL_INTERFACE`, so it stays out of the exports).
+- `rust_module` / `rust_dependency` — where the prost types live (a protobuf package nests
+  below it one module per segment) and the `Cargo.toml` line that supplies the crate.
+
+The host's bindings must come from the same `.proto` files at the same paths relative to
+the source root, because that root decides Python module names and C++ header paths.
+Well-known types come from each language's runtime in both modes. A ref's language symbols
+only learn the mode through `ProtobufMessageRef.bind_config`, which
+`resolve_protobuf_messages` calls once resolution is done.
+
 ## Schema validation
 
 An argument's optional `schema:` constraint flows through the whole pipeline:
