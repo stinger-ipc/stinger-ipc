@@ -8,9 +8,10 @@ This library uses feature flags to control which modules are included in your bu
 
 ### Available Features
 
-- **`payloads`**: Includes only the payload types, enums, and structures.
-- **`client`**: Includes client functionality and payloads.
-- **`server`**: Includes server functionality and payloads.
+- **`client`**: Includes client functionality.
+- **`server`**: Includes server functionality.
+
+Payload types, enums, and structures are always included.
 
 ## Usage
 
@@ -21,8 +22,6 @@ Add this to your `Cargo.toml`:
 full_ipc = { path = ".", features = ["client"] }  # For client functionality
 # OR
 full_ipc = { path = ".", features = ["server"] }  # For server functionality
-# OR  
-full_ipc = { path = ".", features = ["payloads"] } # For just payload types
 ```
 
 ## Examples
@@ -47,11 +46,18 @@ cargo build --features client
 
 # Build with server feature
 cargo build --features server
-
-# Build with just payloads (not a common use case to only need the payload structures)
-cargo build --features payloads
-
 ```
+
+## Documentation
+
+```bash
+cargo doc --all-features --open
+```
+
+Because no features are on by default, `--all-features` is what makes the client and
+server pages appear. The crate's landing page explains the interface and the server/client
+design, and the `docs` module holds two longer guides — one for writing a server, one for
+writing a client.
 
 ## Library Structure
 
@@ -62,9 +68,14 @@ src/
 ├── server.rs       # Server module (enabled with 'server' feature)  
 └── payloads.rs     # Payload types and structures
 
+docs/
+├── overview.md     # Crate landing page
+├── client.md       # Client guide
+└── server.md       # Server guide
+
 examples/
-├── client.rs       # Client usage example
-└── server.rs       # Server usage example
+├── client_demo.rs  # Client usage example
+└── server_demo.rs  # Server usage example
 ```
 
 ## Generated Code

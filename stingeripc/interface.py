@@ -5,13 +5,10 @@ from .loading import parse_yaml_file, parse_yaml_io
 from .components import InvalidStingerStructure, StingerSpec
 from .config import StingerConfig
 
-VERSIONS_SUPPORTED = ["0.0.7", "0.1.0", "0.1.1"]
+VERSIONS_SUPPORTED = ["0.3.0"]
 
 
 class StingerInterface(StingerSpec):
-
-    def __init__(self, stinger: Dict[str, Any], config: StingerConfig):
-        super().__init__(stinger["interface"], config)
 
     @classmethod
     def from_yaml(cls, yaml_input: Union[str, IO], config: StingerConfig) -> StingerSpec:

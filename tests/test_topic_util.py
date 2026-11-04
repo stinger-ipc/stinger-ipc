@@ -4,6 +4,7 @@ from stingeripc.topic_util import (
     is_valid_topic_template,
     get_argument_position,
     topic_template_to_js,
+    topic_template_to_mqtt_filter,
 )
 
 import unittest
@@ -331,6 +332,20 @@ class TestTopicTemplateToJs(unittest.TestCase):
         template = "topic/{device_type}/{custom_var}"
         result = topic_template_to_js(template, ["device_type"])
         self.assertEqual(result, "topic/${topicParams.device_type}/${custom_var}")
+
+
+class TestTopicTemplateToMqttFilter(unittest.TestCase):
+    def test_every_placeholder_becomes_a_wildcard(self):
+        template = "{prefix}/Weather/{service_id}/interface"
+        self.assertEqual(topic_template_to_mqtt_filter(template), "+/Weather/+/interface")
+
+    def test_template_without_placeholders_is_unchanged(self):
+        template = "Weather/interface"
+        self.assertEqual(topic_template_to_mqtt_filter(template), "Weather/interface")
+
+    def test_two_placeholders_in_one_segment(self):
+        template = "data/{interface_name}_{service_id}/resource"
+        self.assertEqual(topic_template_to_mqtt_filter(template), "data/+_+/resource")
 
 
 if __name__ == "__main__":

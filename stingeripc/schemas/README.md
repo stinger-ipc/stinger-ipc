@@ -1,0 +1,399 @@
+# Stinger Files
+
+Stinger files are YAML files that describe interfaces for inter-process communication (IPC) using the Stinger IPC framework. These files define the structure and types of messages that can be sent and received between different components of a system.
+
+## File Name
+
+Stinger files should be named with the `.stinger.yaml` extension to indicate their purpose and format.
+For example: `example_interface.stinger.yaml`
+
+## Format Version
+
+Every stinger file declares which version of this format it follows:
+
+```yaml
+stingeripc:
+  version: 0.3.0
+```
+
+The current version is `0.3.0`, and it is the only version the generator accepts.  Each version has its own schema in a directory alongside this file; earlier schemas are kept for reference only.
+
+Changes in `0.3.0`:
+
+* A method returns at most one value.  The `returnValues` list was replaced by a single `returnValue` argument (see [Methods](#methods)).
+* A property holds exactly one value.  The `values` list was replaced by a single `value` argument (see [Properties](#properties)).
+* A structure's list of arguments is named `values` (previously `members`), and a signal's list of arguments is named `values` (previously `payload`).
+* A new 'configuration' section for specifying topic templates and the payload mime type. (Topic templates were previously specified in a config toml file)
+
+Changes in `0.2.0`:
+
+* `binary` arguments require a `contentType`.
+
+## Arguments
+
+Structures, signals, and methods take a list of arguments, though they might call the list different things.  Methods and properties instead name a single argument:
+
+Structures: `values`
+Signals: `values`
+Methods: Have a list of `arguments` and a single `returnValue`
+Properties: a single `value`
+
+All arguments have required `name` and `type` fields.  See below for valid `type` values.
+
+All arguments can have optional fields:
+* `description` (string) — describes the argument
+* `optional` (boolean) — whether the argument is optional; defaults to false
+* `example` — an example value used in demo code and documentation (not yet supported)
+* `index` (integer ≥ 1) — payload ordering index required for some serialization formats
+* `schema` (object) — a JSON Schema that further constrains the value (see [JSON Schema](#json-schema))
+
+Struct and enum arguments must have respective `structName` and `enumName` fields, where the value is the name of a struct or enum as defined in the stinger file.  When the parent component has a `version` field, struct and enum arguments should also include `structVersion` and `enumVersion` fields respectively.
+
+Example:
+
+```yaml
+- name: nick
+  type: string
+  optional: true
+  description: A person's nick name
+- name: age
+  type: integer
+  description: A person's age in years.
+- name: address
+  type: struct
+  structName: addressFields
+```
+
+### Argument Types
+
+* integer
+* float
+* boolean
+* string
+* datetime
+* duration
+* binary
+* struct (see below)
+* enum (see below)
+* array (see below)
+
+### Arrays
+
+Array arguments require an `itemType` field which specifies the type of the array elements.  The `itemType` can be a primitive type, an enum, or a struct.
+
+```yaml
+- name: scores
+  type: array
+  itemType:
+    type: float
+  description: A list of scores
+- name: colors
+  type: array
+  itemType:
+    type: enum
+    enumName: Color
+  description: A list of colors
+```
+
+### JSON Schema
+
+Arguments can have a `schema` field consisting of JSON Schema.  The value of the argument is **runtime** evaluated against the schema.  The schema can restrict values.  For example, minimum and maximum on numbers, or a regex pattern on a string.
+
+Example of an integer where, at runtime, the value is enforced to be between 1 and 12.
+
+```yaml
+- name: month
+  type: integer
+  schema:
+    minimum: 1
+    maximum: 12
+```
+
+## Structure
+
+A Stinger file typically contains the following:
+
+- **Metadata**: Information about the interface, such as its name, version, title, and summary.
+- **Types**: Enumerations and structures that define the data types used in the interface.
+- **IPC Components**: Definitions of signals, methods, and properties that make up the interface.
+
+## Minimal Example
+
+Here is a minimal example that shows metadata and the sections for types and IPC components.  No types or components are defined in this example, which is why the sections are an empty mapping.
+
+```yaml
+stingeripc:
+  version: 0.3.0
+
+interface:
+  name: example_interface
+  version: 0.0.1
+  title: Example Interface
+  summary: An example Stinger interface
+  license: MIT
+  documentation: |
+    Markdown *documentation* can be provided.  It will be used in documentation and code generations.
+
+enums: {}
+
+structures: {}
+
+signals: {}
+
+commands: {}
+
+methods: {}
+
+properties: {}
+
+```
+
+`title`, `summary`, and `license` are all optional.  `license` names the license or
+copyright under which the interface is provided; all generated code is subject to it.
+
+## Enums
+
+An example enumeration definition:
+
+```yaml
+enums:
+  Color:
+    documentation: An enumeration of colors
+    values:
+      - name: RED
+        description: The color red
+        value: 1
+      - name: GREEN
+        description: The color green
+        value: 2
+      - name: BLUE
+        description: The color blue
+        value: 3
+      - name: YELLOW
+        description: The color yellow
+        value: 4
+```
+
+Enum values have a required `name` field.  They can have an optional `description` field and an optional integer `value` field.
+
+## Structs
+
+```yaml
+structures:
+  Point:
+    documentation: A 2D point
+    values:
+      - name: x
+        type: float
+        description: The x coordinate
+      - name: y
+        type: float
+        description: The y coordinate
+```
+
+## Signals
+
+Signals are messages from a server to clients.
+
+```plantuml
+@startuml
+Client <<- Server : Signal(Parameters)
+@enduml
+```
+
+```yaml
+signals:
+  PositionUpdated:
+    documentation: Signal emitted when the position is updated
+    values:
+      - name: position
+        type: struct
+        structName: Point
+        description: The new position.
+      - name: timestamp
+        type: datetime
+        description: The timestamp of the update.
+```
+
+## Commands
+
+Commands are messages from a client to a server, with no response — the mirror image of
+a signal, or equivalently a method with no return value:
+
+```plantuml
+@startuml
+Client ->> Server : Command(Parameters)
+@enduml
+```
+
+```yaml
+commands:
+  setTheTable:
+    documentation: Tell the server to lay the table for a meal.
+    arguments:
+      - name: seats
+        type: integer
+        description: How many places to lay.
+```
+
+`arguments` is an array, the same as a signal's `values` or a method's `arguments`.
+Because there is no response, a command has no `returnValue`.  The server may have any
+number of things consuming a command, including none — an unconsumed command is simply
+logged and dropped, the same as a signal nothing is listening for.
+
+## Methods
+
+Methods are requests from a client to a server and the server provides a response back to the client:
+
+```plantuml
+@startuml
+Client ->> Server : Request(Parameters)
+Client <<-- Server: Response(Parameters)
+@enduml
+```
+
+`arguments` is an array which can have multiple elements.  `returnValue` is a single argument: a method returns at most one value.  Omit `returnValue` for a method that returns nothing, and use a `struct` return value to send several fields back together.
+
+```yaml
+methods:
+  MoveTo:
+    documentation: Move to a new position
+    arguments:
+      - name: position
+        type: struct
+        structName: Point
+        description: The target position.
+    returnValue:
+      name: success
+      type: boolean
+      description: True if the move was successful, false otherwise.
+```
+
+### Timeouts
+
+A method may declare how many seconds a caller should wait for its response:
+
+```yaml
+methods:
+  RunSelfTest:
+    timeout: 60
+    arguments: []
+```
+
+`timeout` defaults to 5 seconds.  It does two things in the generated client: the call
+fails locally with a `TIMEOUT` return code once it elapses, and the request message is
+published with that expiry interval so the broker stops trying to deliver a request the
+caller has already given up on.  Set it higher for a method the server genuinely takes a
+long time to answer.
+
+## Properties
+
+Properties are values held by the server.  They are re-published when the value changes.  A property has exactly one `value`, which is a single argument.  Use a `struct` or an `array` value to hold several fields together.
+
+```plantuml
+@startuml
+Server -> Server : Set_Property(value)
+Client <<- Server: Property_Updated(value)
+@enduml
+```
+
+If the property is not read only, the client may also request an update to a property.
+
+```plantuml
+@startuml
+Client ->> Server : Request_Property_Update(value)
+Server -> Server  : Set_property(value)
+Client <<- Server : Property_Updated(value)
+@enduml
+```
+
+```yaml
+properties:
+  position:
+    documentation: The current position.
+    value:
+      name: position
+      type: struct
+      structName: Point
+      description: The current position.
+```
+
+### Read Only Properties
+
+A property can be marked as "read only" which means that clients may not request updates to the property.  This is useful for when a server wants to share a persistent value with clients, such as a particular state.
+
+```yaml
+properties:
+  network_state:
+    documentation: Describes if the network is connected
+    value:
+      name: state
+      type: enum
+      enumName: networkStates
+    readOnly: true
+```
+
+The default value for the `readOnly` field is `false`. 
+
+### Coming Soon: Default Values
+
+At some point, we'd like properties to start off with a default value, though I'm uncertain whether those should be statically defined in the stinger file, loaded from a config file at runtime, or both.
+
+
+## Versioning and Consumers
+
+Signals, methods, properties, enums, and structures can each have an optional `version` field, which is a [semantic version](https://semver.org) (e.g. `1.0.0`) that can be used to determine data consistency and compatibility.
+
+Signals, methods, and properties can also have an optional `consumers` field, which is a list of names representing interface consumers allowed to access that component.  If `consumers` is specified, `version` is required.  This can be used to dictate whether the component is to be bridged to another broker, or ACL'ed for a client ID.
+
+Each argument in the values list can be marked with an `index` (a positive integer) for payload ordering in serialization formats like protocol buffers.
+
+Here is an example of a signal with versioning and consumers:
+
+```yaml
+signals:
+  circle_created:
+    values:
+      - name: color
+        type: enum
+        enumName: color
+        enumVersion: "1.0.0"
+        index: 1
+      - name: diameter
+        type: float
+        index: 2
+    version: "1.0.0"
+    consumers:
+      - cloud
+      - automation
+```
+
+## Constants
+
+Constants are named, typed, read-only values that can be referenced in documentation and generated code. Each constant has a required `type` and `value`, and an optional single-line `description`.
+
+Valid types for constants: `integer`, `float`, `string`, `boolean`.
+
+```yaml
+constants:
+  MAX_SPEED:
+    type: float
+    value: 100.0
+    description: The maximum speed in metres per second.
+  DEVICE_NAME:
+    type: string
+    value: "my-device"
+    description: The default device name.
+```
+
+## Validation
+
+Stinger files can be validated against a schema to ensure they conform to the expected structure and types. 
+
+Install `uv` ([install instructions](https://docs.astral.sh/uv/getting-started/installation/)) to use the uvx tool.
+
+One line to validate your stinger file against the schema:
+
+```bash
+uvx stinger validate path/to/your_file.stinger.yaml
+```

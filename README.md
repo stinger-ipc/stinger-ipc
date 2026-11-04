@@ -1,6 +1,6 @@
 # Stinger IPC
 
-StingerIPC provides inter-process communications (IPC) between a server and multiple clients running on the same or separate hosts.  It uses an MQTT server to pass messages between processes, implementing several IPC patterns: signals, properties, and proceedures.
+StingerIPC provides inter-process communications (IPC) between a server and multiple clients running on the same or separate hosts.  It uses an MQTT server to pass messages between processes, implementing several IPC patterns: signals, commands, properties, and proceedures.
 
 ## Project Status
 
@@ -12,7 +12,7 @@ StingerIPC takes a interface description file (.singeripc), and will generate co
 
 ```yaml
 stingeripc:
-  version: 0.1.0
+  version: 0.3.0
 
 interface:
   name: Example
@@ -21,7 +21,7 @@ interface:
 signals:
 
   foo:
-    payload:
+    values:
       - name: message
         type: string
 
@@ -33,9 +33,16 @@ methods:
         type: integer
       - name: right
         type: integer
-    returnValues:
-      - name: sum
-        type: integer
+    returnValue:
+      name: sum
+      type: integer
+
+properties:
+
+  favorite_number:
+    value:
+      name: number
+      type: integer
 
 ```
 

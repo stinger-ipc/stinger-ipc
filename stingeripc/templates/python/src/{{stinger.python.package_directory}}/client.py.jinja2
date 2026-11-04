@@ -7,35 +7,33 @@ This is the Client for the {{stinger.name}} interface.
 {%if stinger.license%}LICENSE: {{stinger.license}}{%endif%}
 """
 {% import "partials/imports.jinja2" as imports %}
-from typing import Dict, Callable, List, Any, Optional, Union
+{% import "partials/docstrings.jinja2" as docstrings %}
+{%- import "partials/codec.jinja2" as codec %}
+from typing import Dict, Callable, List, Any, Optional, Tuple, Union
 from uuid import uuid4
 from functools import partial, wraps
-import json
 import logging
 {{ imports.datetime_types(config) }}
 from isodate import parse_duration
 from stinger_python_utils.message_creator import MessageCreator
-from pyqttier.interface import IBrokerConnection
-from pyqttier.message import Message
+from pystingerconniface import IBrokerConnection, Message
 import concurrent.futures as futures
 import asyncio
 import threading
 from stinger_python_utils.return_codes import (
     MethodReturnCode,
     ClientDeserializationErrorStingerMethodException,
+    TimeoutStingerMethodException,
     stinger_exception_factory,
 )
 from .interface_types import *
-from . import semver
-{%if stinger.properties | length > 0 %}
-from .property import {{stinger.name|UpperCamelCase}}InitialPropertyValues
-{%endif%}
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 logging.basicConfig(level=logging.DEBUG)
 
 {%for sig_name, sig in stinger.signals.items()-%}
-{{sig_name | UpperCamelCase}}SignalCallbackType = Union[Callable[[{%for arg in sig.arg_list%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None], Callable[[Any{%for arg in sig.arg_list%}{%if loop.first%}, {%endif%}{{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}], None]]
+{%- set sig_param_types = codec.param_types(sig.payload, sig.arg_list) -%}
+{{sig_name | UpperCamelCase}}SignalCallbackType = Union[Callable[[{{sig_param_types}}], None], Callable[[Any{%if sig_param_types%}, {{sig_param_types}}{%endif%}], None]]
 {%endfor%}
 {%-for method_name, method in stinger.methods.items()-%}
 {{method_name | UpperCamelCase}}MethodResponseCallbackType = Union[Callable[[{%if method.return_value%}{{method.python.return_value_annotation}}{%endif%}], None], Callable[[Any{%if method.return_value%}, {{method.python.return_value_annotation}}{%endif%}], None]]
@@ -46,10 +44,32 @@ logging.basicConfig(level=logging.DEBUG)
 UnmatchedSignalCallbackType = Callable[[Message], None]
 
 UNINITIALIZED_SUBSCRIPTION_ID = -1
+{%for method_name, method in stinger.methods.items()%}
+# How long a '{{method_name}}' call waits for the server's response before its future is
+# failed with a `TimeoutStingerMethodException` and its bookkeeping discarded.  It is also
+# the request message's expiry interval, so the broker stops trying to deliver a request
+# whose caller has already stopped listening.  Declared as `timeout: {{method.timeout}}` on the
+# '{{method_name}}' method.
+{{method_name | CONST_CASE}}_METHOD_TIMEOUT_SECONDS = {{method.timeout}}
+{%endfor%}
+{%if stinger.properties | length > 0 %}
+# How long a property getter or setter waits for the server's current value after
+# subscribing to the property's value topic.
+PROPERTY_VALUE_TIMEOUT_SECONDS = 5.0
+
+
+class PropertyValueUnavailableError(Exception):
+    """ Raised when a property's value is needed but has not been received.
+
+    The client does not subscribe to a property's value topic until the
+    application first shows interest in that property, so the first read of a
+    property has to wait for the server to publish its value.  This is raised
+    when no value arrives within `PROPERTY_VALUE_TIMEOUT_SECONDS`.
+    """
+{%endif%}
 
 class DiscoveredInstance(BaseModel):
     instance_id: str
-    {%if stinger.properties | length > 0 %}initial_property_values: {{stinger.name|UpperCamelCase}}InitialPropertyValues{%endif%}
     info: {{stinger.name|UpperCamelCase}}InterfaceInfo
 
 
@@ -60,30 +80,45 @@ class {{stinger.python.client_class_name}}:
         """
         self._logger = logging.getLogger('{{stinger.python.client_class_name}}')
         self._logger.setLevel(logging.DEBUG)
-        self._logger.debug("Initializing {{stinger.python.client_class_name}} with %s", {%if stinger.properties | length > 0 %}instance_info.initial_property_values{%else%}instance_info{%endif%})
+        self._logger.debug("Initializing {{stinger.python.client_class_name}} with %s", instance_info)
         self._conn = connection
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
         self._topic_template_kwargs = {
             "client_id": self._conn.client_id,
             "service_id": instance_info.instance_id,
-            {%- for topic_param in config.topics.params %}
+            {%- for topic_param in stinger.topics.params %}
             "{{topic_param|snake_case}}": instance_info.info.{{topic_param|snake_case}},
             {%-endfor%}
         }
         {%-if stinger.methods | length > 0 %}
-        self._pending_method_responses: Dict[str, Callable[..., None]] = {}
+        # Correlation id -> (response handler, timeout timer).  Written from the calling
+        # thread and read from the broker's thread, so every access takes the mutex.
+        self._pending_method_responses: Dict[str, Tuple[Callable[..., None], threading.Timer]] = {}
+        self._pending_method_responses_mutex = threading.Lock()
         {%endif%}
         {%for prop_name, prop_spec in stinger.properties.items()-%}
-        self._property_{{prop_name|snake_case}} = instance_info.initial_property_values.{{prop_name|snake_case}}  # type: {{prop_spec.python.annotation}}
+        # Property: {{prop_name}}
+        self._property_{{prop_name|snake_case}} = None  # type: Optional[{{prop_spec.python.annotation}}]
         self._property_{{prop_name|snake_case}}_mutex = threading.Lock()
-        self._property_{{prop_name|snake_case}}_version = instance_info.initial_property_values.{{prop_name|snake_case}}_version
-        self._conn.subscribe("{{prop_spec.value_topic()}}".format(**self._topic_template_kwargs), self._receive_{{prop_name | snake_case}}_property_update_message) # type: ignore[str-format]
+        self._property_{{prop_name|snake_case}}_received = threading.Event()
+        {%if config.properties.version_tracking-%}
+        self._property_{{prop_name|snake_case}}_version = -1
+        {%endif-%}
+        self._property_{{prop_name|snake_case}}_subscription_id = UNINITIALIZED_SUBSCRIPTION_ID # Lazy subscription
+        self._property_{{prop_name|snake_case}}_subscription_mutex = threading.Lock()
         self._changed_value_callbacks_for_{{prop_name|snake_case}}: List[{{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType] = []
+        
         {%endfor-%}
-        {%-for sig_name in stinger.signals.keys()-%}
+        {%-for sig_name, sig in stinger.signals.items()-%}
+        # Signal: {{sig_name}}
         self._signal_recv_callbacks_for_{{sig_name | snake_case }}: List[{{sig_name | UpperCamelCase}}SignalCallbackType] = []
+        {%- if not sig.payload.is_protobuf %}
+        self._signal_payload_callbacks_for_{{sig_name | snake_case }}: List[Callable[[{{sig.payload.python.class_name}}], None]] = []
+        {%- endif %}
+
         {%endfor-%}
+
         self._all_signals_subscription_id = UNINITIALIZED_SUBSCRIPTION_ID
         self._unmatched_signal_callbacks: List[UnmatchedSignalCallbackType] = []
         {%if stinger.methods|length > 0%}
@@ -91,10 +126,22 @@ class {{stinger.python.client_class_name}}:
         self._logger.debug("Subscribing to method response topic %s", self._all_methods_response_topic)
         self._conn.subscribe(self._all_methods_response_topic, self._receive_any_method_response_message)
         {%endif%}
-        {%if stinger.properties|length > 0%}
-        self._property_response_topic = "{{stinger.all_properties_response_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
-        self._logger.debug("Subscribing to property response topic %s", self._property_response_topic)
-        self._conn.subscribe(self._property_response_topic, self._receive_any_property_response_message)
+        # The exact response topic of each property, so a response arriving on the wildcard
+        # subscription below can be checked against the content type that property uses.
+        # A property whose content type is not enforced is simply absent.  Always defined,
+        # because `_receive_any_property_response_message` reads it whether or not this
+        # interface has a property to subscribe for.
+        self._property_response_content_types = {
+            {%- for prop_name, prop_spec in stinger.properties.items() %}
+            {%- if prop_spec.payload.enforce_content_type %}
+            "{{prop_spec.response_topic()}}".format(**self._topic_template_kwargs): "{{ codec.content_type(prop_spec.payload) }}",
+            {%- endif %}
+            {%- endfor %}
+        } # type: Dict[str, str]
+        {%if stinger.properties.values()|rejectattr('read_only')|list|length > 0%}
+        self._all_properties_response_topic = "{{stinger.all_properties_response_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
+        self._logger.debug("Subscribing to property response topic %s", self._all_properties_response_topic)
+        self._conn.subscribe(self._all_properties_response_topic, self._receive_any_property_response_message)
         {%endif%}
 
     @property
@@ -104,16 +151,56 @@ class {{stinger.python.client_class_name}}:
         return self._service_id
 
     {%for prop_name, prop_spec in stinger.properties.items()-%}
+    def _subscribe_to_{{prop_name|snake_case}}_property(self):
+        """ Subscribes to the '{{prop_name}}' property's value topic, at most once.
+
+        Nothing subscribes to property values at construction time; the subscription is
+        made the first time the application shows interest in the '{{prop_name}}' property,
+        either by registering a changed-value callback or by reading the value.
+        """
+        with self._property_{{prop_name|snake_case}}_subscription_mutex:
+            if self._property_{{prop_name|snake_case}}_subscription_id != UNINITIALIZED_SUBSCRIPTION_ID:
+                return
+            {{prop_name|snake_case}}_topic = "{{prop_spec.value_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
+            self._logger.debug("Subscribing to '{{prop_name}}' property value topic %s", {{prop_name|snake_case}}_topic)
+            self._property_{{prop_name|snake_case}}_subscription_id = self._conn.subscribe({{prop_name|snake_case}}_topic, self._receive_{{prop_name | snake_case}}_property_update_message)
+
+    def _await_{{prop_name|snake_case}}_property(self, timeout: Optional[float]=None):
+        """ Subscribes to the '{{prop_name}}' property if it is not subscribed yet, then
+        waits for a value to arrive.
+
+        Args:
+            timeout (Optional[float]): How many seconds to wait for the value.  Defaults
+                to `PROPERTY_VALUE_TIMEOUT_SECONDS`.
+
+        Raises:
+            PropertyValueUnavailableError: If no value for the '{{prop_name}}' property
+                arrives within `timeout` seconds.
+        """
+        if timeout is None:
+            timeout = PROPERTY_VALUE_TIMEOUT_SECONDS
+        self._subscribe_to_{{prop_name|snake_case}}_property()
+        if not self._property_{{prop_name|snake_case}}_received.wait(timeout):
+            raise PropertyValueUnavailableError(
+                f"No value for the '{{prop_name}}' property was received within {timeout} seconds"
+            )
+
     @property
     def {{prop_name|snake_case}}(self) -> {{prop_spec.python.getter_value_annotation}}:
-        """ Property '{{prop_name}}' getter.
+        """ {{ docstrings.google_docstring(prop_spec.documentation, 8, returns=(prop_spec.python.getter_value_annotation, "The value of the '" ~ prop_name ~ "' property."), raises=[("PropertyValueUnavailableError", "If no value for the '" ~ prop_name ~ "' property arrives within " ~ "PROPERTY_VALUE_TIMEOUT_SECONDS" ~ " seconds of subscribing.")], extra="Reading this the first time subscribes to the property and blocks until the server publishes its value.") }}
         """
+        self._await_{{prop_name|snake_case}}_property()
         with self._property_{{prop_name|snake_case}}_mutex:
-            return self._property_{{prop_name|snake_case}}
+            value = self._property_{{prop_name|snake_case}}
+        {%-if not prop_spec.python.is_optional %}
+        if value is None:
+            raise PropertyValueUnavailableError("The '{{prop_name}}' property has no value")
+        {%-endif %}
+        return value
     {%if not prop_spec.read_only %}
     @{{prop_name|snake_case}}.setter
     def {{prop_name|snake_case}}(self, value: {{prop_spec.python.setter_value_annotation}}):
-        """ Serializes and publishes the '{{prop_name}}' property.
+        """ {{ docstrings.google_docstring(prop_spec.documentation, 8, extra="Serializes and publishes a new value for the '" ~ prop_name ~ "' property.  " ~ ("The request carries the version of the value the client last saw, so setting also subscribes to the property and waits for that value first." if config.properties.version_tracking else "Setting also subscribes to the property and waits for the server's current value first."), raises=[("PropertyValueUnavailableError", "If no value for the '" ~ prop_name ~ "' property arrives within " ~ "PROPERTY_VALUE_TIMEOUT_SECONDS" ~ " seconds of subscribing.")]) }}
         """
         {%if prop_spec.arg_list | length > 1 -%}
         # value must be the model object.
@@ -123,14 +210,22 @@ class {{stinger.python.client_class_name}}:
         if isinstance(value, {{prop_spec.python.model_class_name}}):
             property_obj = value
         else:
-            property_obj = {{prop_name|UpperCamelCase}}Property({{prop_spec.arg_list[0].name|snake_case}}=value)
+            property_obj = {{ codec.property_wrap(prop_spec, 'value') }}
         {%endif-%}
+        {%if config.properties.version_tracking-%}
+        # The server rejects an update request whose version does not match the version it
+        # last published, so the current value has to be known before one can be sent.
+        {%else-%}
+        # The client only subscribes to a property once the application asks for it, so the
+        # server's current value has to have been received before an update is sent.
+        {%endif-%}
+        self._await_{{prop_name|snake_case}}_property()
         self._logger.debug("Setting '{{prop_name}}' property to %s", property_obj)
         with self._property_{{prop_name|snake_case}}_mutex:
-            req_msg = MessageCreator.property_update_request_message(
+            req_msg = MessageCreator.{{ codec.binary_prefix(prop_spec.payload) }}property_update_request_message(
                 "{{prop_spec.update_topic()}}".format(**self._topic_template_kwargs), # type: ignore[str-format]
-                property_obj, 
-                str(self._property_{{prop_name|snake_case}}_version), 
+                {{ codec.payload_arg(prop_spec.payload, "property_obj") }}
+                {%if config.properties.version_tracking%}self._property_{{prop_name|snake_case}}_version{%else%}None{%endif%},
                 "{{prop_spec.response_topic()}}".format(**self._topic_template_kwargs), # type: ignore[str-format]
                 str(uuid4())
             )
@@ -139,19 +234,34 @@ class {{stinger.python.client_class_name}}:
     def {{prop_name | snake_case}}_changed(self, handler: {{prop_name | UpperCamelCase}}PropertyUpdatedCallbackType, call_immediately: bool=False):
         """ Sets a callback to be called when the '{{prop_name}}' property changes.
         Can be used as a decorator.
+
+        Registering a handler is what subscribes the client to the '{{prop_name}}' property,
+        so the handler will be called with the server's current value shortly after this
+        returns even if the property never changes again.
         """
         with self._property_{{prop_name|snake_case}}_mutex:
             self._changed_value_callbacks_for_{{prop_name|snake_case}}.append(handler)
-            if call_immediately and self._property_{{prop_name|snake_case}} is not None:
-                handler(self._property_{{prop_name|snake_case}}) # type: ignore[call-arg]
+            current_{{prop_name|snake_case}} = self._property_{{prop_name|snake_case}}
+            if call_immediately and current_{{prop_name|snake_case}} is not None:
+                handler(current_{{prop_name|snake_case}}) # type: ignore[call-arg]
+        # Subscribe outside the value mutex: the message handler takes that same mutex.
+        self._subscribe_to_{{prop_name|snake_case}}_property()
         return handler
-    {%endfor%}
 
+    {%endfor%}
     def _do_callbacks_for(self, callbacks: List[Callable[..., None]], **kwargs):
         """ Call each callback in the callback dictionary with the provided args.
         """
         for cb in callbacks:
             cb(**kwargs)
+
+    def _receive_message(self, message: Message):
+        """ New MQTT messages are passed to this method, which, based on the topic,
+        calls the appropriate handler method for the message.
+        """
+        self._logger.warning("Receiving message %s, but without a handler", message)
+
+    # SIGNALS
 
     def _receive_unmatched_signal_message(self, message: Message):
         if len(message.subscription_ids) == 1 and message.subscription_ids[0] == self._all_signals_subscription_id:
@@ -159,19 +269,181 @@ class {{stinger.python.client_class_name}}:
             for cb in self._unmatched_signal_callbacks:
                 cb(message)
     
-    {%for sig_name, sig in stinger.signals.items()-%}
+    {%for sig_name, sig in stinger.signals.items()%}
     def _receive_{{sig_name|snake_case}}_signal_message(self, message: Message):
-        if message.content_type is None or message.content_type != 'application/json':
-            self._logger.warning("Received '{{sig_name}}' signal with non-JSON content type")
+        {% if sig.payload.enforce_content_type %}
+        if message.content_type is None or message.content_type != '{{ codec.content_type(sig.payload) }}':
+            self._logger.warning("Received '{{sig_name}}' signal with unexpected content type: %s", message.content_type)
             return
+        {% endif %}
 
-        model = {{sig_name|UpperCamelCase}}SignalPayload.model_validate_json(message.payload)
+        model = {{ codec.decode(sig.payload, "message.payload") }}
+        {% if sig.payload.is_protobuf -%}
+        # Read the fields off the message rather than passing it along, so handlers are
+        # given the signal's individual values the way a JSON signal's handlers are.
+        for handler in self._signal_recv_callbacks_for_{{sig_name | snake_case}}:
+{%- if sig.payload.python.params %}
+            handler(  # type: ignore[call-arg]
+                {{ codec.handler_keywords(sig.payload, sig.arg_list, "model") }}
+            ) # type: ignore[call-arg]
+{%- else %}
+            handler()  # type: ignore[call-arg]
+{%- endif %}
+        {% else -%}
+        for payload_handler in self._signal_payload_callbacks_for_{{sig_name | snake_case}}:
+            payload_handler(model)
         kwargs = model.model_dump()
 
         self._do_callbacks_for(self._signal_recv_callbacks_for_{{sig_name | snake_case}}, **kwargs)
-    {%endfor%}{# end signal loop #}
+        {% endif -%}
+    {% endfor %}{# end signal loop #}
+
+    {% for sig_name, sig in stinger.signals.items() %}
+    def receive_{{sig_name | snake_case }}(self, handler: {{sig_name | UpperCamelCase}}SignalCallbackType):
+        """ {{ docstrings.google_docstring(sig.documentation, 8, args=sig.payload.python.params, extra="Used as a decorator for methods which handle the '" ~ sig_name ~ "' signal; the handler receives the signal's arguments as keyword arguments.") }}
+        """
+        self._signal_recv_callbacks_for_{{sig_name | snake_case }}.append(handler)
+        self._subscribe_to_{{sig_name | snake_case}}_signal()
+        return handler
+{% if not sig.payload.is_protobuf %}
+    def receive_{{sig_name | snake_case }}_payload(self, handler: Callable[[{{sig.payload.python.class_name}}], None]):
+        """ {{ docstrings.google_docstring(sig.documentation, 8, extra="Equivalent to `receive_" ~ (sig_name|snake_case) ~ "()`, but the handler receives the whole `" ~ sig.payload.python.class_name ~ "` payload rather than its individual arguments. Can be used as a decorator. Any number of handlers of either kind may be registered.") }}
+        """
+        self._signal_payload_callbacks_for_{{sig_name | snake_case }}.append(handler)
+        self._subscribe_to_{{sig_name | snake_case}}_signal()
+        return handler
+{% endif %}
+    def _subscribe_to_{{sig_name | snake_case}}_signal(self):
+        """ Subscribes to the '{{sig_name}}' signal topic once, when its first handler of
+        either kind is registered.
+        """
+        if len(self._signal_recv_callbacks_for_{{sig_name | snake_case}}){% if not sig.payload.is_protobuf %} + len(self._signal_payload_callbacks_for_{{sig_name | snake_case}}){% endif %} == 1:
+            {{sig_name|snake_case}}_topic = "{{sig.topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format] 
+            self._logger.debug("Subscribing to '{{sig_name}}' signal topic %s", {{sig_name|snake_case}}_topic)
+            self._conn.subscribe({{sig_name|snake_case}}_topic, self._receive_{{sig_name|snake_case}}_signal_message)
+    {%endfor%}
+
+    def unmatched_signal_handler(self, handler: UnmatchedSignalCallbackType):
+        """ Registers a callback invoked for signal messages that did not match any specific
+        signal handler (i.e. only matched the all-signals subscription).  Can be used as a decorator.
+        """
+        self._unmatched_signal_callbacks.append(handler)
+        if self._all_signals_subscription_id == UNINITIALIZED_SUBSCRIPTION_ID:
+            self._all_signals_subscription_id = self._conn.subscribe("{{stinger.all_signals_topic()}}".format(**self._topic_template_kwargs), self._receive_unmatched_signal_message) # type: ignore[str-format]
+        return handler
+
+    # METHODS
+
+    {%for method_name, method in stinger.methods.items()%}
+    {%- set method_returns = ("concurrent.futures.Future", "Resolves to a " ~ method.python.return_value_annotation ~ " message once the server responds.") if method.response_payload.is_protobuf else (("concurrent.futures.Future", "Resolves to " ~ (method.return_value.description or method.python.return_value_annotation) ~ " once the server responds.") if method.return_value else ("concurrent.futures.Future", "Resolves to None once the server responds.")) %}
+    def {{method_name | snake_case}}(self, {{ codec.handler_params(method.request_payload, method.arg_list) }}) -> futures.Future:
+        """ {{ docstrings.google_docstring(method.documentation, 8, args=method.request_payload.python.params, returns=method_returns, extra="Calling this method with individual arguments initiates a `" ~ method_name ~ "` IPC method call.") }}
+        """
+        {%- if method.request_payload.is_protobuf %}
+        payload = {{ codec.build_message(method.request_payload) }}
+        {%- else %}
+        payload = {{method.request_payload.python.class_name}}( {%-for arg in method.arg_list%}
+            {{arg.name}}={{arg.name|snake_case}},{%endfor%}
+        )
+        {%- endif %}
+        return self.{%if method.request_payload.is_protobuf%}_{%endif%}call_{{method_name | snake_case}}(payload)
+
+    def {%if method.request_payload.is_protobuf%}_{%endif%}call_{{method_name | snake_case}}(self, payload: {{method.request_payload.python.class_name}}) -> futures.Future:
+        """ {{ docstrings.google_docstring(method.documentation, 8, returns=method_returns, extra="Equivalent to `" ~ (method_name|snake_case) ~ "()`, but takes an already-built `" ~ method.request_payload.python.class_name ~ "` payload instead of individual arguments.") }}
+        """
+        fut = futures.Future() # type: futures.Future
+        correlation_id = str(uuid4())
+        self._register_pending_method_response(correlation_id, fut, partial(self._handle_{{method_name | snake_case}}_response, fut), "{{method_name}}", {{method_name | CONST_CASE}}_METHOD_TIMEOUT_SECONDS)
+
+        self._logger.debug("Calling '{{method_name}}' method with payload %s", payload)
+        response_topic = "{{method.response_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
+        req_msg = {{ codec.request_message(method.request_payload, '"' ~ method.request_topic() ~ '".format(**self._topic_template_kwargs)', "payload", "response_topic", "correlation_id", (method_name | CONST_CASE) ~ "_METHOD_TIMEOUT_SECONDS") }} # type: ignore[str-format]
+        self._conn.publish(req_msg)
+        return fut
+
+    def _handle_{{method_name | snake_case}}_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str]=None, content_type: Optional[str]=None):
+        """ This called with the response to a `{{method_name}}` IPC method call.
+        """
+        self._logger.debug("Handling {{method_name | snake_case}} response message %s", fut)
+
+        {% if method.response_payload.enforce_content_type -%}
+        if content_type != "{{ codec.content_type(method.response_payload) }}":
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(
+                f"Response to the '{{method_name}}' method has content type '{content_type}'; expected '{{ codec.content_type(method.response_payload) }}'"))
+            return
+        {%- endif %}
+
+        if return_value != MethodReturnCode.SUCCESS.value:
+            self._logger.warning("Received error return value %s from '{{method_name}}' method: %s", return_value, debug_message)
+            fut.set_exception(stinger_exception_factory(return_value, debug_message))
+            return
+
+        resp_model = None
+        try:
+            resp_model = {{ codec.decode(method.response_payload, "response_json_text") }}
+        except Exception as e:
+            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to '{{method_name}}' method: {e}"))
+
+        if not fut.done() and resp_model:
+        {%-if method.response_payload.is_protobuf %}
+            # A protobuf response has no single named field to unwrap: the message is the result.
+            fut.set_result(resp_model)
+            return
+        {%elif method.return_value is none %}
+            fut.set_result(None)
+            return
+        {%else%}
+            fut.set_result(resp_model.{{method.return_value.name|snake_case}})
+        {%endif-%}
+        else:
+            self._logger.warning("Future for '{{method_name}}' method was already done!")
+    {%endfor%}
 
     {%-if stinger.methods|length > 0-%}
+    def _register_pending_method_response(self, correlation_id: str, fut: futures.Future, handler: Callable[..., None], method_name: str, timeout_seconds: float):
+        """ Records the handler for an in-flight method call and arms its timeout.
+
+        The entry is removed either by `_take_pending_method_response()` when the response
+        arrives or by the timer when it does not, so a call the server never answers
+        neither leaves the pending map growing nor leaves its future unresolved forever.
+
+        Args:
+            timeout_seconds (float): The calling method's own declared timeout.
+        """
+        timer = threading.Timer(timeout_seconds, self._expire_pending_method_response, args=(correlation_id, fut, method_name, timeout_seconds))
+        timer.daemon = True
+        with self._pending_method_responses_mutex:
+            self._pending_method_responses[correlation_id] = (handler, timer)
+        timer.start()
+
+    def _take_pending_method_response(self, correlation_id: str) -> Optional[Callable[..., None]]:
+        """ Removes the handler for a correlation id and disarms its timeout.
+
+        Returns None if the call has already been completed or timed out, which is what
+        makes a duplicate response harmless.
+        """
+        with self._pending_method_responses_mutex:
+            entry = self._pending_method_responses.pop(correlation_id, None)
+        if entry is None:
+            return None
+        handler, timer = entry
+        timer.cancel()
+        return handler
+
+    def _expire_pending_method_response(self, correlation_id: str, fut: futures.Future, method_name: str, timeout_seconds: float):
+        """ Fails a method call whose response did not arrive within its declared timeout.
+
+        Popping the entry under the mutex is what decides between this and the response
+        path, so exactly one of the two ever resolves the future.
+        """
+        with self._pending_method_responses_mutex:
+            if self._pending_method_responses.pop(correlation_id, None) is None:
+                return
+        self._logger.warning("No response to the '%s' method within %s seconds", method_name, timeout_seconds)
+        if fut.set_running_or_notify_cancel():
+            fut.set_exception(TimeoutStingerMethodException(
+                f"No response to the '{method_name}' method within {timeout_seconds} seconds"))
+
     def _receive_any_method_response_message(self, message: Message):
         """
         Handle '{{method_name}}' method response.  This is the callback provided to the MQTT client
@@ -189,17 +461,24 @@ class {{stinger.python.client_class_name}}:
                 return_code = MethodReturnCode(int(user_properties["ReturnCode"]))
         if message.correlation_data is not None:
             correlation_id = message.correlation_data.decode()
-            if correlation_id in self._pending_method_responses:
-                cb = self._pending_method_responses[correlation_id]
-                del self._pending_method_responses[correlation_id]
-                cb(message.payload, return_code, debug_message)
+            cb = self._take_pending_method_response(correlation_id)
+            if cb is not None:
+                cb(message.payload, return_code, debug_message, message.content_type)
             else:
-                self._logger.warning("Correlation id %s was not in the list of pending method responses... %s", correlation_id, [k for k in self._pending_method_responses.keys()])
+                self._logger.warning("Correlation id %s was not in the list of pending method responses; it either already completed or timed out", correlation_id)
         else:
             self._logger.warning("No correlation data in properties sent to %s.", message.topic)
     {%endif%}{# end method response handler #}
 
+    # PROPERTIES
+
     def _receive_any_property_response_message(self, message: Message):
+        expected_content_type = self._property_response_content_types.get(message.topic)
+        if expected_content_type is not None and message.content_type != expected_content_type:
+            self._logger.warning(
+                "Received property update response on '%s' with unexpected content type: %s", message.topic, message.content_type
+            )
+            return
         user_properties = message.user_properties or {}
         return_code = user_properties.get("ReturnCode")
         if return_code is not None and int(return_code) != MethodReturnCode.SUCCESS.value:
@@ -209,18 +488,25 @@ class {{stinger.python.client_class_name}}:
     {%-for prop_name, prop_spec in stinger.properties.items()%}
     def _receive_{{prop_name | snake_case}}_property_update_message(self, message: Message):
         # Handle '{{prop_name}}' property change.
-        if message.content_type is None or message.content_type != 'application/json':
-            self._logger.warning("Received '{{prop_name}}' property change with non-JSON content type")
+        {% if prop_spec.payload.enforce_content_type %}
+        if message.content_type is None or message.content_type != '{{ codec.content_type(prop_spec.payload) }}':
+            self._logger.warning("Received '{{prop_name}}' property change with unexpected content type: %s", message.content_type)
             return
+        {% endif %}
         try:
-            prop_obj = {{prop_name|UpperCamelCase}}Property.model_validate_json(message.payload)
+            prop_obj = {{ codec.decode(prop_spec.payload, "message.payload") }}
+            {%if config.properties.version_tracking-%}
             user_properties = message.user_properties or {}
             property_version = int(user_properties.get("PropertyVersion", -1))
+            {%endif-%}
             with self._property_{{prop_name|snake_case}}_mutex:
-                self._property_{{prop_name|snake_case}} = prop_obj{% if prop_spec.arg_list | length == 1 %}.{{prop_spec.arg_list[0].name|snake_case}}{% endif %}
+                self._property_{{prop_name|snake_case}} = {{ codec.property_unwrap(prop_spec, 'prop_obj') }}
+                {%if config.properties.version_tracking-%}
                 self._property_{{prop_name|snake_case}}_version = property_version
+                {%endif-%}
+                self._property_{{prop_name|snake_case}}_received.set()
                 {% if prop_spec.arg_list | length == 1 %}
-                self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name|snake_case}}, value=prop_obj.{{prop_spec.arg_list[0].name|snake_case}})
+                self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name|snake_case}}, value={{ codec.property_unwrap(prop_spec, 'prop_obj') }})
                 {%else%}
                 self._do_callbacks_for(self._changed_value_callbacks_for_{{prop_name|snake_case}}, value=prop_obj)
                 {%endif%}
@@ -228,81 +514,28 @@ class {{stinger.python.client_class_name}}:
             self._logger.exception("Error processing '{{prop_name}}' property change: %s", exc_info=e)
     {%endfor%}{# end property loop #}
 
-    def _receive_message(self, message: Message):
-        """ New MQTT messages are passed to this method, which, based on the topic,
-        calls the appropriate handler method for the message.
+    # COMMANDS
+
+    {%for command_name, command in stinger.commands.items()%}
+    def send_{{command_name | snake_case}}(self, {{ codec.handler_params(command.payload, command.arg_list) }}):
+        """ {{ docstrings.google_docstring(command.documentation, 8, args=command.payload.python.params, extra="Client application code should call this method to send the '" ~ command_name ~ "' command to the server. A command is fire-and-forget: the server sends nothing back, so this returns nothing and the client does not learn whether the server acted on it.") }}
         """
-        self._logger.warning("Receiving message %s, but without a handler", message)
+        {%- if command.payload.is_protobuf %}
+        payload = {{ codec.build_message(command.payload) }}
+        {%- else %}
+        payload = {{command.python.payload_class_name}}({%-for arg in command.arg_list%}
+            {{arg.name|snake_case}}={{arg.name|snake_case}}{%if arg.optional%} if {{arg.name|snake_case}} is not None else None{%endif%},
+        {%endfor%})
+        {%- endif %}
+        return self.{%if command.payload.is_protobuf%}_{%endif%}send_{{command_name | snake_case}}_payload(payload)
 
-    {%for sig_name, sig in stinger.signals.items()%}
-    def receive_{{sig_name | snake_case }}(self, handler: {{sig_name | UpperCamelCase}}SignalCallbackType):
-        """ Used as a decorator for methods which handle particular signals.
+    def {%if command.payload.is_protobuf%}_{%endif%}send_{{command_name | snake_case}}_payload(self, payload: {{command.python.payload_class_name}}):
+        """ {{ docstrings.google_docstring(command.documentation, 8, extra="Equivalent to `send_" ~ (command_name|snake_case) ~ "()`, but takes an already-built `" ~ command.python.payload_class_name ~ "` payload instead of individual arguments.") }}
         """
-        self._signal_recv_callbacks_for_{{sig_name | snake_case }}.append(handler)
-        if len(self._signal_recv_callbacks_for_{{sig_name | snake_case}}) == 1:
-            {{sig_name|snake_case}}_topic = "{{sig.topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format] 
-            self._logger.debug("Subscribing to '{{sig_name}}' signal topic %s", {{sig_name|snake_case}}_topic)
-            self._conn.subscribe({{sig_name|snake_case}}_topic, self._receive_{{sig_name|snake_case}}_signal_message)
-        return handler
-    {%endfor%}
-
-    def unmatched_signal_handler(self, handler: UnmatchedSignalCallbackType):
-        """ Registers a callback invoked for signal messages that did not match any specific
-        signal handler (i.e. only matched the all-signals subscription).  Can be used as a decorator.
-        """
-        self._unmatched_signal_callbacks.append(handler)
-        if self._all_signals_subscription_id == UNINITIALIZED_SUBSCRIPTION_ID:
-            self._all_signals_subscription_id = self._conn.subscribe("{{stinger.all_signals_topic()}}".format(**self._topic_template_kwargs), self._receive_unmatched_signal_message) # type: ignore[str-format]
-        return handler
-
-    {%for method_name, method in stinger.methods.items()%}
-    def {{method_name | snake_case}}(self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> futures.Future:
-        """ Calling this method with individual arguments initiates a `{{method_name}}` IPC method call.
-        """
-        payload = {{method_name|UpperCamelCase}}MethodRequest( {%-for arg in method.arg_list%}
-            {{arg.name}}={{arg.name|snake_case}},{%endfor%}
-        )
-        return self.call_{{method_name | snake_case}}(payload)
-
-    def call_{{method_name | snake_case}}(self, payload: {{method_name|UpperCamelCase}}MethodRequest) -> futures.Future:
-        """ Calling this method with a model payload initiates a `{{method_name}}` IPC method call.
-        """
-        fut = futures.Future() # type: futures.Future
-        correlation_id = str(uuid4())
-        self._pending_method_responses[correlation_id] = partial(self._handle_{{method_name | snake_case}}_response, fut)
-
-        self._logger.debug("Calling '{{method_name}}' method with payload %s", payload)
-        response_topic = "{{method.response_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
-        req_msg = MessageCreator.request_message("{{method.request_topic()}}".format(**self._topic_template_kwargs), payload, response_topic, correlation_id) # type: ignore[str-format]
-        self._conn.publish(req_msg)
-        return fut
-
-    def _handle_{{method_name | snake_case}}_response(self, fut: futures.Future, response_json_text: str, return_value: MethodReturnCode, debug_message: Optional[str]=None):
-        """ This called with the response to a `{{method_name}}` IPC method call.
-        """
-        self._logger.debug("Handling {{method_name | snake_case}} response message %s", fut)
-
-        if return_value != MethodReturnCode.SUCCESS.value:
-            self._logger.warning("Received error return value %s from '{{method_name}}' method: %s", return_value, debug_message)
-            fut.set_exception(stinger_exception_factory(return_value, debug_message))
-            return
-
-        try:
-            resp_model = {{method.python.response_class_name}}.model_validate_json(response_json_text)
-        except Exception as e:
-            fut.set_exception(ClientDeserializationErrorStingerMethodException(f"Failed to deserialize response to '{{method_name}}' method: {e}"))
-
-        if not fut.done():
-        {%-if method.return_arg_list | length == 0 %}
-            fut.set_result(None)
-            return
-        {%elif method.return_arg_list | length == 1 %}
-            fut.set_result(resp_model.{{method.return_arg_list[0].name|snake_case}})
-        {%else%}
-            fut.set_result(resp_model)
-        {%endif-%}
-        else:
-            self._logger.warning("Future for '{{method_name}}' method was already done!")
+        self._logger.debug("Sending '{{command_name}}' command with payload %s", payload)
+        command_topic = "{{command.topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
+        cmd_msg = {{ codec.command_message(command.payload, "command_topic", "payload", stinger.command_qos) }}
+        self._conn.publish(cmd_msg)
     {%endfor%}
 
 class {{stinger.python.client_class_name}}Builder:
@@ -373,212 +606,14 @@ class {{stinger.python.client_class_name}}Builder:
             else:
                 client.unmatched_signal_handler(unmatched_signal_cb)
         {%for prop_name, prop in stinger.properties.items()%}
-        for {{prop_name | snake_case}}_cb in self._property_updated_callbacks_for_{{prop_name | snake_case}}:
+        {#- A signal and a property may share a name, and their callbacks then have
+            different types; one loop variable for both would be two conflicting
+            declarations of the same local. #}
+        {%- set prop_cb = (prop_name | snake_case) ~ ("_property_cb" if prop_name in stinger.signals else "_cb") %}
+        for {{prop_cb}} in self._property_updated_callbacks_for_{{prop_name | snake_case}}:
             if binding:
-                client.{{prop_name | snake_case}}_changed({{prop_name | snake_case}}_cb.__get__(binding, binding.__class__))
+                client.{{prop_name | snake_case}}_changed({{prop_cb}}.__get__(binding, binding.__class__))
             else:
-                client.{{prop_name | snake_case}}_changed({{prop_name | snake_case}}_cb)
+                client.{{prop_name | snake_case}}_changed({{prop_cb}})
         {%endfor%}
         return client
-
-class {{stinger.python.client_class_name}}Discoverer:
-    
-    def __init__(self, connection: IBrokerConnection, builder: Optional[{{stinger.python.client_class_name}}Builder]=None, build_binding: Optional[Any]=None):
-        """ Creates a new {{stinger.python.client_class_name}}Discoverer.
-        """
-        self._conn = connection
-        self._builder = builder
-        self._build_binding = build_binding
-        self._logger = logging.getLogger('{{stinger.python.client_class_name}}Discoverer')
-        self._logger.setLevel(logging.DEBUG)
-        topic_params = {
-            "client_id": '+',
-            "service_id": '+',
-            {%- for topic_param in config.topics.params %}
-            "{{topic_param}}": '+',
-            {%- endfor %}
-        }
-        service_discovery_topic = "{{stinger.interface_info_topic()}}".format(**topic_params) # type: ignore[str-format]
-        self._conn.subscribe(service_discovery_topic, self._process_service_discovery_message)
-        {%-if stinger.properties|length > 0%}
-        all_property_discovery_topic = "{{stinger.all_properties_value_topic()}}".format(**topic_params) # type: ignore[str-format]
-        self._conn.subscribe(all_property_discovery_topic, self._process_property_value_message)
-        {%-endif%}
-        self._mutex = threading.Lock()
-        self._pending_futures : List[futures.Future] = []
-        self._removed_service_callbacks: List[Callable[[str], None]] = []
-        
-        # For partially discovered services
-        self._discovered_interface_infos = dict() # type: Dict[str, {{stinger.name|UpperCamelCase}}InterfaceInfo]
-        {%-if stinger.properties|length > 0%}
-        self._discovered_properties = dict() # type: Dict[str, Dict[str, Any]]
-        {%-endif%}
-
-        # For fully discovered services
-        self._discovered_services: Dict[str, DiscoveredInstance] = {}
-        self._discovered_service_callbacks: List[Callable[[DiscoveredInstance], None]] = []
-
-    def add_discovered_service_callback(self, callback: Callable[[DiscoveredInstance], None]):
-        """ Adds a callback to be called when a new service is discovered.
-        """
-        with self._mutex:
-            for instance in self._discovered_services.values():
-                callback(instance)
-            self._discovered_service_callbacks.append(callback)
-
-    def add_removed_service_callback(self, callback: Callable[[str], None]):
-        """ Adds a callback to be called when a service is removed.
-        """
-        with self._mutex:
-            self._removed_service_callbacks.append(callback)
-
-    def set_discovered_interface_info_callback(self, callback: Callable[[{{stinger.name|UpperCamelCase}}InterfaceInfo], None]):
-        """ Sets a callback to be called when new interface info is discovered (even if not fully discovered).
-        """
-        with self._mutex:
-            self._discovered_interface_info_callback = callback
-
-    def get_service_instance_ids(self) -> List[str]:
-        """ Returns a list of currently discovered service instance IDs.
-        """
-        with self._mutex:
-            return list(self._discovered_services.keys())
-
-    def get_discovery_info(self, instance_id: str) -> Optional[DiscoveredInstance]:
-        """ Returns the DiscoveredInstance for a discovered service instance ID, or None if not found.
-        """
-        with self._mutex:
-            return self._discovered_services.get(instance_id, None)
-
-    def get_singleton_client(self) -> futures.Future{%if not config.python.python37%}[{{stinger.python.client_class_name}}]{%endif%}:
-        """ Returns a {{stinger.python.client_class_name}} for the single discovered service.
-        Raises an exception if there is not exactly one discovered service.
-        """
-        fut = futures.Future() # type: futures.Future{%if not config.python.python37%}[{{stinger.python.client_class_name}}]{%endif%}
-        with self._mutex:
-            if len(self._discovered_services) > 0:
-                instance_info = next(iter(self._discovered_services.values()))
-                if self._builder is None:
-                    fut.set_result({{stinger.python.client_class_name}}(self._conn, instance_info))
-                else:
-                    new_client = self._builder.build(self._conn, instance_info, self._build_binding)
-                    fut.set_result(new_client)
-            else:
-                self._pending_futures.append(fut)
-        return fut
-
-    def _check_for_fully_discovered(self, instance_id: str):
-        """ Checks if interface info {%if stinger.properties|length > 0%}and all properties have{%else%}has{%endif%} been discovered for the given instance ID.
-        """
-        with self._mutex:
-            if ({%if stinger.properties|length > 0%}instance_id in self._discovered_properties
-                    and len(self._discovered_properties[instance_id]) == {{(stinger.properties | length)*2}}
-                    and {%endif%}instance_id in self._discovered_interface_infos):
-
-                {%if stinger.properties|length > 0 -%}
-                try:
-                    initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(**self._discovered_properties[instance_id])
-                except Exception as e:
-                    self._logger.warning("Failed to load initial property values for service %s: %s", instance_id, e)
-                    return
-                {%- endif %}
-
-                entry = DiscoveredInstance(
-                    instance_id=instance_id,
-                    {%if stinger.properties|length > 0 %}initial_property_values={{stinger.name|UpperCamelCase}}InitialPropertyValues(**self._discovered_properties[instance_id]),{%endif%}
-                    info=self._discovered_interface_infos[instance_id],
-                )
-                is_new_entry = not instance_id in self._discovered_services
-
-                self._discovered_services[instance_id] = entry
-                while self._pending_futures:
-                    self._logger.info("Creating a client object id=%s and returning as future result", instance_id)
-                    fut = self._pending_futures.pop(0)
-                    if not fut.done():
-                        if self._builder is not None:
-                            fut.set_result(self._builder.build(self._conn, entry, self._build_binding))
-                        else:
-                            fut.set_result({{stinger.python.client_class_name}}(self._conn, entry))
-                if is_new_entry:
-                    self._logger.info("Discovered service: %s", instance_id)
-                    for cb in self._discovered_service_callbacks:
-                        cb(entry)
-                else:
-                    self._logger.debug("Updated info for service: %s", instance_id)
-
-    def _process_service_discovery_message(self, message: Message):
-        """ Processes a service discovery message.
-        """
-        self._logger.debug("Processing service discovery message on topic %s", message.topic)
-        if len(message.payload) > 0:
-            try:
-                service_info = {{stinger.name|UpperCamelCase}}InterfaceInfo.model_validate_json(message.payload)
-                if not semver.is_compatible(service_info.version):
-                    self._logger.warning("Discovered service %s has incompatible version %s.", service_info.instance, service_info.version)
-                with self._mutex:
-                    self._discovered_interface_infos[service_info.instance] = service_info
-            except ValidationError as e:
-                self._logger.warning("Discovery message did not match expected format: %s", e)
-                try:
-                    raw_info = json.loads(message.payload)
-                    instance_id = raw_info.get("instance", "unknown")
-                    version = raw_info.get("version", "0.0.0")
-                    self._logger.error("Discovery message for instance '%s' has incompatible version %s.", instance_id, version)
-                except Exception as e2:
-                    self._logger.warning("Failed to parse discovery message payload as JSON for error logging: %s", e2)
-            except Exception as e:
-                self._logger.warning("Failed to process service discovery message: %s", e)
-            self._check_for_fully_discovered(service_info.instance)
-
-        else: # Empty payload means the service is going away
-            instance_id_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, "service_id")}}
-            instance_id = message.topic.split('/')[instance_id_expected_index]
-            with self._mutex:
-                if instance_id in self._discovered_services:
-                    self._logger.info("Service %s is going away", instance_id)
-                    if instance_id in self._discovered_services:
-                        del self._discovered_services[instance_id]
-                    if instance_id in self._discovered_interface_infos:
-                        del self._discovered_interface_infos[instance_id]
-                    {%- if stinger.properties|length > 0 %}
-                    if instance_id in self._discovered_properties:
-                        del self._discovered_properties[instance_id]
-                    {%-endif%}
-                    for cb in self._removed_service_callbacks:
-                        cb(instance_id)
-    {%if stinger.properties|length > 0%}
-    def _process_property_value_message(self, message: Message):
-        """ Processes a property value message for discovery purposes.
-        """
-        self._logger.debug("Processing property value message on topic %s", message.topic)
-        instance_id_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, "service_id")}}
-        instance_id = message.topic.split('/')[instance_id_expected_index]
-        property_name_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, "property_name")}}
-        property_name = message.topic.split('/')[property_name_expected_index]
-        user_properties  = message.user_properties or {}
-        prop_version = user_properties.get("PropertyVersion", "-1")
-
-        with self._mutex:
-            if instance_id not in self._discovered_properties:
-                self._discovered_properties[instance_id] = dict()
-            {%for prop_name, prop in stinger.properties.items()%}
-            {%if not loop.first%}el{%endif%}if property_name == "{{prop_name}}":
-                try:
-                    {{prop_name|snake_case}}_prop_obj = {{prop_name|UpperCamelCase}}Property.model_validate_json(message.payload)
-                except Exception as e:
-                    self._logger.warning("Failed to deserialize property '{{prop_name}}' value message:\n%s\n%s", message.payload, e)
-                    return
-                try:
-                    {%if prop.arg_list|length == 1 -%}
-                    self._discovered_properties[instance_id]["{{prop_name|snake_case}}"] = {{prop_name|snake_case}}_prop_obj.{{prop.arg_list[0].name}}
-                    {%else-%}
-                    self._discovered_properties[instance_id]["{{prop_name|snake_case}}"] = {{prop_name|snake_case}}_prop_obj
-                    {%endif-%}
-                    self._discovered_properties[instance_id]["{{prop_name|snake_case}}_version"] = prop_version
-                except Exception as e:
-                    self._logger.warning("Failed to process property '{{prop_name}}' value message: %s", e)
-                    return
-                {%endfor%}
-            
-        self._check_for_fully_discovered(instance_id)
-    {%endif%}

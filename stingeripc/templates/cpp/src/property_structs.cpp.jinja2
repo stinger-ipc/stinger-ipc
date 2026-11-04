@@ -11,21 +11,23 @@ namespace {{ns}} {
 namespace {{stinger.name|snake_case}} {
 
 {%for prop_name, prop in stinger.properties.items()%}
-{{prop.name | UpperCamelCase}}Property {{prop.name | UpperCamelCase}}Property::FromRapidJsonObject(const rapidjson::Value& jsonObj)
+{%- if not prop.payload.is_protobuf %}
+{{prop.payload.cpp.class_name}} {{prop.payload.cpp.class_name}}::FromRapidJsonObject(const rapidjson::Value& jsonObj)
 {
-    {{prop.name | UpperCamelCase}}Property {{prop.name | lowerCamelCase }};
+    {{prop.payload.cpp.class_name}} {{prop.name | lowerCamelCase }};
     {{deser.deserialize(prop.name|lowerCamelCase, prop.arg_list, 'jsonObj') | indent(4)}}
 
     return {{prop.name | lowerCamelCase}};
 };
 
-void {{prop.name | UpperCamelCase}}Property::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
+void {{prop.payload.cpp.class_name}}::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
 {
     {%for arg in prop.arg_list%}
     {{ser.addToValue('parent', arg, 'allocator') | indent(4)}}
     {%- endfor %}
 }
 {{ val.validate_schema_body((prop.name | UpperCamelCase) ~ "Property", prop.arg_list) }}
+{%- endif %}
 {% endfor %}
 
 } // namespace {{stinger.name|snake_case}}

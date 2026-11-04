@@ -1,0 +1,25 @@
+# Use protobuf bindings the host application already provides, instead of
+# bundling and compiling the .proto files into the generated code.
+#
+# The .proto files named by [protobuf] path are still read at generation time to
+# resolve the messages the interface uses; they are just not copied or compiled.
+# The external bindings must have been built from those same files, with the same
+# paths relative to the source root.
+[protobuf]
+path = "protos"
+mode = "external"
+
+[protobuf.external]
+# Python: `from <python_package> import weather_pb2`.  Empty means a top-level
+# `import weather_pb2`, for bindings that sit directly on sys.path.
+python_package = ""
+
+# C++: #include "<cpp_include_dir>/weather.pb.h".  Empty means "weather.pb.h".
+cpp_include_dir = ""
+# CMake target that provides those headers and their compiled sources.
+cpp_cmake_target = "weather_protos"
+
+# Rust: the module the prost types live in; a protobuf package nests below it one
+# module per segment (protoweather.v1 -> weather_protos::protoweather::v1).
+rust_module = "weather_protos"
+rust_dependency = 'weather_protos = { path = "../weather_protos" }'

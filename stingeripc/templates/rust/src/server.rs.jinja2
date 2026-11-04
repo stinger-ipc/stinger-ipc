@@ -1,3 +1,4 @@
+{%- from "partials/codec.jinja2" import expect_content_type, decode_or, empty_payload_bytes, payload_params, param_names, unpack_payload, build_payload, example_payload_local, property_wrap, property_unwrap, property_example -%}
 //! Server module for {{stinger.name}} IPC
 //! 
 //! This module is only available when the "server" feature is enabled.
@@ -14,7 +15,9 @@ This is the Server for the {{stinger.name}} interface.
 
 #[allow(unused_imports)]
 use crate::payloads::{MethodReturnCode, *};
+#[allow(unused_imports)]
 use bytes::Bytes;
+#[allow(unused_imports)]
 use tokio::sync::{oneshot};
 use std::collections::HashMap;
 use strfmt::strfmt;
@@ -23,17 +26,23 @@ use std::any::Any;
 use async_trait::async_trait;
 {%endif%}
 use tokio::sync::{Mutex as AsyncMutex};
+#[allow(unused_imports)]
 use std::sync::{Arc, Mutex};
-{%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
+{%if stinger.methods|length > 0 or stinger.properties|length > 0 or stinger.commands|length > 0 %}
+#[allow(unused_imports)]
 use serde_json;
 use tokio::sync::{broadcast{%if stinger.properties|length > 0 %}, watch{%endif%}};
 {%endif%}
 {%if stinger.properties | length > 0%}
+{%- if config.properties.version_tracking %}
 use std::sync::atomic::{AtomicU32, Ordering};
+{%- endif %}
 use crate::property::{{stinger.name | UpperCamelCase}}InitialPropertyValues;
 use stinger_rwlock_watch::{RwLockWatch};
 {%endif%}
+#[allow(unused_imports)]
 use stinger_mqtt_trait::{Mqtt5PubSub, MqttPublishSuccess, Mqtt5PubSubError};
+#[allow(unused_imports)]
 use stinger_mqtt_trait::message::{MqttMessage, QoS};
 #[allow(unused_imports)]
 use stinger_rwlock_watch::{WriteRequestLockWatch, CommitResult};
@@ -44,17 +53,21 @@ type SentMessageFuture = Pin<Box<dyn Future<Output = Result<(), MethodReturnCode
 #[cfg(feature = "server")]
 #[allow(unused_imports)]
 use tracing::{debug, info, warn, error};
+#[allow(unused_imports)]
 use crate::message;
 #[cfg(feature = "metrics")]
 use serde::Serialize;
 
-{%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
+{%if stinger.methods|length > 0 or stinger.properties|length > 0 or stinger.commands|length > 0 %}
 /// This struct is used to store all the MQTTv5 subscription ids
 /// for the subscriptions the client will make.
 #[derive(Clone, Debug)]
 struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
     {%for method_name, method in stinger.methods.items()-%}
     {{method_name | snake_case}}_method_req: u32,
+    {%endfor%}
+    {%for cmd_name, cmd in stinger.commands.items()-%}
+    {{cmd_name | snake_case}}_command: u32,
     {%endfor%}
     {%for prop_name, prop in stinger.properties.items()-%}{%if not prop.read_only %}
     {{prop_name | snake_case}}_property_update: u32,
@@ -65,19 +78,29 @@ struct {{stinger.name | UpperCamelCase }}ServerSubscriptionIds {
 #[derive(Clone)]
 struct {{stinger.name | UpperCamelCase}}Properties {
     {%for prop_name, prop in stinger.properties.items()-%}
-    {%-if prop.arg_list | length > 1%}
     pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.rust.type}}>>,
-    {%-else%}
-    pub {{prop_name | snake_case}}: Arc<RwLockWatch<{{prop.arg_list[0].rust.type}}>>,
-    {%endif-%}
+    {%-if config.properties.version_tracking%}
     {{prop_name | snake_case}}_version: Arc<AtomicU32>,
+    {%-endif%}
     {%-endfor%}
 }
 {%endif%}{# if any properties #}
 {%-endif%}{# any methods or properties #}
+{%if stinger.commands|length > 0 %}
+/// This struct holds the tx side of the broadcast channels used when receiving commands.
+/// The rx side of the broadcast channels can be created from the tx side later.
+/// When {{stinger.rust.server_struct_name}} gets a message and determines that it
+/// is a command, it will send the command payload via the tx channel that is in this struct.
+#[derive(Clone)]
+struct {{stinger.name | UpperCamelCase }}CommandChannels {
+    {%for cmd_name, cmd in stinger.commands.items()-%}
+    {{cmd_name|snake_case}}_sender: broadcast::Sender<{{cmd.payload.rust.channel_type}}>,
+    {%endfor%}
+}
+{%endif%}{# any commands #}
 
 #[cfg(feature = "metrics")]
-#[derive(Debug, Serialize)]
+#[derive(Debug, Default, Serialize)]
 pub struct {{stinger.name | UpperCamelCase }}ServerMetrics {
     {%for method_name, method in stinger.methods.items()-%}
     pub {{method_name | snake_case}}_calls: u64,
@@ -88,25 +111,10 @@ pub struct {{stinger.name | UpperCamelCase }}ServerMetrics {
     {%endif%}
 }
 
-#[cfg(feature = "metrics")]
-impl Default for {{stinger.name | UpperCamelCase }}ServerMetrics {
-    fn default() -> Self {
-        {{stinger.name | UpperCamelCase }}ServerMetrics {
-            {%for method_name, method in stinger.methods.items()-%}
-            {{method_name | snake_case}}_calls: 0,
-            {{method_name | snake_case}}_errors: 0,
-            {%endfor%}
-            {%if stinger.properties | length > 0 %}
-            initial_property_publish_time: std::time::Duration::from_secs(0),
-            {%endif%}
-        }
-    }
-}
-
 #[derive(Clone)]
 pub struct {{stinger.rust.server_struct_name}}<C: Mqtt5PubSub> {
     mqtt_client: C,
-    {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
+    {%if stinger.methods|length > 0 or stinger.properties|length > 0 or stinger.commands|length > 0 %}
     /// Temporarily holds the receiver for the broadcast channel.  The Receiver will be moved
     /// to a process loop when it is needed.  MQTT messages will be received with this.
     msg_streamer_rx: Arc<Mutex<Option<broadcast::Receiver<MqttMessage>>>>,
@@ -120,11 +128,15 @@ pub struct {{stinger.rust.server_struct_name}}<C: Mqtt5PubSub> {
     /// Struct contains all the method handlers.
     method_handlers: Arc<AsyncMutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers<C>>>>,
     {%endif%}
+    {%if stinger.commands|length > 0 %}
+    /// Struct contains the tx side of the broadcast channel for each command.
+    command_channels: {{stinger.name | UpperCamelCase }}CommandChannels,
+    {%endif%}
     {%if stinger.properties|length > 0%}
     /// Struct contains all the properties.
     properties: {{stinger.name | UpperCamelCase}}Properties,
     {%endif%}
-    {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
+    {%if stinger.methods|length > 0 or stinger.properties|length > 0 or stinger.commands|length > 0 %}
     /// Subscription IDs for all the subscriptions this makes.
     subscription_ids: {{stinger.name | UpperCamelCase }}ServerSubscriptionIds,
     {%endif%}
@@ -134,7 +146,7 @@ pub struct {{stinger.rust.server_struct_name}}<C: Mqtt5PubSub> {
     pub client_id: String,
 
     pub instance_id: String,
-    {%- for topic_param in config.topics.params %}
+    {%- for topic_param in stinger.topics.params %}
     topic_param_{{topic_param|snake_case}}: String,
     {%- endfor %}
     #[cfg(feature = "metrics")]
@@ -142,19 +154,22 @@ pub struct {{stinger.rust.server_struct_name}}<C: Mqtt5PubSub> {
 }
 
 impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
+    // `connection` and `metrics` are only mutated when there are methods, properties, or
+    // commands to subscribe to below; a signals-only interface leaves both untouched.
+    #[allow(unused_mut)]
     pub async fn new(
             mut connection: C,
             {%if stinger.methods|length > 0%}method_handlers: Arc<AsyncMutex<Box<dyn {{stinger.name | UpperCamelCase }}MethodHandlers<C>>>>, {%endif%}
             instance_id: String, {%if stinger.properties|length > 0 %}
             initial_property_values: {{stinger.name | UpperCamelCase}}InitialPropertyValues,{%endif%}
-            {%- for topic_param in config.topics.params %}
+            {%- for topic_param in stinger.topics.params %}
             {{topic_param|snake_case}}: String,
             {%- endfor %}
         ) -> Self {
         #[cfg(feature = "metrics")]
         let mut metrics = {{stinger.name | UpperCamelCase }}ServerMetrics::default();
 
-        {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
+        {%if stinger.methods|length > 0 or stinger.properties|length > 0 or stinger.commands|length > 0 %}
         // Create a channel for messages to get from the Mqtt5PubSub object to this {{stinger.rust.server_struct_name}} object.
         // The Connection object uses a clone of the tx side of the channel.
         let (message_received_tx, message_received_rx) = broadcast::channel::<MqttMessage>(64);
@@ -163,7 +178,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             ("interface_name".to_string(), "{{stinger.name}}".to_string()),
             ("service_id".to_string(), instance_id.to_string()),
             ("client_id".to_string(), connection.get_client_id().to_string()),
-            {%-for topic_param in config.topics.params%}
+            {%-for topic_param in stinger.topics.params%}
             ("{{topic_param}}".to_string(), {{topic_param|snake_case}}.clone()),
             {%-endfor%}
         ]);
@@ -172,6 +187,13 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         {%for method_name, method in stinger.methods.items()-%}
         let subscription_id_{{method_name | snake_case}}_method_req = connection.subscribe(strfmt("{{method.request_topic()}}", &topic_param_map).unwrap(), QoS::ExactlyOnce, message_received_tx.clone()).await;
         let subscription_id_{{method_name | snake_case}}_method_req = subscription_id_{{method_name | snake_case}}_method_req.unwrap_or(u32::MAX);
+
+        {%endfor%}
+        // Subscribe to the topic of every command.  Handlers can be registered at any
+        // time, but the subscriptions are made eagerly, like the method requests above.
+        {%for cmd_name, cmd in stinger.commands.items()-%}
+        let subscription_id_{{cmd_name | snake_case}}_command = connection.subscribe(strfmt("{{cmd.topic()}}", &topic_param_map).unwrap(), QoS::ExactlyOnce, message_received_tx.clone()).await;
+        let subscription_id_{{cmd_name | snake_case}}_command = subscription_id_{{cmd_name | snake_case}}_command.unwrap_or(u32::MAX);
 
         {%endfor%}
         {%for prop_name, prop in stinger.properties.items()-%}{%if not prop.read_only %}
@@ -186,6 +208,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             {%for method_name, method in stinger.methods.items()-%}
             {{method_name | snake_case}}_method_req: subscription_id_{{method_name | snake_case}}_method_req,
             {%endfor%}
+            {%for cmd_name, cmd in stinger.commands.items()-%}
+            {{cmd_name | snake_case}}_command: subscription_id_{{cmd_name | snake_case}}_command,
+            {%endfor%}
             {%for prop_name, prop in stinger.properties.items()-%}{%if not prop.read_only -%}
             {{prop_name | snake_case}}_property_update: subscription_id_{{prop_name | snake_case}}_property_update,
             {%endif%}{%endfor%}
@@ -195,12 +220,10 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         {%if stinger.properties|length > 0%}
         let property_values = {{stinger.name | UpperCamelCase}}Properties {
             {%-for prop_name, prop in stinger.properties.items()%}
-            {%if prop.arg_list | length > 1 -%}
             {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(initial_property_values.{{prop_name | snake_case}}.clone())),
-            {%-else%}
-            {{prop_name | snake_case}}: Arc::new(RwLockWatch::new(initial_property_values.{{prop_name | snake_case}}.clone())),
-            {%-endif-%}
+            {%-if config.properties.version_tracking%}
             {{prop_name | snake_case}}_version: Arc::new(AtomicU32::new(initial_property_values.{{prop_name | snake_case}}_version)),
+            {%-endif%}
             {%-endfor%}
         };
 
@@ -210,14 +233,8 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         {%-for prop_name, prop in stinger.properties.items()%}
         {
             let topic = strfmt("{{prop.value_topic()}}", &topic_param_map).unwrap();
-            {%if prop.arg_list | length > 1 -%}
-            let msg = message::property_value(&topic, &initial_property_values.{{prop_name | snake_case}}, initial_property_values.{{prop_name | snake_case}}_version).unwrap();
-            {%-else%}
-            let payload_obj = {{prop_name | UpperCamelCase}}Property {
-                {{prop.arg_list[0].name | snake_case}}: initial_property_values.{{prop_name | snake_case}},
-            };
-            let msg = message::property_value(&topic, &payload_obj, initial_property_values.{{prop_name | snake_case}}_version).unwrap();
-            {%endif%}
+            let payload_obj = {{ property_wrap(prop, 'initial_property_values.' ~ (prop_name|snake_case)) }};
+            let msg = message::property_value(&topic, &payload_obj{%if config.properties.version_tracking%}, initial_property_values.{{prop_name | snake_case}}_version{%endif%}).unwrap();
             let _ = connection.publish_nowait(msg);
         }
         {%endfor%}
@@ -228,18 +245,26 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         }
         {%endif%}
 
+        {%if stinger.commands | length > 0 %}// Create structure for the tx side of broadcast channels for commands.
+        let command_channels = {{stinger.name | UpperCamelCase }}CommandChannels {
+            {%for cmd_name, cmd in stinger.commands.items()-%}
+            {{cmd_name|snake_case}}_sender: broadcast::channel(64).0,
+            {%endfor%}
+        };{%endif%}
+
         {{stinger.rust.server_struct_name}} {
             mqtt_client: connection.clone(),
-            {%if stinger.methods|length > 0 or stinger.properties|length > 0 %}
+            {%if stinger.methods|length > 0 or stinger.properties|length > 0 or stinger.commands|length > 0 %}
             msg_streamer_rx: Arc::new(Mutex::new(Some(message_received_rx))),
             msg_streamer_tx: message_received_tx,{%if stinger.methods | length > 0 %}
-            method_handlers,{%endif%}{%if stinger.properties | length > 0 %}
+            method_handlers,{%endif%}{%if stinger.commands | length > 0 %}
+            command_channels,{%endif%}{%if stinger.properties | length > 0 %}
             properties: property_values,{%endif%}
             subscription_ids: sub_ids,
             {%endif%}
             client_id: connection.get_client_id(),
             instance_id,
-            {%- for topic_param in config.topics.params %}
+            {%- for topic_param in stinger.topics.params %}
             topic_param_{{topic_param|snake_case}}: {{topic_param|snake_case}},
             {%- endfor %}
             #[cfg(feature = "metrics")]
@@ -252,6 +277,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         self.metrics.clone()
     }
 
+    {%if stinger.signals | length > 0 %}
     /// Converts a oneshot channel receiver into a future.
     async fn oneshot_to_future(
         ch: oneshot::Receiver<Result<MqttPublishSuccess, Mqtt5PubSubError>>,
@@ -277,6 +303,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         })
     }
 
+    {#- Only a schema-validation failure returns through this, and only a JSON signal
+        is schema-validated, so an all-protobuf interface never reaches it. #}
+    {%if stinger.signals.values() | rejectattr('payload.is_protobuf') | list | length > 0 %}
     async fn wrap_return_code_in_future(rc: MethodReturnCode) -> SentMessageFuture {
         Box::pin(async move {
             match rc {
@@ -285,11 +314,13 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             }
         })
     }
-    {%if stinger.methods | length > 0 or stinger.properties | length > 0 %}
+    {%endif%}
+    {%endif%}
+    {%if stinger.methods | length > 0 %}
     /// Publishes an error response to the given response topic with the given correlation data.
-    async fn publish_error_response(mut publisher: C, response_topic: Option<String>, correlation_data: Option<Bytes>, err: MethodReturnCode) {
+    async fn publish_error_response<T: WirePayload>(mut publisher: C, response_topic: Option<String>, correlation_data: Option<Bytes>, err: MethodReturnCode) {
         if let Some(resp_topic) = response_topic {
-            let msg = message::error_response(&resp_topic, correlation_data, err).unwrap();
+            let msg = message::error_response::<T>(&resp_topic, correlation_data, err).unwrap();
             let _ = publisher.publish(msg).await;
         } else {
             info!("No response topic found in message properties; cannot send error response.");
@@ -298,22 +329,20 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     {%endif-%}
     {%for sig_name, sig in stinger.signals.items()-%}
     /// Emits the {{sig_name}} signal with the given arguments.
-    pub async fn emit_{{sig_name|snake_case}}(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> SentMessageFuture {
-        let data = {{sig_name|UpperCamelCase}}SignalPayload {
-            {%for arg in sig.arg_list%}
-            {{arg.name|snake_case}},
-            {%endfor%}
-        };
+    pub async fn emit_{{sig_name|snake_case}}(&mut self, {{ payload_params(sig.payload, sig.arg_list) }}) -> SentMessageFuture {
+        {{ build_payload(sig.payload, sig.arg_list) }}
+{%- if not sig.payload.is_protobuf %}
         if let Err(err) = data.validate_schema() {
             error!("Payload for '{{sig_name}}' signal failed schema validation, not emitting: {}", err);
             return Self::wrap_return_code_in_future(MethodReturnCode::ServerSerializationError(format!("'{{sig_name}}' signal payload failed schema validation: {}", err))).await;
         }
+{%- endif %}
         let topic_param_map = HashMap::from([
             ("interface_name".to_string(), "{{stinger.name}}".to_string()),
             ("service_id".to_string(), self.instance_id.clone()),
             ("signal_name".to_string(), "{{sig_name}}".to_string()),
             ("client_id".to_string(), self.client_id.clone()),
-            {%-for topic_param in config.topics.params%}
+            {%-for topic_param in stinger.topics.params%}
             ("{{topic_param}}".to_string(), self.topic_param_{{topic_param | snake_case}}.clone()),
             {%-endfor%}
         ]);
@@ -329,22 +358,20 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     }
 
     /// Emits the {{sig_name}} signal with the given arguments, but this is a fire-and-forget version.
-    pub fn emit_{{sig_name|snake_case}}_nowait(&mut self, {%for arg in sig.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError>{
-        let data = {{sig_name|UpperCamelCase}}SignalPayload {
-            {%for arg in sig.arg_list%}
-            {{arg.name|snake_case}},
-            {%endfor%}
-        };
+    pub fn emit_{{sig_name|snake_case}}_nowait(&mut self, {{ payload_params(sig.payload, sig.arg_list) }}) -> std::result::Result<MqttPublishSuccess, Mqtt5PubSubError>{
+        {{ build_payload(sig.payload, sig.arg_list) }}
+{%- if not sig.payload.is_protobuf %}
         if let Err(err) = data.validate_schema() {
             error!("Payload for '{{sig_name}}' signal failed schema validation, not emitting: {}", err);
             return Err(Mqtt5PubSubError::Other(format!("'{{sig_name}}' signal payload failed schema validation: {}", err)));
         }
+{%- endif %}
         let topic_param_map = HashMap::from([
             ("interface_name".to_string(), "{{stinger.name}}".to_string()),
             ("service_id".to_string(), self.instance_id.clone()),
             ("signal_name".to_string(), "{{sig_name}}".to_string()),
             ("client_id".to_string(), self.client_id.clone()),
-            {%-for topic_param in config.topics.params%}
+            {%-for topic_param in stinger.topics.params%}
             ("{{topic_param}}".to_string(), self.topic_param_{{topic_param | snake_case}}.clone()),
             {%-endfor%}
         ]);
@@ -358,6 +385,32 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         publisher.publish_nowait(msg)
     }
     {%endfor%}
+    {%for cmd_name, cmd in stinger.commands.items()%}
+    /// Get the RX receiver side of the broadcast channel for the '{{cmd_name}}' command.
+    /// The command payload, `{{cmd.payload.rust.channel_type}}`, will be put onto the channel whenever it is received.
+    ///
+    /// Any number of receivers may be created.  A command received while no receiver is
+    /// subscribed is logged and dropped, because a command has no response channel.
+    pub fn get_{{cmd_name|snake_case}}_receiver(&self) -> broadcast::Receiver<{{cmd.payload.rust.channel_type}}> {
+        self.command_channels.{{cmd_name | snake_case}}_sender.subscribe()
+    }
+
+    /// Handles a received `{{cmd_name}}` command message by putting it onto the command's
+    /// broadcast channel.
+    ///
+    /// A command has no response channel, so a message that cannot be understood is
+    /// logged and dropped; nothing is ever published back to the client.
+    async fn handle_{{cmd_name|snake_case}}_command(
+                sender: broadcast::Sender<{{cmd.payload.rust.channel_type}}>,
+                msg: MqttMessage
+    ) {
+        {{ expect_content_type(cmd.payload, "msg", cmd_name ~ " command", "return") | indent(8) }}
+        {{ decode_or(cmd.payload, "msg", "payload", cmd_name ~ " command", "return") | indent(8) }}
+        if sender.send(payload).is_err() {
+            warn!("No receiver is subscribed to the '{{cmd_name}}' command; dropping message.");
+        }
+    }
+    {%endfor%}
     {%for method_name, method in stinger.methods.items()%}
     /// Handles a request message for the {{method_name}} method.
     async fn handle_{{method_name|snake_case}}_request(
@@ -367,60 +420,72 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     ) {
         let opt_corr_data = msg.correlation_data;
         let opt_resp_topic = msg.response_topic;
-        {%if method.arg_list | length > 0 -%}
+{%- if method.request_payload.enforce_content_type %}
+        // Unlike the drop-on-arrival sites, a request has a response channel, so a bad
+        // content type is reported to the caller rather than silently ignored.
+        let expected_content_type = <{{method.request_payload.rust.struct_name}} as WirePayload>::content_type();
+        if msg.content_type.as_deref() != Some(expected_content_type) {
+            error!("Unexpected content-type {:?} for '{{method_name}}' request; expected '{}'", msg.content_type, expected_content_type);
+            {{stinger.rust.server_struct_name}}::<C>::publish_error_response::<{{method.response_payload.rust.struct_name}}>(
+                publisher, opt_resp_topic, opt_corr_data,
+                MethodReturnCode::ServerDeserializationError(format!("Unsupported content type {:?} for the '{{method_name}}' request; expected '{}'", msg.content_type, expected_content_type))).await;
+            return;
+        }
+{%- endif %}
+        {%if method.request_payload.rust.has_params -%}
         let payload_vec = msg.payload;
-        let payload_obj = serde_json::from_slice::<{{method_name | UpperCamelCase}}RequestObject>(&payload_vec);
+        let payload_obj = <{{method.request_payload.rust.struct_name}} as WirePayload>::from_bytes(&payload_vec);
         if payload_obj.is_err() {
             error!("Error deserializing request payload for {{method_name}}: {:?}", payload_obj.err());
-            {{stinger.rust.server_struct_name}}::<C>::publish_error_response(publisher, opt_resp_topic, opt_corr_data, MethodReturnCode::ServerDeserializationError("Failed to deserialize request payload".to_string())).await;
+            {{stinger.rust.server_struct_name}}::<C>::publish_error_response::<{{method.response_payload.rust.struct_name}}>(publisher, opt_resp_topic, opt_corr_data, MethodReturnCode::ServerDeserializationError("Failed to deserialize request payload".to_string())).await;
             return;
         }
         // Unwrap is OK here because we just checked for error.
         let payload = payload_obj.unwrap();
+        {%- if not method.request_payload.is_protobuf %}
         if let Err(err) = payload.validate_schema() {
             error!("Request payload for {{method_name}} failed schema validation: {}", err);
-            {{stinger.rust.server_struct_name}}::<C>::publish_error_response(publisher, opt_resp_topic, opt_corr_data, MethodReturnCode::ClientDeserializationError("Request payload failed schema validation".to_string())).await;
+            {{stinger.rust.server_struct_name}}::<C>::publish_error_response::<{{method.response_payload.rust.struct_name}}>(publisher, opt_resp_topic, opt_corr_data, MethodReturnCode::ClientDeserializationError("Request payload failed schema validation".to_string())).await;
             return;
         }
-        {%endif%}{# has arg_list #}
+        {%- endif %}
+        {%endif%}{# has a request payload #}
         // call the method handler
         let rc: Result<{{method.rust.return_value_type}}, MethodReturnCode> = {
             let handler_guard = handlers.lock().await;
-            handler_guard.handle_{{method_name|snake_case}}({%for arg in method.arg_list%}payload.{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}).await
+            handler_guard.handle_{{method_name|snake_case}}({{ unpack_payload(method.request_payload, method.arg_list) }}).await
         };
 
         if let Some(resp_topic) = opt_resp_topic {
             let corr_data = opt_corr_data.unwrap_or_default();
             match rc {
-                Ok({%if method.return_arg_list|length == 0 %}_{%endif%}retval) => {
-                    {% if method.return_arg_list|length == 0 %}
-                    let empty_resp = {{method.return_value_name | UpperCamelCase}}{};
+                Ok({%if not method.has_response %}_{%endif%}retval) => {
+                    {% if not method.has_response %}
+                    let empty_resp = {{method.rust.return_struct_name}}{};
                     let msg = message::response(&resp_topic, &empty_resp, corr_data, None).unwrap();
                     let _fut_publish_result = publisher.publish(msg).await;
-                    {%elif method.return_arg_list|length == 1 %}
-                    let resp_obj = {{method.return_value_name | UpperCamelCase}} {
-                        {{method.return_arg_list[0].name | snake_case}}: retval,
+                    {% else %}
+                    {%- if method.response_payload.is_protobuf %}
+                    let resp_obj = retval;
+                    {%- else %}
+                    let resp_obj = {{method.rust.return_struct_name}} {
+                        {{method.return_value.name | snake_case}}: retval,
                     };
+                    {%- endif %}
+                    {%- if not method.response_payload.is_protobuf %}
                     if let Err(err) = resp_obj.validate_schema() {
                         error!("Response payload for {{method_name}} failed schema validation: {}", err);
-                        {{stinger.rust.server_struct_name}}::<C>::publish_error_response(publisher, Some(resp_topic), Some(corr_data), MethodReturnCode::ServerSerializationError("Response payload failed schema validation".to_string())).await;
+                        {{stinger.rust.server_struct_name}}::<C>::publish_error_response::<{{method.response_payload.rust.struct_name}}>(publisher, Some(resp_topic), Some(corr_data), MethodReturnCode::ServerSerializationError("Response payload failed schema validation".to_string())).await;
                         return;
                     }
+                    {%- endif %}
                     let msg = message::response(&resp_topic, &resp_obj, corr_data,None).unwrap();
-                    let _fut_publish_result = publisher.publish(msg).await;
-                    {% else %}
-                    if let Err(err) = retval.validate_schema() {
-                        error!("Response payload for {{method_name}} failed schema validation: {}", err);
-                        {{stinger.rust.server_struct_name}}::<C>::publish_error_response(publisher, Some(resp_topic), Some(corr_data), MethodReturnCode::ServerSerializationError("Response payload failed schema validation".to_string())).await;
-                        return;
-                    }
-                    let msg = message::response(&resp_topic, &retval, corr_data, None).unwrap();
                     let _fut_publish_result = publisher.publish(msg).await;
                     {% endif %}
                 }
                 Err(err) => {
                     info!("Error occurred while handling {{method_name}}: {:?}", &err);
-                    {{stinger.rust.server_struct_name}}::<C>::publish_error_response(publisher, Some(resp_topic), Some(corr_data), err).await;
+                    {{stinger.rust.server_struct_name}}::<C>::publish_error_response::<{{method.response_payload.rust.struct_name}}>(publisher, Some(resp_topic), Some(corr_data), err).await;
                 }
             }
         } else {
@@ -438,27 +503,33 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     /// If there is an error, it can publish back if a response topic was provided.
     async fn update_{{prop_name|snake_case}}_value(
             mut publisher: C, 
-            property_pointer: Arc<RwLockWatch<{%if prop.arg_list|length > 0 %}{{prop.rust.type}}{%else%}{{prop.arg_list[0].rust.type}}{%endif%}>>,  // Arc to the property value
+            property_pointer: Arc<RwLockWatch<{{prop.rust.type}}>>,  // Arc to the property value
+            {%- if config.properties.version_tracking %}
             version_pointer: Arc<AtomicU32>,
+            {%- endif %}
             msg: MqttMessage
     )
     {
-        // This is JSON encoding of an object with {{prop.arg_list | length}} field{%if prop.arg_list | length > 1 %}s{%endif%}.
-        let payload_str = String::from_utf8_lossy(&msg.payload).to_string();
-        
         let mut return_code = MethodReturnCode::Success(None);
 
+{%- if prop.payload.enforce_content_type %}
+        let expected_content_type = <{{prop.payload.rust.struct_name}} as WirePayload>::content_type();
         match msg.content_type.as_deref() {
-            Some("application/json") => { /* OK */ }
+            Some(ct) if ct == expected_content_type => { /* OK */ }
             Some(ct) => {
                 error!("Unexpected content-type for property update: {}", ct);
-                return_code = MethodReturnCode::PayloadError(format!("Invalid Content-Type '{}', expected 'application/json'", ct));
+                return_code = MethodReturnCode::PayloadError(format!("Invalid Content-Type '{}', expected '{}'", ct, expected_content_type));
             }
             None => {
                 error!("Missing content-type for property update");
-                return_code = MethodReturnCode::PayloadError("Missing Content-Type; expected 'application/json'".to_string());
+                return_code = MethodReturnCode::PayloadError(format!("Missing Content-Type; expected '{}'", expected_content_type));
             }
         }
+{%- else %}
+        // `[protobuf] mime_type = false`: a '{{prop_name}}' update carries no content type,
+        // so the body is assumed to be the declared protobuf message.
+{%- endif %}
+{%- if config.properties.version_tracking %}
 
         match return_code {
             MethodReturnCode::Success(_) => {
@@ -485,27 +556,25 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             }
             _ => { /* Do nothing, error already set. */ }
         }
+{%- endif %}
 
         let opt_new_value = match return_code {
             MethodReturnCode::Success(_) => {
-                match serde_json::from_str::<{{prop_name|UpperCamelCase}}Property>(&payload_str) {
+                match <{{prop.payload.rust.struct_name}} as WirePayload>::from_bytes(&msg.payload) {
                     Ok(new_property_structure) => {
+{%- if not prop.payload.is_protobuf %}
                         if let Err(err) = new_property_structure.validate_schema() {
                             error!("Property '{{prop_name}}' update payload failed schema validation: {}", err);
                             return_code = MethodReturnCode::ClientDeserializationError("Property '{{prop_name}}' payload failed schema validation".to_string());
                             None
                         } else {
+{%- else %}
+                        {
+{%- endif %}
                         let request_lock = property_pointer.write_request();
                         let mut write_request = request_lock.write().await;
-                        {%if prop.arg_list | length == 1 %}
-                        // Single value property.  Use the {{prop.arg_list[0].name | snake_case}} field of the struct.
-                        *write_request = new_property_structure.{{prop.arg_list[0].name | snake_case}}.clone();
+                        *write_request = {{ property_unwrap(prop, 'new_property_structure') }}.clone();
                         debug!("Updating '{{prop_name}}' property to new value: {:?}", *write_request);
-                        {%else%}
-                        // Multi-value property set as a struct.
-                        *write_request = new_property_structure.clone();
-                        debug!("Updating '{{prop_name}}' property to new structure: {:?}", *write_request);
-                        {%endif%}
 
                         // Committing the write request blocks until the message has been published to MQTT.
                         match write_request.commit(std::time::Duration::from_secs(2)).await {
@@ -534,22 +603,10 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             let corr_data = msg.correlation_data.unwrap_or_default();
             let payload_obj = {
                 if let Some(new_value) = opt_new_value {
-                    {%if prop.arg_list | length == 1 %}
-                    {{prop_name | UpperCamelCase}}Property { 
-                        {{prop.arg_list[0].name}}: new_value
-                    }
-                    {%else%}
-                    new_value
-                    {%endif%}
+                    {{ property_wrap(prop, 'new_value') }}
                 } else {
                     let prop_lock = property_pointer.read().await;
-                    {%if prop.arg_list | length == 1 %}
-                    {{prop_name | UpperCamelCase}}Property { 
-                        {{prop.arg_list[0].name}}: (*prop_lock).clone(),
-                    }
-                    {%else%}
-                    (*prop_lock).clone()
-                    {%endif%}
+                    {{ property_wrap(prop, '(*prop_lock).clone()') }}
                 }
             };
             match message::property_update_response(&resp_topic, &payload_obj, corr_data, return_code) {
@@ -570,16 +627,16 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
     /// Watch for changes to the `{{prop_name}}` property.
     /// This returns a watch::Receiver that can be awaited on for changes to the property value.
     /// Use `.borrow_and_update()` on the Receiver to get the current value and reset the watcher.
-    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{% else %}{{prop.arg_list[0].rust.type}}{% endif %}> {
+    pub fn watch_{{prop_name | snake_case}}(&self) -> watch::Receiver<{{prop.rust.type}}> {
         self.properties.{{prop_name | snake_case}}.subscribe()
     }
 
-    pub fn get_{{prop_name | snake_case}}_handle(&self) -> WriteRequestLockWatch<{%if prop.arg_list | length > 1 %}{{prop.rust.type}}{% else %}{{prop.arg_list[0].rust.type}}{% endif %}> {
+    pub fn get_{{prop_name | snake_case}}_handle(&self) -> WriteRequestLockWatch<{{prop.rust.type}}> {
         self.properties.{{prop_name | snake_case}}.write_request()
     }
 
-    /// Sets the value{%if prop.arg_list|length > 1%}s{%endif%} of the {{prop_name}} property.
-    pub async fn set_{{prop_name}}(&mut self, value: {{prop.rust.type}}) -> SentMessageFuture {
+    /// Sets the value of the {{prop_name}} property.
+    pub async fn set_{{prop_name | snake_case}}(&mut self, value: {{prop.rust.type}}) -> SentMessageFuture {
         let write_request_lock = self.get_{{prop_name | snake_case}}_handle();
         Box::pin(async move { 
             let mut write_request = write_request_lock.write().await;
@@ -591,6 +648,35 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         })
     }
     {%endfor%}
+
+    {%if stinger.properties|length > 0%}
+    /// Unpublishes the retained value of all properties.
+    ///
+    /// Call this before your application exits so that clients don't receive stale property
+    /// values from a server instance which is no longer running.
+    pub async fn shutdown(&mut self) {
+        let topic_param_map = HashMap::from([
+            ("interface_name".to_string(), "{{stinger.name}}".to_string()),
+            ("service_id".to_string(), self.instance_id.clone()),
+            ("client_id".to_string(), self.client_id.clone()),
+            {%-for topic_param in stinger.topics.params%}
+            ("{{topic_param}}".to_string(), self.topic_param_{{topic_param|snake_case}}.clone()),
+            {%-endfor%}
+        ]);
+        {%-for prop_name, prop in stinger.properties.items()%}
+        {
+            let topic = strfmt("{{prop.value_topic()}}", &topic_param_map).unwrap();
+            let msg = message::unpublish(&topic);
+            if let Err(err) = self.mqtt_client.publish(msg).await {
+                error!("Failed to unpublish retained value for '{{prop_name}}' property: {:?}", err);
+            }
+        }
+        {%-endfor%}
+    }
+    {%else%}
+    /// This interface has no properties, so there is nothing to unpublish on exit.
+    pub async fn shutdown(&mut self) {}
+    {%endif%}
 
     /// Starts the tasks that process messages received.
     /// In the task, it loops over messages received from the rx side of the message_receiver channel.
@@ -604,12 +690,12 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             ("interface_name".to_string(), "{{stinger.name}}".to_string()),
             ("service_id".to_string(), self.instance_id.clone()),
             ("client_id".to_string(), self.client_id.clone()),
-            {%-for topic_param in config.topics.params%}
+            {%-for topic_param in stinger.topics.params%}
             ("{{topic_param}}".to_string(), self.topic_param_{{topic_param | snake_case}}.clone()),
             {%-endfor%}
         ]);
 
-        {%if (stinger.methods|length > 0) or (stinger.properties|length > 0) %}
+        {%if (stinger.methods|length > 0) or (stinger.properties|length > 0) or (stinger.commands|length > 0) %}
         // Take ownership of the RX channel that receives MQTT messages.  This will be moved into the loop_task.
         let mut message_receiver = {
             self.msg_streamer_rx.lock().unwrap().take().expect("msg_streamer_rx should be Some")
@@ -619,6 +705,9 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         let method_handlers = self.method_handlers.clone();
         let _ = self.method_handlers.lock().await.initialize(self.clone()).await;
         {%endif-%}{# methods exist#}
+        {%if stinger.commands|length > 0 -%}
+        let command_channels = self.command_channels.clone();
+        {%endif-%}{# commands exist#}
 
         let sub_ids = self.subscription_ids.clone();
 
@@ -631,19 +720,16 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
         {%-for prop_name, prop in stinger.properties.items()%}
         { // Set up property change request handling task
             let mut publisher_for_{{prop_name|snake_case}}_prop = self.mqtt_client.clone();
+            {%- if config.properties.version_tracking %}
             let {{prop_name|snake_case}}_prop_version = props.{{prop_name | snake_case}}_version.clone();
+            {%- endif %}
             let topic_param_map_for_{{prop_name|snake_case}} = topic_param_map.clone();
             if let Some(mut rx_for_{{prop_name|snake_case}}_prop) = props.{{prop_name | snake_case}}.take_request_receiver() {
                 tokio::spawn(async move {
                     while let Some((request, opt_responder)) = rx_for_{{prop_name|snake_case}}_prop.recv().await {
-                        debug!("Received request to update '{{prop_name}}' property value through local watch channel. Current version is {}, request is: {:?}", {{prop_name|snake_case}}_prop_version.load(Ordering::SeqCst), request);
-                        {%if prop.arg_list | length == 1 %}
-                        let payload_obj = {{prop_name | UpperCamelCase}}Property { 
-                            {{prop.arg_list[0].name}}: request.clone(),
-                        };
-                        {%else%}
-                        let payload_obj = request.clone();
-                        {%endif%}
+                        debug!("Received request to update '{{prop_name}}' property value through local watch channel. {%if config.properties.version_tracking%}Current version is {}, request{%else%}Request{%endif%} is: {:?}"{%if config.properties.version_tracking%}, {{prop_name|snake_case}}_prop_version.load(Ordering::SeqCst){%endif%}, request);
+                        let payload_obj = {{ property_wrap(prop, 'request.clone()') }};
+                        {%- if not prop.payload.is_protobuf %}
                         if let Err(err) = payload_obj.validate_schema() {
                             error!("Value for '{{prop_name}}' property failed schema validation, not publishing: {}", err);
                             if let Some(responder) = opt_responder {
@@ -651,9 +737,12 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                             }
                             continue;
                         }
+                        {%- endif %}
+                        {%- if config.properties.version_tracking %}
                         let version_value = {{prop_name|snake_case}}_prop_version.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1; // fetch_add returns the previous value, so add 1 to get the new version after the update.
+                        {%- endif %}
                         let topic: String = strfmt("{{prop.value_topic()}}", &topic_param_map_for_{{prop_name|snake_case}}).unwrap();
-                        match message::property_value(&topic, &payload_obj, version_value) {
+                        match message::property_value(&topic, &payload_obj{%if config.properties.version_tracking%}, version_value{%endif%}) {
                             Ok(msg) => {
                                 let publish_result = publisher_for_{{prop_name|snake_case}}_prop.publish(msg).await;
                                 if let Some(responder) = opt_responder {
@@ -692,6 +781,15 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
             {%-endfor%}
         ]);
 
+        // Static map of command names to their declared version, used in periodic interface info advertisements.
+        let interface_info_commands: HashMap<String, String> = HashMap::from([
+            {%-for cmd_name, cmd in stinger.commands.items()%}
+            {%-if cmd.version%}
+            ("{{cmd_name}}".to_string(), "{{cmd.version}}".to_string()),
+            {%-endif%}
+            {%-endfor%}
+        ]);
+
         // Spawn a task to periodically publish interface info.
         let mut interface_publisher = self.mqtt_client.clone();
         let instance_id = self.instance_id.clone();
@@ -706,9 +804,10 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                     .title("{{stinger.title}}".to_string())
                     .version("{{stinger.version}}".to_string())
                     .methods(interface_info_methods.clone())
+                    .commands(interface_info_commands.clone())
                     .instance(instance_id.clone())
                     .connection_topic(topic.clone())
-                    {%-for topic_param in config.topics.params%}
+                    {%-for topic_param in stinger.topics.params%}
                     .{{topic_param}}(topic_param_map_for_info.get("{{topic_param}}").unwrap().to_string())
                     {%-endfor%}
                     .build().unwrap();
@@ -716,7 +815,7 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                 let _ = interface_publisher.publish(msg).await;
             }
         });
-        {%if (stinger.methods|length > 0) or (stinger.properties|length > 0) %}
+        {%if (stinger.methods|length > 0) or (stinger.properties|length > 0) or (stinger.commands|length > 0) %}
         {%if stinger.properties|length > 0 %}
         let properties = self.properties.clone();
         {%endif%}
@@ -734,13 +833,21 @@ impl<C: Mqtt5PubSub + Clone + Send> {{stinger.rust.server_struct_name}}<C> {
                                     {{stinger.rust.server_struct_name}}::<C>::handle_{{method_name|snake_case}}_request(publisher.clone(), method_handlers.clone(), msg).await;
                                 },
                                 {%-endfor%}
+                                {%-for cmd_name, cmd in stinger.commands.items()%}
+                                _i if _i == sub_ids.{{cmd_name | snake_case}}_command => {
+                                    debug!("Received {{cmd_name}} command message.");
+                                    {{stinger.rust.server_struct_name}}::<C>::handle_{{cmd_name|snake_case}}_command(command_channels.{{cmd_name | snake_case}}_sender.clone(), msg).await;
+                                },
+                                {%-endfor%}
                                 {%-for prop_name, prop in stinger.properties_rw.items()%}
                                 _i if _i ==sub_ids.{{prop_name | snake_case}}_property_update => {
                                     debug!("Received {{prop_name}} property update request message.");
                                     {{stinger.rust.server_struct_name}}::<C>::update_{{prop_name | snake_case}}_value(
                                             publisher.clone(),
                                             properties.{{prop_name | snake_case}}.clone(),
+                                            {%- if config.properties.version_tracking %}
                                             properties.{{prop_name | snake_case}}_version.clone(),
+                                            {%- endif %}
                                             msg
                                     ).await;
                                 }
@@ -776,7 +883,7 @@ pub trait {{stinger.name | UpperCamelCase }}MethodHandlers<C: Mqtt5PubSub>: Send
 
     {%for method_name, method in stinger.methods.items()-%}
     /// Pointer to a function to handle the {{method_name}} method request.
-    async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.rust.return_value_type}}, MethodReturnCode>;
+    async fn handle_{{method_name|snake_case}}(&self, {{ payload_params(method.request_payload, method.arg_list) }}) -> Result<{{method.rust.return_value_type}}, MethodReturnCode>;
     
     {%endfor%}
 
@@ -806,26 +913,21 @@ mod tests {
         }
 
         {%for method_name, method in stinger.methods.items()%}
-        async fn handle_{{method_name|snake_case}}(&self, {%for arg in method.arg_list%}_{{arg.name|snake_case}}: {{arg.rust.type}}{%if not loop.last%}, {%endif%}{%endfor%}) -> Result<{{method.rust.return_value_type}}, MethodReturnCode> {
+        async fn handle_{{method_name|snake_case}}(&self, {{ payload_params(method.request_payload, method.arg_list, prefix="_") }}) -> Result<{{method.rust.return_value_type}}, MethodReturnCode> {
             println!("Handling {{method_name}}");
             {%-if method.return_value_type == 'struct'%}
-            let rv = {{method.return_arg_list[0].rust.temp_type}} {
-                {%for arg in method.return_value.members-%}
+            let rv = {{method.return_value.rust.temp_type}} {
+                {%for arg in method.return_value.values-%}
                 {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
                 {%endfor%}
             };
-            {%if method.return_arg_list[0].optional %}
+            {%if method.return_value.optional %}
             Ok(Some(rv))
             {%else%}
             Ok(rv)
             {%endif%}
-            {%-elif method.return_value_type == 'multiple'%}
-            let rv = {{method.rust.return_value_type}} {
-                {%for arg in method.return_value-%}
-                {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
-                {%endfor%}
-            };
-            Ok(rv)
+            {%elif method.response_payload.is_protobuf %}
+            Ok(<{{method.response_payload.rust.struct_name}} as Default>::default())
             {%elif method.return_value_type is not false %}
             Ok({{method.return_value.get_random_example_value(lang="rust")}})
             {%else%}
@@ -852,16 +954,10 @@ mod tests {
         {%if stinger.properties|length > 0%}
         let initial_property_values = {{stinger.name | UpperCamelCase}}InitialPropertyValues {
             {%for prop_name, prop in stinger.properties.items()%}
-            {{prop_name | snake_case}}: 
-            {%-if prop.arg_list|length == 1%}{{prop.arg_list[0].get_random_example_value(lang="rust")}},
-            {%-else-%}
-            {{prop.rust.type}} {
-                {%-for arg in prop.arg_list %}
-                    {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
-                {%-endfor%}
-            },
-            {%-endif%}
+            {{prop_name | snake_case}}: {{ property_example(prop) }},
+            {%-if config.properties.version_tracking%}
             {{prop_name | snake_case}}_version: 1,
+            {%-endif%}
             {%endfor%}
         };
         {%endif%}
@@ -871,7 +967,7 @@ mod tests {
             {%if stinger.methods|length > 0%}Arc::new(AsyncMutex::new(Box::new({{stinger.name | UpperCamelCase }}MethodImpl { server: None }))),{%endif%}
             service_id.clone(),
             {%if stinger.properties|length > 0%}initial_property_values.clone(),{%endif%}
-            {%- for topic_param in config.topics.params %}
+            {%- for topic_param in stinger.topics.params %}
             "{{topic_param}}".to_string(),
             {%- endfor %}
         ).await;
@@ -887,7 +983,7 @@ mod tests {
             ("service_id".to_string(), service_id.clone()),
             ("client_id".to_string(), client_id.clone()),
             ("property_name".to_string(), "prop_xyz".to_string()),
-            {%-for topic_param in config.topics.params%}
+            {%-for topic_param in stinger.topics.params%}
             ("{{topic_param}}".to_string(), "{{topic_param}}".to_string()),
             {%-endfor%}
         ]);
@@ -905,17 +1001,19 @@ mod tests {
             mock_mqtt.clear_published_messages();
 
             topic_param_map.insert("property_name".to_string(), "{{prop_name}}".to_string());
-            let property_{{prop_name|snake_case}}_topic = strfmt("{{config.topics.property_updates}}", &topic_param_map).unwrap();
-            let property_{{prop_name|snake_case}}_response_topic = strfmt("{{config.topics.property_update_responses}}", &topic_param_map).unwrap();
+            let property_{{prop_name|snake_case}}_topic = strfmt("{{stinger.topics.property_updates}}", &topic_param_map).unwrap();
+            let property_{{prop_name|snake_case}}_response_topic = strfmt("{{stinger.topics.property_update_responses}}", &topic_param_map).unwrap();
             let correlation_uuid = uuid::Uuid::new_v4();
 
             // Just to get this test working faster, we're copy-pasting test code from payloads.rs to generate example property payloads. 
-            let json_str = r#"{ {%-for arg in prop.arg_list%}
-                "{{arg.name}}": {{arg.get_random_example_value(lang="json")}} {%if not loop.last%},{%endif%}
-            {%endfor-%} }"#;
-            let payload: {{prop_name | UpperCamelCase}}Property = serde_json::from_str(json_str).unwrap();
+            {%- if prop.payload.is_protobuf %}
+            let payload = <{{prop.payload.rust.struct_name}} as Default>::default();
+            {%- else %}
+            let json_str = r#"{ "{{prop.value.name}}": {{prop.value.get_random_example_value(lang="json")}} }"#;
+            let payload: {{prop.payload.rust.class_name}} = serde_json::from_str(json_str).unwrap();
+            {%- endif %}
 
-            let update_req = property_update_request(&property_{{prop_name|snake_case}}_topic, &payload, initial_property_values.{{prop_name | snake_case}}_version, correlation_uuid, property_{{prop_name|snake_case}}_response_topic).unwrap();
+            let update_req = property_update_request(&property_{{prop_name|snake_case}}_topic, &payload{%if config.properties.version_tracking%}, initial_property_values.{{prop_name | snake_case}}_version{%endif%}, correlation_uuid, property_{{prop_name|snake_case}}_response_topic).unwrap();
 
             info!("Inject message to {}", update_req.topic);
             let result = mock_mqtt.simulate_receive(update_req);
@@ -934,5 +1032,39 @@ mod tests {
         }
         {%endif%}{% endfor %}
 
+        // Deliver a message for each command and check that it arrives on the command's
+        // broadcast channel.
+        {%for cmd_name, cmd in stinger.commands.items()%}
+        {
+            // Subscribe before the message is delivered; a broadcast channel only carries
+            // values to receivers that are already subscribed.
+            let mut {{cmd_name|snake_case}}_rx = server.get_{{cmd_name|snake_case}}_receiver();
+
+            // Example values always satisfy any schema constraint declared on the argument,
+            // so this payload reaches the channel.
+            let payload = {%if cmd.payload.is_protobuf%}<{{cmd.payload.rust.struct_name}} as Default>::default(){%else%}{{cmd.rust.payload_struct_name}} {
+                {%-for arg in cmd.arg_list%}
+                {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
+                {%-endfor%}
+            }{%endif%};
+
+            topic_param_map.insert("command_name".to_string(), "{{cmd_name}}".to_string());
+            let command_{{cmd_name|snake_case}}_topic = strfmt("{{cmd.topic()}}", &topic_param_map).unwrap();
+            let command_msg = message::command(&command_{{cmd_name|snake_case}}_topic, &payload).unwrap();
+
+            info!("Inject message to {}", command_msg.topic);
+            let result = mock_mqtt.simulate_receive(command_msg);
+            assert!(result.is_ok());
+            assert_eq!(result.unwrap(), 1);
+
+            let received = tokio::time::timeout(tokio::time::Duration::from_millis(500), {{cmd_name|snake_case}}_rx.recv())
+                .await
+                .expect("Timed out waiting for the '{{cmd_name}}' command on its broadcast channel")
+                .expect("The '{{cmd_name}}' command channel was closed");
+            {%for arg in cmd.arg_list%}
+            assert_eq!(received.{{arg.name|snake_case}}, payload.{{arg.name|snake_case}}, "Unexpected '{{arg.name}}' on the '{{cmd_name}}' command channel");
+            {%-endfor%}
+        }
+        {%endfor%}
     }
 }

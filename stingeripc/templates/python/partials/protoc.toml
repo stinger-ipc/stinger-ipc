@@ -1,0 +1,39 @@
+# How to turn this interface's .proto sources into Python bindings.
+#
+# Read by the generator after the templates are rendered.  Paths are relative to
+# the output directory and may use {python_package} and {interface}; protoc flags
+# may also use {out} for the absolute binding output directory.
+
+# The .proto sources are copied here so the generated package is self-contained.
+copy_to = "src/{python_package}/proto"
+
+# protoc writes the _pb2 modules here.
+out_dir = "src/{python_package}/proto"
+
+flags = ["--python_out={out}", "--pyi_out={out}"]
+
+# Used when legacy_protobuf is set: protoc 3.8 predates --pyi_out.
+legacy_flags = ["--python_out={out}"]
+
+# protoc does not make the output a package, so the import in interface_types works
+# only once this exists.
+[write]
+"src/{python_package}/proto/__init__.py" = "# Generated protobuf bindings for the {interface} interface.\n"
+
+# When one .proto imports another, protoc writes a top-level `import camera_pb2 as
+# camera__pb2` into the bindings, because it assumes its output directory is on
+# sys.path.  Here the bindings are a subpackage of the generated package, so those
+# imports are respelled as relative ones.  The first rule covers a sibling .proto,
+# the second one in a subdirectory -- which protoc imports from a top-level package
+# named after that directory.  A well-known type comes from the installed protobuf
+# runtime rather than from this package, so `google.` is left alone.  `.pyi` stubs
+# spell their imports the same way the modules do, so the globs match both.
+[[rewrite]]
+glob = "*_pb2.py*"
+pattern = '^import (\w+_pb2)( as \w+)?$'
+replacement = 'from {up} import \g<1>\g<2>'
+
+[[rewrite]]
+glob = "*_pb2.py*"
+pattern = '^from (?!google\.)([A-Za-z_]\w*(?:\.\w+)*) import (\w+_pb2)( as \w+)?$'
+replacement = 'from {up}\g<1> import \g<2>\g<3>'

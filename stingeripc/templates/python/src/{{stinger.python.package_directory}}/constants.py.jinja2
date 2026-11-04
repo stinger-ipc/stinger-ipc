@@ -1,5 +1,5 @@
 
-from typing import Final
+{% if config.python.python37 %}from typing_extensions import Final{% else %}from typing import Final{% endif %}
 {% for const_name, const in stinger.constants.items() %}
 {% if const.description %}
 # {{ const.description }}

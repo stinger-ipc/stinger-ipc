@@ -1,0 +1,14 @@
+# How to turn this interface's .proto sources into C++ bindings.
+#
+# Read by the generator after the templates are rendered.  Paths are relative to
+# the output directory; protoc flags may use {out} for the absolute binding
+# output directory.
+
+# The .proto sources are copied here so the generated library is self-contained.
+copy_to = "proto"
+
+# protoc writes the .pb.cc / .pb.h pair here.  Header and source live together so
+# the generated code needs no extra include-path juggling.
+out_dir = "src/proto"
+
+flags = ["--cpp_out={out}"]

@@ -1,0 +1,34 @@
+syntax = "proto3";
+package traps.v1;
+
+enum Severity {
+  SEVERITY_UNSPECIFIED = 0;
+  SEVERITY_WARNING = 1;
+  SEVERITY_CRITICAL = 2;
+}
+
+message Reading {
+  // A map -- protoc lowers this to a repeated synthetic LabelsEntry message.
+  map<string, int32> labels = 1;
+  map<string, Nested> nested_by_name = 2;
+
+  // A real oneof: exactly one may be set.
+  oneof source {
+    string sensor_id = 3;
+    uint32 sensor_index = 4;
+  }
+
+  // A proto3 optional -- protoc wraps this in a synthetic one-member oneof
+  // that must NOT be reported as a choice.
+  optional string note = 5;
+
+  Severity severity = 6;
+  repeated Nested history = 7;
+  bytes blob = 8;
+  int64 big = 9;
+
+  message Nested {
+    string name = 1;
+    double value = 2;
+  }
+}

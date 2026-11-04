@@ -1,0 +1,56 @@
+{#
+  Machine-readable description of this interface's discovery topic, emitted beside
+  the web app it belongs to.
+
+  An application that watches the broker for running services reads this file to learn
+  which topic advertises this interface, how to pull an instance's identity out of the
+  advertisement, and how to build a link into this web app for that instance.
+-#}
+{%- set web_query_params = ["service_id"] + stinger.topics.params -%}
+{
+  "format": "stinger-web-discovery/1",
+  "generator": {
+    "name": "stinger-ipc",
+    "version": {{ generator.version | tojson }}
+  },
+  "interface": {
+    "name": {{ stinger.name | tojson }},
+    "title": {{ stinger.title | tojson }},
+    "version": {{ stinger.version | tojson }},
+    "summary": {{ stinger.summary | tojson }}
+  },
+  "discovery": {
+    "topic_template": {{ stinger.interface_info_topic() | tojson }},
+    "topic_filter": {{ stinger.interface_info_subscription_topic() | tojson }},
+    "topic_segments": {
+      {%- set topic = stinger.interface_info_topic() %}
+      {%- for param in utils.get_topic_arguments(topic) %}
+      {{ param | tojson }}: {{ utils.topic_template_placeholder_index(topic, param) }}{{ "," if not loop.last }}
+      {%- endfor %}
+    },
+    "content_type": "application/json",
+    "payload_fields": {
+      "interface_name": "Name of the interface being advertised; always {{ stinger.name }} here.",
+      "title": "Human-readable title of the interface.",
+      "version": "Version of the interface the instance implements.",
+      "instance": "Identifier of the advertising instance; this is the {service_id} topic parameter.",
+      "connection_topic": "Topic carrying the instance's online/offline (last will) state.",
+      "timestamp": "ISO-8601 time at which the advertisement was published.",
+      "methods": "Map of method name to version, for methods that declare one.",
+      "commands": "Map of command name to version, for commands that declare one."{% for param in stinger.topics.params %},
+      {{ param | tojson }}: "Value of the {{ '{' }}{{ param }}{{ '}' }} topic parameter for this instance."{% endfor %}
+    }
+  },
+  "web_app": {
+    "entry": "index.html",
+    "link_template": "index.html?{% for param in web_query_params %}{{ param }}={{ '{' }}{{ param }}{{ '}' }}{{ "&" if not loop.last }}{% endfor %}",
+    "query_params": [
+      {%- for param in web_query_params %}
+      {
+        "name": {{ param | tojson }},
+        "from_payload": {{ ("instance" if param == "service_id" else param) | tojson }}
+      }{{ "," if not loop.last }}
+      {%- endfor %}
+    ]
+  }
+}

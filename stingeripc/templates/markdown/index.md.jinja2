@@ -1,3 +1,64 @@
+{%- macro argrow(arg) -%}
+|{{arg.name|center(15)}}|
+{%-if arg.arg_type.name.lower() == "enum" or arg.arg_type.name.lower() == "struct"%}{{arg.markdown.markdown_type|center(10)}}
+{%-else%}{{arg.json_type|center(10)}}
+{%-endif%}{%if arg.optional%} (optional){%endif%}|
+{{- arg.description or ''}}|
+{%- endmacro -%}
+{#- How a protobuf field's type is written in the .proto file it came from. -#}
+{%- macro fieldtype(field) -%}
+{%- if field.is_map -%}
+map&lt;{{ field.map_key.kind }}, {{ field.map_value.type_name or field.map_value.kind }}&gt;
+{%- elif field.repeated -%}
+repeated {{ field.type_name or field.kind }}
+{%- else -%}
+{{ field.type_name or field.kind }}
+{%- endif -%}
+{%- endmacro -%}
+{%- macro fieldrow(field) -%}
+|{{field.name|center(15)}}|{{ fieldtype(field)|center(10) }}|
+{%- if field.oneof_name %}One of `{{ field.oneof_name }}`; at most one member of the group is set.
+{%- elif field.optional %}Optional.
+{%- endif -%}|
+{%- endmacro -%}
+{#-
+    A protobuf payload, described by the message it carries and by that message's
+    fields.  The fields are listed because the generated API takes them one by one
+    rather than taking the message whole, so they are the parameters a caller passes.
+-#}
+{%- macro fieldtable(ref) -%}
+| Field         | Type     |Notes|
+|---------------|----------|-----|
+{%-for field in ref.param_fields%}
+{{fieldrow(field)}}
+{%- endfor %}
+{%- endmacro -%}
+{%- macro payloadtable(payload) -%}
+{%- if payload.is_protobuf -%}
+Carried as the protobuf message **`{{ payload.protobuf.full_name }}`**, defined in `{{ payload.protobuf.proto_file }}`.
+{% if payload.protobuf.param_fields %}
+{{ fieldtable(payload.protobuf) }}
+{%- else %}
+The message has no fields.
+{%- endif -%}
+{% else -%}
+{{ argtable(payload.arg_list) }}
+{%- endif -%}
+{%- endmacro -%}
+{%- macro argtable(arglist) -%}
+| Name          | Type     |Description|
+|---------------|----------|-----------|
+{%-for arg in arglist%}
+{{argrow(arg)}}
+{%- endfor %}
+{%- endmacro -%}
+{%- macro content_type_row(payload) -%}
+{%- if payload.is_protobuf -%}
+| content-type | `{{ payload.content_type }}; messageType="{{ payload.protobuf.full_name }}"` |
+{%- else -%}
+| content-type | `{{ payload.content_type }}` |
+{%- endif -%}
+{%- endmacro -%}
 # _{{stinger.title}}_ API Overview 
 
 <!--
@@ -22,396 +83,80 @@ For most languages, Stinger-IPC does not require a specific connection object im
 
 The application code is responsible for creating and managing the connection object, including connecting to the MQTT broker.
 
-### Connection code Examples
-
-<details>
-  <summary>Python MQTT Connection Example</summary>
-
-Rather than including connection code in each generated client and server, Stinger-IPC for Python uses the [PYQTtier](https://pypi.org/project/pyqttier/) library to provide MQTT connection objects.  PYQTtier is a wrapper around the [paho-mqtt](https://pypi.org/project/paho-mqtt/) library and handles serialization, message queuing, and acknowledgments.
-
-```python
-from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
-
-transport = MqttTransport(MqttTransportType.TCP, "localhost", 1883) # Or: MqttTransport(MqttTransportType.UNIX, socket_path="/path/to/socket")
-connection_object = Mqtt5Connection(transport)
-```
-
-The `connection_object` will be passed to client and server constructors.
-
-</details>
-
-<details>
-  <summary>Rust MQTT Connection Example</summary>
-
-Stinger-IPC instances only require an MQTT connection object that implements the [`stinger_mqtt_trait::Mqtt5PubSub` trait](https://docs.rs/stinger-mqtt-trait/latest/stinger_mqtt_trait/trait.Mqtt5PubSub.html). 
-
-The [MQTTier](https://crates.io/crates/mqttier) crate provides an implementation of the `Mqtt5PubSub` trait, and is shown in this documentation as an example.  MQTTier is a wrapper around the [rumqttc](https://crates.io/crates/rumqttc) crate and handles serialization, message queuing, and acknowledgments.'
-
-Here is an example showing how to create an MQTTier client connection object:
-
-```rust
-use mqttier::{MqttierClient, MqttierOptionsBuilder, Connection};
-
-let mqttier_options = MqttierOptionsBuilder::default()
-    .connection(Connection::TcpLocalhost(1883))
-    .client_id("rust-client-demo".to_string())
-    .build().unwrap();
-let mut connection_object = MqttierClient::new(mqttier_options).unwrap();
-let _ = connection_object.start().await;
-```
-
-The `connection_object` will be passed to client and server constructors.
-
-</details>
-
-<details>
-  <summary>C++ MQTT Connection Example</summary>
-
-The C++ connection object is a wrapper around the [libmosquitto](https://mosquitto.org/api/files/mosquitto-h.html) C library.  This library only supports TCP and WebSocket connections.  Unix Domain Socket support may be added in the future.
-
-```c++
-#include "broker.hpp"
-
-auto connection_object = std::make_shared<MqttBrokerConnection>("localhost", 1883, "daemon-name");
-```
-
-The `connection_object` will be passed to client and server constructors.
-
-</details>
-
 ## Discovery
 
 Because there may be multiple instances of the same Stinger Interface, a discovery mechanism is provided to find and connect to them.  A discovery class is provided which connects to
-the MQTT broker and listens for Stinger Interface announcements.  The discovery class can then provide {{stinger.rust.client_struct_name}} client instances.  Additionally, the discovery class
-find all the current property values for discovered interfaces in order to initialize the client instance.
+the MQTT broker and listens for Stinger Interface announcements.  The discovery class can then provide client instances.
 
-### Discovery Code Examples
+A server publishes its announcement as a **retained** message when it starts up, and re-publishes it every {{config.discovery.advert_interval_seconds}} seconds to keep the retained value fresh.  Because the message is retained, a discovery class that starts listening after a server is already running still receives its current announcement right away.  On a clean shutdown, the server publishes an empty payload to the same topic, which tells any listening discovery class that the instance is going away.
 
-<details>
-  <summary>Python Discovery Example</summary>
-
-```python
-from {{stinger.python.module_name}}.client import {{stinger.python.client_class_name}}Discoverer
-
-discovery = {{stinger.python.client_class_name}}Discoverer(connection_object)
-
-# To get a single client instance (waits until one is found):
-client = discovery.get_singleton_client().result()
-
-# To get all currently available client instances (does not wait):
-discovered_service_ids = discovery.get_service_instance_ids()
-clients = [discovery.get_client_for_instance(service_id) for service_id in discovered_service_ids]
-```
-</details>
-
-<details>
-  <summary>Rust Discovery Example</summary>
-
-```rust
-use {{stinger.rust.package_name}}::discovery::{{stinger.name|UpperCamelCase}}Discovery;
-
-let discovered_singleton_info = {
-    let service_discovery = {{stinger.name|UpperCamelCase}}Discovery::new(&mut connection_object).await.unwrap();
-    service_discovery.get_singleton_instance_info().await // Blocks until a service is discovered.
-}
-let {{stinger.name|snake_case}}_client = {{stinger.rust.client_struct_name}}::new(&mut connection_object, &discovered_singleton_info).await;
+```plantuml
+@startuml
+box Consumer
+participant Client
+participant Discovery
+end box
+participant Broker
+box Producer
+participant Server
+end box
+Server -> Broker : PUB Announcement(ServiceInfo)\n[retained]
+Discovery -> Broker : SUB Announcement Topic
+Discovery <- Broker : PUB Annoucement(ServiceInfo)
+Discovery -> Client ** : ServiceInfo
+Client -> Broker : SUB all the things
+Client -> Client : Do all the things
+@enduml
 ```
 
-</details>
+#### Announcement Contents
+
+| Name | Type | Description |
+|---|---|---|
+| instance | string | Identifies the specific instance of the service. |
+| {{stinger.topics.params|join(", ")}} | string | Topic parameter(s) that identify this instance on the broker. |
+| methods | map&lt;string,string&gt; | Maps method names to their version string, for methods that declare a version. |
+| commands | map&lt;string,string&gt; | Maps command names to their version string, for commands that declare a version. |
+
+#### MQTT Details
+
+| Field | Value |
+| --- | --- |
+| Topic | `{{stinger.interface_info_topic()}}` |
+| QoS | 1 |
+| Retain | true |
+
+| Property | Value |
+|---|---|
+| content-type | `application/json` |
 
 ## Server
 
-A server is a _provider_ of functionality.  It {%if stinger.signals|length > 0%}sends signals {%endif%}{%if stinger.methods|length > 0 %}and handles method calls {%endif%}{%if stinger.properties|length > 0 %}and owns property values{%endif%}.
+A server is a _provider_ of functionality.  It {%if stinger.signals|length > 0%}sends signals {%endif%}{%if stinger.methods|length > 0 %}and handles method calls {%endif%}{%if stinger.commands|length > 0 %}and receives commands {%endif%}{%if stinger.properties|length > 0 %}and owns property values{%endif%}.
 
 When constructing a server instance, a connection object{%if stinger.properties | length > 0 %} and initial property values must be provided{%endif%}.
 
-### Server Code Examples
-
-<details>
-  <summary>Python Server Object Construction</summary>
-{%if stinger.properties | length > 0 %}
-Because the server needs correct property values on initialization, a {{stinger.name|UpperCamelCase}}InitialPropertyValues object must be provided to
-the server constructor.
-{%endif%}
-{%if config.properties.stinger_owned_values %}
-```python
-from {{stinger.python.module_name}}.server import {{stinger.python.server_class_name}}
-from {{stinger.python.module_name}}.property import {{stinger.name|UpperCamelCase}}InitialPropertyValues
-
-# Ideally, you would load these initial property values from a configuration file or database.
-{%if stinger.properties | length > 0 %}
-initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
-{%for prop_name, prop in stinger.properties.items()%}
-    {{prop_name | snake_case}}=
-        {%-if prop.arg_list | length > 1%}
-        {{prop.python.class_name}}(
-            {%for arg in prop.arg_list%}
-            {{arg.name}}={{arg.get_random_example_value()}},
-            {%endfor%}
-        ),
-        {%-else-%}
-        {{prop.arg_list[0].get_random_example_value()}},
-        {%endif%}
-    {{prop_name | snake_case}}_version={{loop.index}},
-{%endfor%}
-)
-{%endif%}
-
-service_id = "py-server-demo:1" # Can be anything. When there is a single instance of the interface, 'singleton' is often used.
-server = {{stinger.python.server_class_name}}(connection_object, service_id, {%if stinger.properties | length > 0 %}initial_property_values{%endif%})
-```
-{%else %}{# app-owned property values#}
-{%if stinger.properties | length > 0 %}
-Application code owns property values. In order for the server to read and write those property values, a {{stinger.name|UpperCamelCase}}PropertyAccess
-object must be provided to the server constructor with function pointers to getters and setters.
-{%endif%}
-```python
-from {{stinger.python.module_name}}.server import {{stinger.python.server_class_name}}
-from {{stinger.python.module_name}}.property import {{stinger.name|UpperCamelCase}}PropertyAccess
-
-{%if stinger.properties | length > 0 %}
-# Create a structure which tells the stinger server how to get and set property values.
-property_access = {{stinger.name|UpperCamelCase}}PropertyAccess(
-    {%for prop_name, prop in stinger.properties.items()%}
-    {{prop_name | snake_case}}_getter=property_owner.get_property_{{prop_name | snake_case}},
-    {%-if not prop.read_only%}
-    {{prop_name | snake_case}}_setter=property_owner.set_property_{{prop_name | snake_case}},
-    {%-endif%}
-    {%endfor%}{# end foreach property#}
-)
-{%endif%}
-service_id = "py-server-demo:1" # Can be anything. When there is a single instance of the interface, 'singleton' is often used.
-server = {{stinger.python.server_class_name}}(connection_object, service_id, {%if stinger.properties | length > 0 %}property_access{%endif%})
-```
-{%endif%}
-
-The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
-
-A full example can be viewed by looking at the `example/server_demo.py` file of the generated code.
-
-When decorating class methods, especially when there might be multiple instances of the class with methods being decorated, the Python implementation provides a `{{stinger.python.client_class_name}}Builder`
-class to help capture decorated methods and bind them to a specific instance at runtime. Here is an example of how to use it in a class:
-
-```python
-from {{stinger.python.module_name}}.client import {{stinger.python.client_class_name}}Builder
-
-{{stinger.name|snake_case}}_builder = {{stinger.python.client_class_name}}Builder()
-
-class MyClass:
-    def __init__(self, label: str, connection: MqttBrokerConnection):
-        instance_info = ... # Create manually or use discovery to get this
-        self.client = {{stinger.name|snake_case}}_builder.build(connection_object, instance_info, binding=self) # The binding param binds all decorated methods to the `self` instance.
-
-    @{{stinger.name|snake_case}}_builder.receive_a_signal
-    def on_a_signal(self, param1: int, param2: str):
-        ...
-```
-
-A more complete example, including use with the discovery mechanism, can be viewed by looking at the generated `examples/server_demo_classes.py` file.
-
-</details>
-
-<details>
-  <summary>Rust Server Struct Creation</summary>
-
-Service code for Rust is only available when using the `server` feature:
-
-```sh
-cargo add {{stinger.rust.package_name}} --features=server
-```
-
-Here is an example of how to create a server instance:
-
-```rust
-use {{stinger.rust.package_name}}::server::{{stinger.rust.server_struct_name}};
-{%-if stinger.properties|length > 0%}
-use {{stinger.rust.package_name}}::property::{{stinger.name | UpperCamelCase}}InitialPropertyValues;
-{%-endif%}
-
-let service_id = String::from("rust-server-demo:1");
-{%if stinger.properties | length > 0 %}
-let initial_property_values = {{stinger.name | UpperCamelCase}}InitialPropertyValues {
-    {%for prop_name, prop in stinger.properties.items()%}
-    {{prop_name | snake_case}}: 
-    {%-if prop.arg_list|length == 1%}{{prop.arg_list[0].get_random_example_value(lang="rust")}},
-    {%-else-%}
-    {{prop.rust.type}} {
-        {%-for arg in prop.arg_list %}
-            {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
-        {%-endfor%}
-    },
-    {%-endif%}
-    {{prop_name | snake_case}}_version: 1,
-    {%endfor%}
-};
-{%endif%}
-{%if stinger.methods|length > 0%}
-// Create the server object.
-let mut server = {{stinger.rust.server_struct_name}}::new(connection_object, method_handlers.clone(), service_id,{%if stinger.properties|length > 0 %} initial_property_values, {%endif%}).await;
-{%else%}
-// Create the server object.
-let mut server = {{stinger.rust.server_struct_name}}::new(connection_object, serivce_id{%if stinger.properties|length > 0 %} initial_property_values, {%endif%}).await;
-{%endif%}
-
-```
-
-Providing method handlers is better described in the [Methods](#methods) section.  
-
-A full example can be viewed by looking at the generated `examples/server_demo.rs` example and can be compiled with `cargo run --example {{stinger.name|snake_case}}_server_demo --features=server` in the generated Rust project.
-
-</details>
-
-<details>
-  <summary>C++ Server Object Construction</summary>
-
-```c++
-// To be written
-```
-
-The `server` object provides methods for emitting signals and updating properties.  It also allows for decorators to indicate method call handlers.
-
-A full example can be viewed by looking at the generated `examples/server_main.cpp` file.`
-
-</details>
-
 ## Client
 
-A client is a _utilizer_ of functionality.  It receives signals, makes method calls, reads property values, or requests updates to property values.
+A client is a _utilizer_ of functionality.  It receives signals, makes method calls, sends commands, reads property values, or requests updates to property values.
 
-<details>
-  <summary>Rust Client Struct Creation</summary>
+A client does not subscribe to a property until the application first asks for it.
+Registering a changed-value handler subscribes, so the handler is called with the
+server's current value shortly afterwards.  Reading a property also subscribes, then
+waits up to five seconds for the value and fails if none arrives.  Writing a property
+does the same{%if config.properties.version_tracking%}, because the update request has to carry the version of the value the
+client last saw{%endif%}.
 
-The best way to create a client instance is to use the discovery class to find an instance of the service, and then create the client from the discovered instance information.
-An example of that is shown in the [Discovery](#discovery) section.  However, if you already know the service instance ID{%if stinger.properties|length > 0 %}and initial property values{%endif%}, you can create a client directly:
 
-```rust
-use {{stinger.rust.package_name}}::client::{{stinger.rust.client_struct_name}};
-
-let instance_info = DiscoveredInstance {
-    service_instance_id: String::from("singleton"),
-    {%if stinger.properties | length > 0 %}
-    initial_property_values: {{stinger.name | UpperCamelCase}}InitialPropertyValues {
-        {%for prop_name, prop in stinger.properties.items()%}
-        {{prop_name | snake_case}}: 
-        {%-if prop.arg_list|length == 1%}{{prop.arg_list[0].get_random_example_value(lang="rust")}},
-        {%-else-%}
-        {{prop.rust.type}} {
-            {%-for arg in prop.arg_list %}
-                {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust")}},
-            {%-endfor%}
-        },
-        {%-endif%}
-        {{prop_name | snake_case}}_version: 1,
-        {%endfor%}
-    },
-    {%endif%}
-};
-
-let {%if stinger.methods|length > 0%}mut {%endif%}{{stinger.name|snake_case}}_client = {{stinger.rust.client_struct_name}}::new(connection_object.clone(), instance_info).await;
-```
-
-A full example can be viewed by looking at the generated `client/examples/client_demo.rs` file.
-
-</details>
-
-<details>
-  <summary>Python Client Object Construction</summary>
-{%if stinger.properties|length > 0%}
-Because the client needs correct property values on initialization, a {{stinger.name|UpperCamelCase}}InitialPropertyValues object must be provided to
-the client constructor.  This object is generally created by the discovery mechanism.
-{%endif%}
-```python
-from {{stinger.python.module_name}}.server import {{stinger.python.server_class_name}}{%if stinger.properties|length > 0 %}, {{stinger.name|UpperCamelCase}}InitialPropertyValues{%endif%}
-
-{%if stinger.properties | length > 0 %}
-initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
-{%for prop_name, prop in stinger.properties.items()%}
-    {{prop_name | snake_case}}=
-        {%-if prop.arg_list | length > 1%}
-        {{prop.python.class_name}}(
-            {%for arg in prop.arg_list%}
-            {{arg.name}}={{arg.get_random_example_value()}},
-            {%endfor%}
-        ),
-        {%-else-%}
-        {{prop.arg_list[0].get_random_example_value()}},
-        {%endif%}
-    {{prop_name | snake_case}}_version={{loop.index}},
-{%endfor%}
-)
-{%endif%}
-
-service_instance_id="singleton"
-server = {{stinger.python.server_class_name}}(connection_object, service_instance_id{%if stinger.properties | length > 0 %}, initial_property_values{%endif%})
-```
-
-A full example can be viewed by looking at the generated `examples/client_main.py` file.
-
-Like the Python client, there is a `{{stinger.python.server_class_name}}Builder` class to help capture decorated methods and bind them to a specific instance at runtime.
-
-```python
-
-</details>
-
-<details>
-  <summary>C++ Client Object Construction</summary>
-
-A full example can be viewed by looking at the generated `examples/client_main.cpp` file.
-
-</details>
-
-## Logging
-
-Each generated language has different ways of handling logging.  
-
-### Python
-
-Python uses the standard Python `logging` module.  
-
-### Rust
-
-Rust uses the `tracing` crate for logging.
-
-### C++
-
-C++ uses a user-provided logging function.  The function should take two parameters: an integer log level and a string message. 
-
-Log levels are re-used from the `syslog.h` header file, although no other syslog mechanisms are used.  Client and server classes use the logging provided by the `MqttBrokerConnection` object.
-
-<details>
-  <summary>Example C++ Log Setup</summary>
-
-```c++
-#include <syslog.h>
-
-auto connection = std::make_shared<MqttBrokerConnection>(...);
-connection->SetLogLevel(LOG_DEBUG);
-connection->SetLogFunction([](int level, const char* msg)
-{
-    std::cout << "[" << level << "] " << msg << std::endl;
-});
-```
-
-</details>
-
-{%macro argrow(arg) -%}
-|{{arg.name|center(15)}}|
-{%-if arg.arg_type.name.lower() == "enum" or arg.arg_type.name.lower() == "struct"%}{{arg.markdown.markdown_type|center(10)}}
-{%-else%}{{arg.json_type|center(10)}}
-{%-endif%}{%if arg.optional%} (optional){%endif%}|
-{{- arg.description or ''}}|
-{%- endmacro %}
-{%macro argtable(arglist) -%}
-| Name          | Type     |Description|
-|---------------|----------|-----------|
-{%-for arg in arglist%}
-{{argrow(arg)}}
-{%- endfor %}
-{%- endmacro %}
 {%if stinger.signals | length > 0 %}
 ## Signals
 
 Signals are messages from a server to clients.
+
+A client subscribes to a signal only when the application first registers a handler for
+it (or, in Rust, asks for its receiver), so a signal nothing is listening for is never
+received.  Signals are not retained, so a signal emitted before a handler is registered
+is missed.
 
 ```plantuml
 @startuml
@@ -425,85 +170,22 @@ Client <<- Server : Signal(Parameters)
 
 #### Signal Parameters for `{{sig_name}}`
 
-{{argtable(signal.arg_list)}}
+{{payloadtable(signal.payload)}}
 
-#### Code Examples
+#### MQTT Details
 
-<details>
-  <summary>Python Client code for receiving '{{sig_name}}' signal</summary>
+| Field | Value |
+| --- | --- |
+| Topic | `{{signal.topic()}}` |
+| QoS | 1 |
+| Retain | false |
 
-The `{{sig_name}}` signal can be subscribed to by using the client's `receive_{{sig_name | snake_case }}` decorator on a callback function. The name of the function does not matter. The function is called any time the signal is received.
-
-```python
-@client.receive_{{sig_name | snake_case }}
-def on_{{sig_name | snake_case }}({%for arg in signal.arg_list%}{{arg.name}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}):
-    print(f"Got a '{{sig_name}}' signal: {%for arg in signal.arg_list%}{{arg.name}}={ {{arg.name}} } {%endfor%}")
-```
-
-</details>
-
-<details>
-  <summary>Python Server code for emitting '{{sig_name}}' signal</summary>
-
-A server can emit a `{{sig_name}}` signal simply by calling the server's `emit_{{sig_name | snake_case}}` method.
-
-```python
-server.emit_{{sig_name | snake_case}}({%for arg in signal.arg_list%}{{arg.get_random_example_value(lang="python")}}{%if not loop.last%}, {%endif%}{%endfor%})
-```
-
-</details>
-
-<details>
-  <summary>Rust Client code for receiving '{{sig_name}}' signal</summary>
-
-A Rust client receives signals through a `tokio::broadcast` channel.  Receiving from the channel returns a `Result<T, RecvError>` object.  
-
-Since receiving a message through the channel blocks, it may be best to put this into a separate async task.
-
-```rust
-let mut {{sig_name|snake_case}}_signal_rx = client.get_{{sig_name|snake_case}}_receiver();
-print("Got a '{{sig_name}}' signal: {:?}", {{sig_name|snake_case}}_signal_rx.recv().await);
-```
-
-</details>
-
-<details>
-  <summary>Rust Server code for emitting '{{sig_name}}' signal</summary>
-
-A server can emit a `{{sig_name}}` signal simply by calling the server's `emit_{{sig_name | snake_case}}` method.
-
-```rust
-let publish_result = server.emit_{{sig_name|snake_case}}({%for arg in signal.arg_list%}{{arg.get_random_example_value(lang="rust")}}{%if not loop.last%}, {%endif%}{%endfor%}).await;
-```
-
-The return type is a **Pinned Boxed Future** that resolves to a `Result<(), MethodReturnCode>`.  The future is resolved when the signal is sent (with "publish complete" acknowledgment) or when an error occurs.  If you need to block until the signal is received by the MQTT broker, you can `.await` the future.
-
-</details>
-
-<details>
-  <summary>C++ Client code for registering a '{{sig_name}}' signal callback</summary>
-
-A client can register a callback function to be called when a `{{sig_name}}` signal is received.  The callback function should take the same parameters as the signal.  In this example, we are using a lambda as the callback function.
-
-```cpp
-client.register{{sig_name | UpperCamelCase}}Callback([]({%for arg in signal.arg_list%}{{arg.cpp.type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}) {
-    std::cout << {%for arg in signal.arg_list%}"{{arg.name}}=" << {%-if arg.optional%} "None"{%else%}{%if arg.arg_type.name.lower() == 'enum'%}{{arg.enum.name | camelCase }}Strings[static_cast<int>({{arg.name}})]{%else%}{{arg.name}}{%endif%}{%endif%} << {%if not loop.last %}" | " << {%endif%}{%endfor%} std::endl;
-});
-```
-
-</details>
-
-<details>
-  <summary>C++ Server code for emitting a '{{sig_name}}' signal</summary>
-
-A `{{sig_name}}` signal can be emitted by calling the server's `emit{{sig_name | UpperCamelCase}}Signal` method.  This returns a `std::future` that can be waited on if desired.  The future is resolved when the signal is sent.
-
-```cpp
-auto {{sig_name|lowerCamelCase}}Future = server.emit{{sig_name | UpperCamelCase}}Signal({%for arg in signal.arg_list%}{{arg.get_random_example_value(lang="c++")}}{%if not loop.last%}, {%endif%}{%endfor%});
-{{sig_name|lowerCamelCase}}Future.wait(); // Optional, to block until signal is sent.
-```
-
-</details>
+| Property | Value |
+|---|---|
+{{content_type_row(signal.payload)}}
+{% if signal.version -%}
+| user-property | name:`Version` value:`{{ signal.version }}` |
+{% endif %}
 
 {%endfor%}{#- end for each signal -#}
 {%endif%}{#- end if there are signals -#}
@@ -521,81 +203,152 @@ Client <<-- Server: Response(Parameters)
 @enduml
 ```
 
+**Method Return Codes**
+
+These return codes are used in method responses.  The string representation of the integer is used in an MQTT user property.
+
+| Return Code | Value |
+|---|---|
+| SUCCESS | 0 |
+| CLIENT_ERROR | 1 |
+| SERVER_ERROR | 2 |
+| TRANSPORT_ERROR | 3 |
+| PAYLOAD_ERROR | 4 |
+| CLIENT_SERIALIZATION_ERROR | 5 |
+| CLIENT_DESERIALIZATION_ERROR | 6 |
+| SERVER_SERIALIZATION_ERROR | 7 |
+| SERVER_DESERIALIZATION_ERROR | 8 |
+| METHOD_NOT_FOUND | 9 |
+| UNAUTHORIZED | 10 |
+| TIMEOUT | 11 |
+| OUT_OF_SYNC | 12 |
+| UNKNOWN_ERROR | 13 |
+| NOT_IMPLEMENTED | 14 |
+| SERVICE_UNAVAILABLE | 15 |
+
 {%for method_name, method in stinger.methods.items()%}
 ### Method `{{method_name}}`
 
 {{method.documentation or "_No documentation for this method_"}}
 
 #### Request Parameters
-{%if method.arg_list | length == 0%}
+{%if method.request_payload.is_empty%}
 There are no arguments for this request.
 {%else-%}
-{{argtable(method.arg_list)}}
+{{payloadtable(method.request_payload)}}
 {%endif%}{# number of args #}
-#### Return Parameters
 
-{%if method.return_value_type == "struct" %}
-{{argtable(method.return_arg_list)}}
-{%elif method.return_value_type is false -%}
-There is no return value for this method call.
+#### Request MQTT Details
+
+| Field | Value |
+| --- | --- |
+| Topic | `{{method.request_topic()}}` |
+| QoS | 2 |
+| Retain | false |
+
+| Property | Value |
+|---|---|
+{{content_type_row(method.request_payload)}}
+| correlation-data | Any unique data, though random UUID is common |
+| response-topic | `{{method.response_topic()}}` |
+{% if method.version -%}
+| user-property | name:`Version` value:`{{ method.version }}` |
+{% endif %}
+
+#### Return Value
+
+{%if not method.has_response -%}
+There is no return value for this method call.  An empty response object will still be sent from server to client.
 {%else-%}
-The return value type is `{{method.return_value.json_type}}`.
+{{payloadtable(method.response_payload)}}
 {%endif-%}
 
-#### Code Examples
+#### Response MQTT Details
 
-<details>
-  <summary>Python Client code for calling the '{{method_name}}' method</summary>
+| Field | Value |
+| --- | --- |
+| Topic | Whatever response topic was passed in the request. |
+| QoS | 1 |
+| Retain | false |
 
-The `{{method_name}}` method can be called by calling the clients's `{{method_name|snake_case}}` method.
-This returns a `Future` object.  In this example, we wait up to 5 seconds for the result.
+| Property | Value |
+|---|---|
+{{content_type_row(method.response_payload)}}
+| correlation-data | Exact copy of the request's correlation-data |
+| user-property | name:`ReturnCode` value:`0` |
+{% if method.version -%}
+| user-property | name:`Version` value:`{{ method.version }}` |
+{% endif %}
 
-```python
-from futures import Future
+#### Error Value
 
-future = client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
-try:
-    print(f"RESULT:  {future.result(5)}")
-except futures.TimeoutError:
-    print(f"Timed out waiting for response to '{{method_name|snake_case}}' call")
-```
+In case there was an error with processing the request, an empty JSON object (`{}`) is returned back as the MQTT.
 
-</details>
+#### Error Response MQTT Details
 
-<details>
-  <summary>Python Server code for handling the '{{method_name}}' method</summary>
+| Field | Value |
+| --- | --- |
+| Topic | Whatever response topic was passed in the request. |
+| QoS | 1 |
+| Retain | false |
 
-The server provides an implementation for the `{{method_name}}` method by using the `@server.handle_{{method_name|snake_case}}` decorator on a function.  The name of the function does not matter. 
-The decorated method is called everytime the a request for the method is received.  In an error, the method can raise on of the exceptions found in `method_codes.py`.
+| Property | Value |
+|---|---|
+| content-type | `application/json` |
+| correlation-data | Exact copy of the request's correlation-data |
+| user-property | name:`ReturnCode` value:Numerical return code |
+| user-property | name:`DebugInfo` value:A string providing extra info (optional) |
+{% if method.version -%}
+| user-property | name:`Version` value:`{{ method.version }}` |
+{% endif %}
 
-```python
-@server.handle_{{method_name | snake_case}} 
-def {{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.name}}: {{arg.python.annotation}}{%if not loop.last%}, {%endif%}{%endfor%}) -> {{method.python.return_value_annotation}}:
-    """ This is an example handler for the '{{method_name}}' method.  """
-    print(f"Running {{method_name | snake_case}}'({%for arg in method.arg_list %}{ {{-arg.name-}} }{%if not loop.last%}, {%endif%}{%endfor%})'")
-    return {{method.get_return_value_random_example_value('python')}}
-```
-
-</details>
-
-<details>
-  <summary>Rust Client code for calling the '{{method_name}}' method</summary>
-
-The `{{stinger.rust.client_struct_name}}` provides an implementation for the `{{method_name}}` method.  It will block and return a Result object of either the return payload value, or an error.
-
-```rust
-let result = api_client.{{method_name | snake_case}}({%for arg in method.arg_list%}{{arg.get_random_example_value(lang='rust')}}{%if not loop.last%}, {%endif%}{%endfor%}).await.expect("Failed to call {{method_name}}");
-println!("{{method_name}} response: {:?}", result);
-```
-
-</details>
-
-{%endfor-%}
+{%endfor-%}{#end for each method#}
 {%endif%}
+{#- ------------------------------------------------------- -#}
+{%if stinger.commands | length > 0 %}
+## Commands
+
+Commands are messages from a client to a server.  A command is the mirror image of a signal: it travels client to server instead of server to client.  Put another way, it is a method call with no response.
+Commands are fire-and-forget.  There is no response message, so a client never learns whether the server acted on the command, and the server never learns which client sent it.
+
+```plantuml
+@startuml
+Client ->> Server : Command(Parameters)
+@enduml
+```
+{%for command_name, command in stinger.commands.items()%}
+### Command `{{command_name}}`
+
+{{command.documentation or "_No documentation for this command_"}}
+
+#### Command Parameters for `{{command_name}}`
+{%if command.payload.is_empty%}
+There are no arguments for this command.
+{%else-%}
+{{payloadtable(command.payload)}}
+{%endif%}{# number of args #}
+
+####  MQTT Details
+
+| Field | Value |
+| --- | --- |
+| Topic | `{{command.topic()}}` |
+| QoS | {{stinger.command_qos}} |
+| Retain | false |
+
+| Property | Value |
+|---|---|
+{{content_type_row(command.payload)}}
+{% if command.version -%}
+| user-property | name:`Version` value:`{{ command.version }}` |
+{% endif %}
+
+{%endfor%}{#- end for each command -#}
+{%endif%}{#- end if there are commands -#}
 {#- ------------------------------------------------------- #}
 {%if stinger.properties | length > 0 %}## Properties
 
-Properties are values (or a set of values) held by the server.   They are re-published when the value changes. 
+Properties are values held by the server.  They are re-published when the value changes.  Each property holds exactly one value, but that value can be an array or a struct.
 
 ```plantuml
 @startuml
@@ -610,65 +363,24 @@ Client <<- Server: Property Updated
 
 This property is **read-only**.  It can only be modified by the server.{%endif%}
 
-{{argtable(prop.arg_list)}}
+{{payloadtable(prop.payload)}}
 
-### Code Examples
+####  MQTT Details
 
-<details>
-  <summary>Rust Server code for reading and writing the '{{prop_name}}' property</summary>
+**Topic:** `{{prop.value_topic()}}`
+**QoS:** 1 
+**Retain:** true
 
-A server hold the "source of truth" for the value of `{{prop_name}}`.  An `Arc` pointer can be copied and moved that points to the server's property value.   Here is how to write a new value:
+| Property | Value |
+|---|---|
+{{content_type_row(prop.payload)}}
+{% if config.properties.version_tracking -%}
+| user-property | name:`PropertyVersion` value:Last server-published version of the property |
+{% endif -%}
+{% if prop.version -%}
+| user-property | name:`Version` value:`{{ prop.version }}` |
+{% endif %}
 
-```rust
-let {{prop_name|snake_case}}_handle = server.get_{{prop_name|snake_case}}_handle();
-{
-    let mut {{prop_name|snake_case}}_guard = {{prop_name|snake_case}}_handle.write().await;
-    {%-if prop.arg_list | length == 1 %}
-    *{{prop_name|snake_case}}_guard = {{prop.arg_list[0].get_random_example_value(lang="rust", seed=4)}};
-    {%else%}
-    let new_{{prop_name|snake_case}}_value = {{prop.rust.type}} {
-        {%-for arg in prop.arg_list %}
-            {{arg.name|snake_case}}: {{arg.get_random_example_value(lang="rust", seed=4)}},
-        {%-endfor%}
-    };
-    *{{prop_name|snake_case}}_guard = new_{{prop_name|snake_case}}_value;
-    {%endif-%}
-
-    // Optional, block until the property is published to the MQTT broker:
-    {{prop_name|snake_case}}_guard.commit(std::time::Duration::from_secs(2)).await;
-
-    // If not committed, the property will be published when the guard is dropped in "fire-and-forget" mode.
-}
-
-```
-
-If only reading the value, a read guard can be used:
-
-```rust
-let {{prop_name|snake_case}}_guard = {{prop_name|snake_case}}_handle.read().await;
-```
-
-Application code can subscribe to property updates by subscribing to a `tokio::sync::watch` channel which can be obtained by:
-
-```rust
-let {{prop_name|snake_case}}_watch_rx = client.watch_{{prop_name|snake_case}}();
-
-if {{prop_name|snake_case}}_watch_rx.changed().await.is_ok() {
-    let latest = {{prop_name|snake_case}}_watch_rx.borrow().clone();
-    println!("Property updated: {:?}", latest);
-}
-```
-</details>
-
-<details>
-  <summary>Rust Client code for reading {%if not prop.read_only %}and writing {%endif%} the '{{prop_name}}' property</summary>
-
-  A Rust client works with properties the same was as the server.  {%if prop.read_only%}However, since this property is read-only, the client cannot get a write handle to modify the value.
-  {%else%}
-  When using the `commit()` method on the write guard, the client will send a request to the server to update the property value and block until the server acknowledges the update.
-  {%endif%}
-
-</details>
 
 {%endfor%}{# for each property #}
 {%endif%}{#end condition that there are a number of properties#}
@@ -694,5 +406,5 @@ Structures are a group of values and may be used as an argument in signals, meth
 
 <a name="Struct-{{istruct.class_name}}"></a>{{istruct.description or "_No general description exists for this structure_"}}
 
-{{argtable(istruct.members)}}
+{{argtable(istruct.values)}}
 {%endfor%}

@@ -1,0 +1,885 @@
+$id: "https://stingeripc.peargrove.com/stingeripc.schema.yaml"
+$schema: "http://json-schema.org/draft-07/schema#"
+description: |
+  This schema is used to validate StingerIPC stinger files.  
+type: object
+
+properties:
+
+  stingeripc:
+    type: object
+    properties:
+      version:
+        type: string
+        description: "This is the version of the schema that the rest of the file follows."
+        enum:
+          - "0.3.0"
+    required:
+      - version
+
+  interface:
+    type: object
+    properties:
+      name:
+        type: string
+        pattern: "^[a-zA-Z0-9_-]+$"
+        maxLength: 32
+        description: "A short token that will be used to create class names, folder names, filenames, etc."
+        not: 
+          $ref: "#/$defs/reservedKeywords"
+      title:
+        type: string
+        maxLength: 64
+        description: "A few words that are the title for the API.  Used at the top of documentation, etc.  The interface name is used if not provided."
+      summary:
+        type: string
+        description: "A one sentence description of the service."
+        maxLength: 128
+      version:
+        type: string
+        maxLength: 32
+      documentation:
+        $ref: "#/$defs/documentation"
+      description: false
+      license:
+        type: string
+        description: "The license or copyright under which this interface is provided.  All generated code will be subject to this license."
+      enums: false # 'enums' is allowed only at the top level
+      structures: false # 'structures' is allowed only at the top level
+      signals: false # 'signals' is allowed only at the top level
+      properties: false # 'properties' is allowed only at the top level
+      methods: false # 'methods' is allowed only at the top level
+      commands: false # 'commands' is allowed only at the top level
+      constants: false # 'constants' is allowed only at the top level
+    required:
+      - name
+      - version
+
+  configuration:
+    type: object
+    properties:
+      mimeType:
+        type: string
+        default: "application/json"
+        enum: ["application/json", "application/protobuf", "application/x-fory"]
+        description: >
+          Describes how to encode messages.  All messages will be encoded into this mime type.
+          If "application/json", any protobuf objects will be turned into JSON payloads and
+          will be sent with "application/protobuf+json" in the content-type header.
+      topics:
+        type: object
+        description: >
+          The broker topic templates this interface's messages travel on.  Both sides of
+          the interface must agree on them, so they are declared here rather than in the
+          code generator's own configuration files.  Each template is a topic string in
+          which "{placeholder}" segments are filled in at runtime.  Every key is optional;
+          an omitted key keeps its default.
+        properties:
+          params:
+            type: array
+            uniqueItems: true
+            description: >
+              Extra topic placeholders -- beyond the ones StingerIPC fills in itself -- that the
+              templates below may use.  A value for each is supplied when a client or server is
+              constructed, which is how one interface can be hosted under several topic trees.
+            items:
+              type: string
+              pattern: "^[a-zA-Z0-9]+(_[a-zA-Z0-9]+)*$"
+              not:
+                $ref: "#/$defs/reservedTopicParams"
+          signals:
+            type: string
+            default: "{interface_name}/{service_id}/signal/{signal_name}"
+            description: "Topic template for signals."
+          propertyValues:
+            type: string
+            default: "{interface_name}/{service_id}/property/{property_name}/value"
+            description: "Topic template for published property values.  Must contain {property_name} and {service_id}."
+          propertyUpdates:
+            type: string
+            default: "{interface_name}/{service_id}/property/{property_name}/update"
+            description: "Topic template for property update requests."
+          propertyUpdateResponses:
+            type: string
+            default: "client/{client_id}/{interface_name}/property/{property_name}/update/response"
+            description: "Topic template for property update responses.  Must contain {property_name}."
+          commands:
+            type: string
+            default: "{interface_name}/{service_id}/command/{command_name}"
+            description: "Topic template for commands.  Must contain {command_name} and {service_id}."
+          methodRequests:
+            type: string
+            default: "{interface_name}/{service_id}/method/{method_name}/request"
+            description: "Topic template for method requests."
+          methodResponses:
+            type: string
+            default: "client/{client_id}/{interface_name}/method/{method_name}/response"
+            description: "Topic template for method responses.  Must contain {method_name}, and must differ from propertyUpdateResponses."
+          interfaceDiscovery:
+            type: string
+            default: "{interface_name}/{service_id}/interface"
+            description: "Topic template on which a server advertises this interface."
+          lwt:
+            type: string
+            default: "client/{client_id}/online"
+            description: "Topic template for Last Will and Testament (online/offline) messages."
+        additionalProperties: false
+    additionalProperties: false
+
+  topics: false # Topic templates belong under 'configuration'
+  topic: false # Topic templates belong under 'configuration'
+
+  enums:
+    type: object
+    propertyNames:
+      pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
+    additionalProperties:
+      oneOf:
+      - type: object
+        properties:
+          $ref:
+            type: string
+        additionalProperties: false
+      - type: object
+        properties:
+          values:
+            type: array
+            uniqueItems: true
+            minItems: 1
+            items:
+              type: object
+              properties:
+                name:
+                  type: string
+                  pattern: "^[a-zA-Z0-9_-]+$"
+                description:
+                  $ref: "#/$defs/enumValueDescription"
+                documentation: false
+                value:
+                  type: integer
+              required:
+                - name
+            version:
+              type: string
+              pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+              description: >
+                A semantic version that can be used to determine data consistency in this specification.
+          documentation:
+            $ref: "#/$defs/documentation"
+          description: false
+        required:
+          - values
+
+  enumerations: false # Use 'enums' instead
+  enum: false # Use 'enums' instead
+  enumeration: false # Use 'enums' instead
+
+  structures:
+    type: object
+    propertyNames:
+      pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
+    additionalProperties:
+      oneOf:
+      - type: object
+        properties:
+          $ref:
+            type: string
+        additionalProperties: false
+      - type: object
+        properties:
+          values:
+            $ref: "#/$defs/payload"
+          members: false # Use 'values' instead
+          documentation:
+            $ref: "#/$defs/documentation"
+          description: false
+          version:
+              type: string
+              pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+              description: >
+                A semantic version that can be used to determine data consistency in this specification.
+        required:
+          - values
+        dependencies:
+          version:
+            properties:
+              values:
+                $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
+
+  structs: false # Use 'structures' instead
+  struct: false # Use 'structures' instead
+  structure: false # Use 'structures' instead
+
+  signals:
+    type: object
+    propertyNames:
+      pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
+    additionalProperties:
+      $ref: "#/$defs/signal"
+
+  sigs: false # Use 'signals' instead
+  signal: false # Use 'signals' instead
+
+  properties:
+    type: object
+    propertyNames:
+      pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
+    additionalProperties:
+      $ref: "#/$defs/property"
+
+  props: false # Use 'properties' instead
+  property: false # Use 'properties' instead
+
+  methods:
+    type: object
+    propertyNames:
+      pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
+    additionalProperties:
+      $ref: "#/$defs/method"
+
+  method: false # Use 'methods' instead
+
+  commands:
+    type: object
+    propertyNames:
+      pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
+    additionalProperties:
+      $ref: "#/$defs/command"
+
+  command: false # Use 'commands' instead
+  cmds: false # Use 'commands' instead
+  cmd: false # Use 'commands' instead
+
+  constants:
+    type: object
+    propertyNames:
+      pattern: "^[a-zA-Z0-9_-]+$"
+      not: 
+        $ref: "#/$defs/reservedKeywords"
+    additionalProperties:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - float
+            - string
+            - integer
+            - boolean
+        value:
+          type: ["string", "number", "boolean"]
+        description:
+          $ref: "#/$defs/constantValueDescription"
+        documentation: false
+      required:
+        - type
+        - value
+
+  const: false # Use 'constants' instead
+  constant: false # Use 'constants' instead
+
+required:
+  - stingeripc
+  - interface
+
+$defs:
+
+  reservedKeywords:
+    type: string
+    enum: ["type", "class", "struct", "enum", "list", "map", "set", "optional", "bool", "int", "float", "string", "datetime", "duration", "binary"]
+
+  reservedTopicParams:
+    type: string
+    description: "Topic placeholders StingerIPC fills in itself; an interface may not redeclare them as its own params."
+    enum: ["interface_name", "service_id", "signal_name", "property_name", "method_name", "command_name", "client_id", "instance_id"]
+
+  documentation:
+    type: string
+    description: "Documentation.  May be multi-line.  May be markdown formatted."
+
+  versionField:
+    type: string
+    pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+    description: >
+      A semantic version that can be used to determine data consistency in this specification.
+
+  consumersField:
+    type: array
+    items:
+      type: string
+      pattern: "^[a-zA-Z0-9_-]+$"
+    uniqueItems: true
+    description: >
+      A list of names representing interface consumers that are allowed access to this signal, property, method, or command.
+
+  argDescription:
+    type: string
+    description: "A short description of an argument as a single line."
+    maxLength: 512
+    pattern: "^[^\n\r]*$"
+
+  payload:
+    type: array
+    uniqueItems: true
+    items:
+      $ref: "#/$defs/arg"
+
+  protobufPayload:
+    type: string
+    description: >-
+      The fully-qualified name of a protobuf message carrying this payload, e.g.
+      'weather.v1.Forecast'.  Resolved against the .proto sources configured for
+      the interface, or, for a name in the 'google.protobuf' package, against
+      protobuf's own well-known types, which every protobuf runtime ships.
+
+  enumValueDescription:
+    type: string
+    description: "A short description of an enum value as a single line."
+    maxLength: 512
+    pattern: "^[^\n\r]*$"
+
+  constantValueDescription:
+    type: string
+    description: "A short description of a constant value as a single line."
+    maxLength: 512
+    pattern: "^[^\n\r]*$"
+
+  genericArg:
+    type: object
+    required:
+      - "type"
+      - "name"
+    properties:
+      name:
+        type: string
+        pattern: "^[a-zA-Z0-9_-]+$"
+        not: 
+          $ref: "#/$defs/reservedKeywords"
+      optional:
+        type: boolean
+        default: false
+      description:
+        $ref: "#/$defs/argDescription"
+      documentation: false
+      schema:
+        description: >
+          A JSON schema which further constrains the value.  Limited to the
+          subset of JSON Schema (Draft 4) constructs supported by the RapidJSON
+          C++ validator, since the generated C++ code uses RapidJSON to validate.
+        allOf:
+          - $ref: "#/$defs/jsonSchema"
+      index:
+        type: integer
+        minimum: 1
+        description: >
+          Payload ordering index required for some serialization formats.
+      example:
+        description: An example value used in demo code and documentation.
+
+  primitiveArg:
+    properties:
+      type:
+        type: string
+        enum:
+          - float
+          - string
+          - integer
+          - boolean
+          - datetime
+          - duration
+      example:
+        description: An example value used in demo code and documentation.
+        type: ["string", "number", "boolean", "integer", "null"]
+
+  binaryArg:
+    properties:
+      type:
+        type: string
+        const: "binary"
+      contentType:
+        type: string
+        description: >
+          The MIME content type of the binary data (e.g. "image/png",
+          "application/octet-stream").
+        not:
+          const: "application/json"
+    required:
+      - contentType
+
+  enumArg:
+    properties:
+      type:
+        type: string
+        const: "enum"
+      enumName:
+        type: string
+      enumVersion:
+        type: string
+        pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+        description: >
+          This must be semantically compatible with the version defined in the enums section.
+      example:
+        description: An example value used in demo code and documentation.
+        type: ["string", "null"]
+    required:
+      - enumName
+
+  structArg:
+    properties:
+      type:
+        type: string
+        const: "struct"
+      structName:
+        type: string
+      structVersion:
+        type: string
+        pattern: "^[0-9]+(\\.[0-9]+){0,2}$"
+        description: >
+          This must be semantically compatible with the version defined in the structures section.
+      example:
+        description: An example value used in demo code and documentation.
+        type: ["object", "null"]
+    required:
+      - structName
+
+  arrayArg:
+    properties:
+      type:
+        type: string
+        const: "array"
+      itemType:
+        oneOf:
+          - $ref: "#/$defs/primitiveArg"
+          - $ref: "#/$defs/binaryArg"
+          - $ref: "#/$defs/enumArg"
+          - $ref: "#/$defs/structArg"
+      example:
+        description: An example value used in demo code and documentation.
+        type: ["array", "null"]
+    required:
+      - itemType
+
+  arg:
+    oneOf:
+      - allOf:
+        - $ref: "#/$defs/genericArg"
+        - $ref: "#/$defs/primitiveArg"
+      - allOf:
+        - $ref: "#/$defs/genericArg"
+        - $ref: "#/$defs/binaryArg"
+      - allOf:
+        - $ref: "#/$defs/genericArg"
+        - $ref: "#/$defs/enumArg"
+      - allOf:
+        - $ref: "#/$defs/genericArg"
+        - $ref: "#/$defs/structArg"
+      - allOf:
+        - $ref: "#/$defs/genericArg"
+        - $ref: "#/$defs/arrayArg"
+
+  enumOrStructArgMustHaveVersion:
+    allOf:
+      - type: object
+        if:
+          properties:
+            type:
+              const: enum
+        then:
+          required:
+            - enumVersion
+      - type: object
+        if:
+          properties:
+            type:
+              const: struct
+        then:
+          required:
+            - structVersion
+      - type: object
+        if:
+          properties:
+            type:
+              const: array
+            itemType:
+              type: object
+              properties:
+                type:
+                  const: enum
+        then:
+          properties:
+            type:
+              const: array
+            itemType:
+              type: object
+              required:
+                - enumVersion
+      - type: object
+        if:
+          properties:
+            type:
+              const: array
+            itemType:
+              type: object
+              properties:
+                type:
+                  const: struct
+        then:
+          properties:
+            type:
+              const: array
+            itemType:
+              type: object
+              required:
+                - structVersion
+
+  enumsAndStructArgsMustHaveVersion:
+    type: array
+    items:
+      $ref: "#/$defs/enumOrStructArgMustHaveVersion"
+
+  signal:
+    type: object
+    properties:
+      documentation:
+        $ref: "#/$defs/documentation"
+      description: false
+      values:
+        $ref: "#/$defs/payload"
+      protobuf:
+        $ref: "#/$defs/protobufPayload"
+      protoBuf: false # Use all lowercase 'protobuf'
+      payload: false # Use 'values' instead
+      arguments: false # Use 'values' instead
+      args: false # Use 'values' instead
+      params: false # Use 'values' instead
+      consumers:
+        $ref: "#/$defs/consumersField"
+      consumer: false # Use 'consumers' instead
+      version:
+        $ref: "#/$defs/versionField"
+    not:
+      required:
+        - values
+        - protobuf
+    dependencies:
+      consumers:
+        - version
+      version:
+        properties:
+          values:
+            $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
+
+  property:
+    type: object
+    properties:
+      documentation:
+        $ref: "#/$defs/documentation"
+      description: false
+      value:
+        description: >
+          The single value held by the property.  Use a struct to hold several
+          fields together.
+        allOf:
+          - $ref: "#/$defs/arg"
+      protobuf:
+        $ref: "#/$defs/protobufPayload"
+      protoBuf: false # Use all lowercase 'protobuf'
+      values: false # Use 'value' instead
+      payload: false # Use 'value' instead
+      arguments: false # Use 'value' instead
+      params: false # Use 'value' instead
+      args: false # Use 'value' instead
+      arg: false # Use 'value' instead
+      readOnly:
+        type: boolean
+        default: false
+        description: >
+          If true, this property can only be read by clients, not written to.
+      consumers:
+        $ref: "#/$defs/consumersField"
+      consumer: false # Use 'consumers' instead
+      version:
+        $ref: "#/$defs/versionField"
+    oneOf:
+      - required:
+          - value
+        not:
+          required:
+            - protobuf
+      - required:
+          - protobuf
+        not:
+          required:
+            - value
+    dependencies:
+      consumers:
+        - version
+      version:
+        properties:
+          value:
+            $ref: "#/$defs/enumOrStructArgMustHaveVersion"
+
+  method:
+    type: object
+    properties:
+      documentation:
+        $ref: "#/$defs/documentation"
+      description: false
+      timeout:
+        type: integer
+        minimum: 1
+        default: 5
+        description: >
+          The number of seconds to wait before the method call is considered "timed out".
+      arguments:
+        $ref: "#/$defs/payload"
+      protobuf:
+        $ref: "#/$defs/protobufPayload"
+      protoBuf: false # Use all lowercase 'protobuf'
+      argument: false # use 'arguments' instead
+      params: false # use 'arguments' instead
+      payload: false # use 'arguments' instead
+      args: false # use 'arguments' instead
+      arg: false # use 'arguments' instead
+      returnValue:
+        description: >
+          The single value returned by the method.  Omit it for a method that
+          returns nothing; use a struct to return several fields together.
+        allOf:
+          - $ref: "#/$defs/arg"
+      returnProtobuf:
+        $ref: "#/$defs/protobufPayload"
+      returnProtoBuf: false # use 'returnProtobuf' instead
+      returnValues: false # use 'returnValue' instead
+      returnArgs: false # use 'returnValue' instead
+      returnParams: false # use 'returnValue' instead
+      returnPayload: false # use 'returnValue' instead
+      returns: false # use 'returnValue' instead
+      returnArg: false # use 'returnValue' instead
+      consumers:
+        $ref: "#/$defs/consumersField"
+      consumer: false # Use 'consumers' instead
+      version:
+        $ref: "#/$defs/versionField"
+    oneOf:
+      - required:
+          - arguments
+        not:
+          anyOf:
+            - required:
+                - protobuf
+            - required:
+                - returnProtobuf
+      - required:
+          - protobuf
+          - returnProtobuf
+        not:
+          anyOf:
+            - required:
+                - arguments
+            - required:
+                - returnValue
+    dependencies:
+      consumers:
+        - version
+      version:
+        properties:
+          arguments:
+            $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
+          returnValue:
+            $ref: "#/$defs/enumOrStructArgMustHaveVersion"
+
+  command:
+    type: object
+    properties:
+      documentation:
+        $ref: "#/$defs/documentation"
+      description: false
+      arguments:
+        $ref: "#/$defs/payload"
+      protobuf:
+        $ref: "#/$defs/protobufPayload"
+      protoBuf: false # Use all lowercase 'protobuf'
+      argument: false # use 'arguments' instead
+      params: false # use 'arguments' instead
+      payload: false # use 'arguments' instead
+      args: false # use 'arguments' instead
+      arg: false # use 'arguments' instead
+      values: false # use 'arguments' instead
+      value: false # use 'arguments' instead
+      returnValue: false # A command has no response; use a method if you need one
+      returnValues: false # A command has no response; use a method if you need one
+      returns: false # A command has no response; use a method if you need one
+      returnProtobuf: false # A command has no response; use a method if you need one
+      consumers:
+        $ref: "#/$defs/consumersField"
+      consumer: false # Use 'consumers' instead
+      version:
+        $ref: "#/$defs/versionField"
+    oneOf:
+      - required:
+          - arguments
+        not:
+          required:
+            - protobuf
+      - required:
+          - protobuf
+        not:
+          required:
+            - arguments
+    dependencies:
+      consumers:
+        - version
+      version:
+        properties:
+          arguments:
+            $ref: "#/$defs/enumsAndStructArgsMustHaveVersion"
+
+  # A restricted JSON Schema describing only the constructs that the RapidJSON
+  # C++ schema validator implements (JSON Schema Draft 4).  The generated C++
+  # code validates 'schema' constraints with RapidJSON, so any keyword RapidJSON
+  # cannot handle must be rejected here.  'additionalProperties: false' enforces
+  # that: keywords such as $ref to external documents, format, const,
+  # if/then/else, contains, propertyNames, and the draft-06+ numeric form of
+  # exclusiveMaximum/exclusiveMinimum are intentionally excluded.
+  jsonSchema:
+    type: object
+    additionalProperties: false
+    properties:
+
+      # Metadata (accepted; not used for validation)
+      title:
+        type: string
+      description:
+        type: string
+      default: true
+      definitions:
+        type: object
+        additionalProperties:
+          $ref: "#/$defs/jsonSchema"
+      $ref:
+        type: string
+
+      # Keywords for any instance type
+      type:
+        oneOf:
+          - $ref: "#/$defs/jsonSchemaSimpleType"
+          - type: array
+            minItems: 1
+            uniqueItems: true
+            items:
+              $ref: "#/$defs/jsonSchemaSimpleType"
+      enum:
+        type: array
+        minItems: 1
+        uniqueItems: true
+      allOf:
+        $ref: "#/$defs/jsonSchemaArray"
+      anyOf:
+        $ref: "#/$defs/jsonSchemaArray"
+      oneOf:
+        $ref: "#/$defs/jsonSchemaArray"
+      not:
+        $ref: "#/$defs/jsonSchema"
+
+      # Numeric keywords (Draft 4 boolean form of exclusive bounds)
+      multipleOf:
+        type: number
+        exclusiveMinimum: 0
+      maximum:
+        type: number
+      exclusiveMaximum:
+        type: boolean
+      minimum:
+        type: number
+      exclusiveMinimum:
+        type: boolean
+
+      # String keywords
+      maxLength:
+        $ref: "#/$defs/jsonSchemaNonNegativeInteger"
+      minLength:
+        $ref: "#/$defs/jsonSchemaNonNegativeInteger"
+      pattern:
+        type: string
+
+      # Array keywords
+      items:
+        oneOf:
+          - $ref: "#/$defs/jsonSchema"
+          - $ref: "#/$defs/jsonSchemaArray"
+      additionalItems:
+        oneOf:
+          - type: boolean
+          - $ref: "#/$defs/jsonSchema"
+      maxItems:
+        $ref: "#/$defs/jsonSchemaNonNegativeInteger"
+      minItems:
+        $ref: "#/$defs/jsonSchemaNonNegativeInteger"
+      uniqueItems:
+        type: boolean
+
+      # Object keywords
+      maxProperties:
+        $ref: "#/$defs/jsonSchemaNonNegativeInteger"
+      minProperties:
+        $ref: "#/$defs/jsonSchemaNonNegativeInteger"
+      required:
+        type: array
+        items:
+          type: string
+        uniqueItems: true
+      properties:
+        type: object
+        additionalProperties:
+          $ref: "#/$defs/jsonSchema"
+      patternProperties:
+        type: object
+        additionalProperties:
+          $ref: "#/$defs/jsonSchema"
+      additionalProperties:
+        oneOf:
+          - type: boolean
+          - $ref: "#/$defs/jsonSchema"
+      dependencies:
+        type: object
+        additionalProperties:
+          oneOf:
+            - $ref: "#/$defs/jsonSchema"
+            - type: array
+              items:
+                type: string
+              uniqueItems: true
+
+  jsonSchemaSimpleType:
+    type: string
+    enum:
+      - "null"
+      - boolean
+      - object
+      - array
+      - number
+      - string
+      - integer
+
+  jsonSchemaArray:
+    type: array
+    minItems: 1
+    items:
+      $ref: "#/$defs/jsonSchema"
+
+  jsonSchemaNonNegativeInteger:
+    type: integer
+    minimum: 0

@@ -1,14 +1,25 @@
 stingeripc:
-  version: 0.0.7
+  version: 0.3.0
 
 interface:
   name: SignalOnly
   version: 0.0.1
 
+configuration:
+
+  topics:
+    params: ["prefix"]
+    signals: "{prefix}/{interface_name}/{service_id}/signal/{signal_name}"
+    propertyValues: "{prefix}/{interface_name}/{service_id}/property/{property_name}/value"
+    propertyUpdates: "{prefix}/{interface_name}/{service_id}/property/{property_name}/update"
+    commands: "{prefix}/{interface_name}/{service_id}/command/{command_name}"
+    methodRequests: "{prefix}/{interface_name}/{service_id}/method/{method_name}/request"
+    interfaceDiscovery: "{prefix}/{interface_name}/{service_id}/interface"
+
 signals:
   
   anotherSignal:
-    payload:
+    values:
       - name: one 
         type: float
       - name: two 
@@ -18,26 +29,26 @@ signals:
 
   bark:
     documentation: Emitted when a dog barks.
-    payload:
+    values:
       - name: word
         type: string
 
   maybe_number:
-    documentation: A signal with optionally no payload.
-    payload:
+    documentation: A signal with optionally no values.
+    values:
       - name: number
         type: integer
         optional: true
   
   maybe_name:
-    documentation: A signal with optionally no payload.
-    payload:
+    documentation: A signal with optionally no values.
+    values:
       - name: name
         type: string
         optional: true
 
   now:
     documentation: The current date and time.
-    payload:
+    values:
       - name: timestamp
         type: datetime

@@ -1,11 +1,14 @@
+{%- import "partials/codec.jinja2" as codec -%}
 import signal
 from time import sleep
 import concurrent.futures as futures
-from typing import Optional, Union, List
+from typing import Optional, Union, List{% if stinger.uses_protobuf() %}, Dict{% endif %}
 from datetime import datetime, timedelta, UTC
 from pyqttier import Mqtt5Connection, MqttTransportType, MqttTransport
-from {{stinger.python.module_name}}.client import {{stinger.python.client_class_name}}, {{stinger.python.client_class_name}}Builder, {{stinger.python.client_class_name}}Discoverer
+from {{stinger.python.module_name}}.client import {{stinger.python.client_class_name}}, {{stinger.python.client_class_name}}Builder
+from {{stinger.python.module_name}}.discovery import {{stinger.python.client_class_name}}Discoverer
 from {{stinger.python.module_name}}.interface_types import *
+{{- codec.example_imports(stinger, stinger.python.module_name) }}
 import threading
 
 client_builder = {{stinger.python.client_class_name}}Builder()
@@ -41,7 +44,7 @@ class SuperAwesomeDoerOfThings:
         while True:
             {%-for method_name, method in stinger.methods.items()%}
             print("Making call to '{{method_name|snake_case}}'")
-            future_resp = self.client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.name|snake_case}}={{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+            future_resp = self.client.{{method_name|snake_case}}({{ codec.example_payload(method.request_payload, method.arg_list) }})
             try:
                 print(f"RESULT:  {future_resp.result(5)}")
             except futures.TimeoutError:
@@ -49,15 +52,7 @@ class SuperAwesomeDoerOfThings:
             sleep(5)
             {%endfor%}{# for each method #}
             {%for prop_name, prop in stinger.properties_rw.items()%}
-            {%if prop.arg_list|length > 1%}
-            self.client.{{prop_name|snake_case}} = {{prop_name|UpperCamelCase}}Property(
-                {%-for arg in prop.arg_list%}
-                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
-                {%-endfor%}
-            )
-            {%else%}
-            self.client.{{prop_name|snake_case}} = {{prop.arg_list[0].get_random_example_value()}}
-            {%endif%} {# end propertly length cases #}
+            self.client.{{prop_name|snake_case}} = {{ codec.property_example(prop) }}
             {%endfor%} {# for each property #}
             sleep(10)
     {%endif%} {# any methods or properties #}

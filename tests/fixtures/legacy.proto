@@ -1,0 +1,11 @@
+syntax = "proto2";
+package traps.legacy;
+
+message Old {
+  optional int32 count = 1 [default = 7];
+  optional string label = 2 [default = "unnamed"];
+  optional bool active = 3 [default = true];
+  optional double ratio = 4 [default = 1.5];
+  required string id = 5;
+  repeated int32 unpacked = 6 [packed = false];
+}

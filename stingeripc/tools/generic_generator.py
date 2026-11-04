@@ -1,9 +1,13 @@
 from jacobsjinjatoo import templator as jj2
+from jacobsjinjatoo import stringmanip
+import json
 import os
+import tomllib
 import shutil
 import typer
 from typing_extensions import Annotated
-from typing import Optional, Any
+from typing import Optional, Any, Callable, Sequence
+from functools import lru_cache
 from pathlib import Path
 from rich import print
 import importlib.resources
@@ -12,7 +16,10 @@ from stingeripc.loading import parse_yaml_file
 from stevedore import ExtensionManager
 from stingeripc import StingerInterface, __version__, topic_util
 from stingeripc.filtering import filter_by_consumer
-from stingeripc.config import load_config, StingerConfig
+from stingeripc.config import load_configs, ProtobufConfig, StingerConfig
+from stingeripc.exceptions import ProtobufError
+from stingeripc.protobuf_compiler import ProtobufSources
+from stingeripc.protobufjs import descriptor_set_to_protobufjs
 
 
 def _to_plain(value: Any) -> Any:
@@ -32,13 +39,173 @@ def _to_plain(value: Any) -> Any:
     return value
 
 
-def _parse_yaml(text: str) -> Any:
-    """Parse YAML text with jacobs-json-doc, resolving $ref references in place."""
-    fetcher = PrepopulatedFetcher()
-    fetcher.prepopulate(None, text)
-    options = ParseOptions()
-    options.ref_resolution_mode = RefResolutionMode.RESOLVE_REFERENCES
-    return create_document(uri=None, fetcher=fetcher, options=options)
+def emit_protobuf_bindings(template_dir: Path, outdir: Path, stinger, config_obj, inname: Path) -> None:
+    """Copy the .proto sources into the output and compile them for this language.
+
+    What to run is described by an optional ``partials/protoc.toml`` in the
+    template tree.  Keeping the recipe beside the templates means this function
+    needs no knowledge of any particular language, and a tree that ships no such
+    file -- markdown, web -- simply does nothing here.
+
+    Paths in the recipe may use ``{python_package}`` and ``{interface}``; protoc
+    flags may additionally use ``{out}`` for the absolute output directory.
+    """
+    if not stinger.uses_protobuf():
+        return
+    recipe_path = template_dir / "partials" / "protoc.toml"
+    if not recipe_path.is_file():
+        return
+
+    placeholders = {
+        "python_package": stinger.python.package_directory,
+        "interface": stringmanip.snake_case(stinger.name),
+    }
+    recipe = tomllib.loads(recipe_path.read_text())
+
+    sources = protobuf_sources(config_obj, inname)
+    # An interface whose protobuf payloads are all well-known types has no .proto
+    # files of its own; those messages come from the language's protobuf runtime,
+    # so there is nothing to copy and nothing to compile.
+    if not sources.has_sources:
+        print("🧬    PROTO: no .proto sources to compile (well-known types only)")
+        return
+
+    # In external mode the host supplies its own compiled bindings, and a second
+    # copy built here would collide with them (protobuf's descriptor pool is keyed
+    # by file name), so nothing is copied, compiled or rewritten.  The messages were
+    # still resolved against the sources, which is what the generated code's field
+    # handling is built from.
+    if config_obj.protobuf.mode == "external":
+        print("🧬    PROTO: external mode, bindings are supplied by the host and not bundled")
+        return
+
+    # The .proto files travel with the generated code, so the output is
+    # self-contained and can be regenerated for another language later.
+    copy_to = outdir / recipe["copy_to"].format(**placeholders)
+    copy_to.mkdir(parents=True, exist_ok=True)
+    for proto in sources.proto_files:
+        # Relative to the source root, not just the file name: protoc addresses an
+        # import by that path and mirrors it in the output, so a flattened copy
+        # would compile to different module paths than the ones shipped beside it.
+        destination = copy_to / proto.relative_to(sources.proto_dir)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(proto, destination)
+    print(f"🧬    PROTO: copied {len(sources.proto_files)} .proto file(s)")
+
+    out_dir = outdir / recipe["out_dir"].format(**placeholders)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    flags = recipe["flags"]
+    if config_obj.python.legacy_protobuf and "legacy_flags" in recipe:
+        flags = recipe["legacy_flags"]
+    sources.run(*[flag.format(out=out_dir, **placeholders) for flag in flags])
+    print(f"🧬    PROTO: compiled bindings into {recipe['out_dir'].format(**placeholders)}")
+
+    # protoc names an import after the .proto file it came from, which resolves
+    # only when the bindings sit directly on the import path.  A language whose
+    # bindings live inside a package says here how to respell those imports.
+    apply_rewrites(out_dir, recipe.get("rewrite", []))
+
+    # Some languages need a module file listing whatever protoc produced, which
+    # protoc itself does not write because it does not know how the language
+    # groups generated files.
+    if "include_module" in recipe:
+        module_file = outdir / recipe["include_module"].format(**placeholders)
+        # prost nests its output by protobuf package, so the search recurses and the
+        # include paths stay relative to the module file.
+        generated = sorted(f.relative_to(module_file.parent).as_posix() for f in out_dir.rglob("*.rs") if f.resolve() != module_file.resolve())
+        header = recipe.get("include_module_header", "")
+        body = "\n".join(f'include!("{name}");' for name in generated)
+        module_file.write_text(f"{header}{body}\n")
+        print(f"🧬    PROTO: wrote {recipe['include_module']} including {len(generated)} file(s)")
+
+    # Some languages need a marker file beside the generated bindings -- a Python
+    # package __init__ -- that protoc does not write.
+    for name, content in recipe.get("write", {}).items():
+        target = outdir / name.format(**placeholders)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content.format(**placeholders))
+
+
+def apply_rewrites(out_dir: Path, rules: Sequence[dict]) -> None:
+    """Apply a recipe's ``[[rewrite]]`` regex substitutions to the protoc output.
+
+    Each rule names a ``glob`` of files under the binding directory, a ``pattern``
+    matched line by line, and its ``replacement``.  This exists because protoc
+    writes imports that assume its output directory is itself on the import path;
+    a language that nests the bindings inside a package has to respell them.
+
+    A replacement may use ``{up}``, which stands for the way back up to the binding
+    directory from the file being rewritten -- one leading dot per level, plus one
+    for the directory itself.  protoc mirrors the .proto layout in its output, so a
+    binding in a subdirectory refers to a top-level one from further down.
+    """
+    for rule in rules:
+        pattern = re.compile(rule["pattern"], re.MULTILINE)
+        rewritten = 0
+        for path in sorted(out_dir.rglob(rule["glob"])):
+            up = "." * (len(path.relative_to(out_dir).parent.parts) + 1)
+            before = path.read_text()
+            after, count = pattern.subn(rule["replacement"].format(up=up), before)
+            if count:
+                path.write_text(after)
+                rewritten += count
+        if rewritten:
+            print(f"\U0001f9ec    PROTO: rewrote {rewritten} import(s) in {rule['glob']}")
+
+
+def protobuf_sources(config_obj, inname: Path) -> ProtobufSources:
+    """The .proto sources for an interface, relative to the interface file.
+
+    Resolved relative to the .stinger.yaml so a definition and its .proto files
+    travel together regardless of where the generator is invoked from.  The
+    protobuf configuration is optional: an interface that names only well-known
+    types needs no .proto directory, and the default one simply turns out to be
+    empty.
+    """
+    protobuf_config = config_obj.protobuf or ProtobufConfig()
+    proto_dir = (inname.parent / protobuf_config.path).resolve()
+    return ProtobufSources(proto_dir, protobuf_config.protoc, python37=config_obj.python.python37, legacy=config_obj.python.legacy_protobuf)
+
+
+def _protobufjs_bundle_builder(stinger, config_obj, inname: Path) -> Callable[[], str]:
+    """A callable a template uses to ask for the protobuf.js schema document.
+
+    Deliberately not the document itself.  Building it runs protoc, while these
+    parameters are assembled once for every target language, so a language that
+    has no use for it must not pay for it.  The result is cached because a
+    template may reasonably ask more than once.
+    """
+
+    @lru_cache(maxsize=1)
+    def build() -> str:
+        refs = stinger.all_protobuf_refs()
+        if not refs:
+            return "null"
+        files = protobuf_sources(config_obj, inname).descriptor_files_for(refs)
+        return json.dumps(descriptor_set_to_protobufjs(files), indent=2, sort_keys=True)
+
+    return build
+
+
+def resolve_protobuf_messages(stinger, config_obj, inname: Path) -> None:
+    """Match every protobuf message the interface names against the .proto sources.
+
+    Done once, before any template runs, so a message that does not exist fails
+    here with a name and a suggestion rather than surfacing later as a compile
+    error in generated code.  An interface that names no protobuf messages needs
+    no protobuf configuration and does nothing here.
+    """
+    refs = stinger.all_protobuf_refs()
+    if not refs:
+        return
+
+    sources = protobuf_sources(config_obj, inname)
+    print(f"🧬 [bold cyan]PROTOS:[/bold cyan] {sources.proto_dir}")
+    sources.resolve_all(refs)
+    for ref in refs:
+        ref.bind_config(config_obj)
+    for ref in stinger.protobuf_messages():
+        print(f"🧬    MSG: {ref.full_name} ({ref.proto_file})")
 
 
 def main(
@@ -61,16 +228,9 @@ def main(
         raise typer.BadParameter("At least one of: --language, --template-pkg, or --template-path must be provided")
 
     # Load and merge configuration files
-    config_obj = StingerConfig()
-    if config:
-        for config_file in config:
-            print(f"⚙️  [bold cyan]CONFIG:[/bold cyan] {config_file}")
-            file_config = load_config(config_file)
-            # Merge configs - later files override earlier ones
-            # Use model_validate to ensure nested models are properly instantiated
-            merged_dict = config_obj.model_dump(exclude_unset=True)
-            merged_dict.update(file_config.model_dump(exclude_unset=True))
-            config_obj = StingerConfig.model_validate(merged_dict)
+    for config_file in config or []:
+        print(f"⚙️  [bold cyan]CONFIG:[/bold cyan] {config_file}")
+    config_obj = load_configs(config)
     assert isinstance(config_obj, StingerConfig), "Config not a Stinger Config"
     for k, v in config_obj.model_dump().items():
         print(f"🔧{k:>10.10}: {v}")
@@ -84,8 +244,11 @@ def main(
     else:
         stinger = StingerInterface.from_dict(yaml_obj, config_obj)
 
+    resolve_protobuf_messages(stinger, config_obj, inname)
+
     print(f"🚥 [bold cyan]SIGNALS:[/bold cyan] {len(stinger.signals)}")
     print(f"💠 [bold cyan]METHODS:[/bold cyan] {len(stinger.methods)}")
+    print(f"📣 [bold cyan]COMMANDS:[/bold cyan] {len(stinger.commands)}")
     print(f"🍌   [bold cyan]PROPS:[/bold cyan] {len(stinger.properties)}")
 
     params: dict[str, Any] = {
@@ -101,6 +264,7 @@ def main(
             "get_topic_arguments": topic_util.get_topic_arguments,
             "template_topic_fill_in": topic_util.topic_template_fill_in,
             "topic_template_to_js": topic_util.topic_template_to_js,
+            "protobufjs_bundle": _protobufjs_bundle_builder(stinger, config_obj, inname),
         },
     }
 
@@ -249,6 +413,9 @@ def main(
     for template_dir in template_dirs:
         src = Path(template_dir)
         recursive_render_templates(template_dir, src, Path(outdir))
+
+    for template_dir in template_dirs:
+        emit_protobuf_bindings(Path(template_dir), Path(outdir), stinger, config_obj, inname)
 
 
 def run():

@@ -1,11 +1,44 @@
-//! {{stinger.name}} IPC Library
-//! 
-//! This library provides client, server, and payload functionality for the {{stinger.name}} IPC system.
-//! Use features to control which modules are included:
-//! 
-//! - `client`: Includes client and payloads modules
-//! - `server`: Includes server and payloads modules  
-//! - `payloads`: Includes only payloads module
+#![doc = include_str!("../docs/overview.md")]
+// Property and argument values are cloned out of shared/locked state through the same
+// generated code path regardless of their concrete type, so a value's type being `Copy`
+// (e.g. an interface property declared as an integer or float) is incidental, not a sign
+// the clone is wasteful.
+#![allow(clippy::clone_on_copy)]
+// Schema validation serializes a field through `&self.field` so the same generated code
+// works whether the field's type is `Copy` or not; dropping the borrow would fail to
+// compile for non-Copy fields (moving out of `&self`), so it can't be done per-callsite.
+#![allow(clippy::needless_borrows_for_generic_args)]
+// Property and channel types nest Arc/RwLockWatch/Option around whatever type the
+// interface declares (e.g. an optional list of structs), so how deep that nesting gets
+// is up to the interface definition, not something a fixed set of type aliases here
+// could pre-empt.
+#![allow(clippy::type_complexity)]
+// Generated functions for methods, signals, and commands take one parameter per
+// argument the interface declares, so their arity is set by the interface definition,
+// not something the generator can bound in advance.
+#![allow(clippy::too_many_arguments)]
+
+/// Long-form guides for using this interface.
+///
+/// These modules hold no code — they exist so that `cargo doc` has somewhere to put the
+/// prose that does not belong on any one type.
+///
+/// - [`server_guide`](docs::server_guide) — providing the interface.
+/// - [`client_guide`](docs::client_guide) — consuming the interface.
+{%- if stinger.uses_protobuf() and config.protobuf.mode == "bundled" %}
+pub mod proto;
+{%- endif %}
+pub mod docs {
+    /// Guide to writing a {{stinger.name}} server.
+    #[allow(rustdoc::broken_intra_doc_links)] // Links into the `server` module resolve only when that feature is on.
+    #[doc = include_str!("../docs/server.md")]
+    pub mod server_guide {}
+
+    /// Guide to writing a {{stinger.name}} client.
+    #[allow(rustdoc::broken_intra_doc_links)] // Links into the `client` module resolve only when that feature is on.
+    #[doc = include_str!("../docs/client.md")]
+    pub mod client_guide {}
+}
 
 pub mod interface;
 {%if stinger.properties|length > 0%}
@@ -18,11 +51,9 @@ mod message;
 #[cfg(feature = "client")]
 pub mod discovery;
 
-#[cfg(feature = "payloads")]
 pub mod payloads;
 
 {%- if stinger.uses_binary() or stinger.uses_datetime() or stinger.uses_duration() %}
-#[cfg(feature = "payloads")]
 pub mod serde_formats;
 {%- endif %}
 
@@ -38,7 +69,5 @@ pub mod lwt;
 pub mod constants;
 {% endif %}
 
-// Re-export commonly used types from payloads when available
-#[cfg(feature = "payloads")]
+// Re-export commonly used types from payloads.
 pub use payloads::*;
-

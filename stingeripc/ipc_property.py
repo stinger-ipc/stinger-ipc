@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from .components import InterfaceComponent, Arg
 from .lang_symb import LanguageSymbolMixin
+from .payload import Payload, PayloadRole, protobuf_ref_from_spec
 from .exceptions import InvalidStingerStructure
 from . import topic_util
 
@@ -14,28 +15,28 @@ if TYPE_CHECKING:
 class IpcProperty(InterfaceComponent):
     """A named, typed property exposed by the interface.
 
-    A property carries an ordered list of values and may be read-only or
-    read/write.  Its current value is published on the property's value topic,
-    updates requested by clients on its update topic, and the results of those
-    updates on its response topic — all computed from the configured topic
-    templates.
+    A property carries exactly one value and may be read-only or read/write.
+    Its current value is published on the property's value topic, updates
+    requested by clients on its update topic, and the results of those updates
+    on its response topic — all computed from the configured topic templates.
     """
 
     def __init__(self, name: str, root: StingerSpec):
         InterfaceComponent.__init__(self, name, root)
         LanguageSymbolMixin.enhance(self, self._config)
-        self._arg_list: list[Arg] = []
+        self._payload = Payload(owner_name=name, role=PayloadRole.PROPERTY, config=self._config)
         self._read_only = False
         self._version: Optional[str] = None
 
-    def add_arg(self, arg: Arg) -> IpcProperty:
-        """Append a value to the property and return self.
+    def set_value(self, value: Arg) -> IpcProperty:
+        """Set the property's single value and return self.
 
-        Duplicate value names are rejected.
+        A property holds exactly one value, so setting a value on a property
+        that already has one is rejected.
         """
-        if arg.name in [a.name for a in self._arg_list]:
-            raise InvalidStingerStructure(f"An arg named '{arg.name}' has been added.")
-        self._arg_list.append(arg)
+        if self._payload.args:
+            raise InvalidStingerStructure(f"A value named '{self._payload.args[0].name}' has already been set; a property has exactly one value.")
+        self._payload.args.append(value)
         return self
 
     def value_topic(self, **kwargs) -> str:
@@ -44,7 +45,7 @@ class IpcProperty(InterfaceComponent):
         The topic is derived from the configured ``property_values`` topic
         template, with the interface name and property name filled in.
         """
-        template_topic = self._config.topics.property_values
+        template_topic = self.topics.property_values
         template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, property_name=self.name, **kwargs)
         return template_topic
 
@@ -54,7 +55,7 @@ class IpcProperty(InterfaceComponent):
         The topic is derived from the configured ``property_updates`` topic
         template, with the interface name and property name filled in.
         """
-        template_topic = self._config.topics.property_updates
+        template_topic = self.topics.property_updates
         template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, property_name=self.name, **kwargs)
         return template_topic
 
@@ -64,7 +65,7 @@ class IpcProperty(InterfaceComponent):
         The topic is derived from the configured ``property_update_responses``
         topic template, with the interface name and property name filled in.
         """
-        template_topic = self._config.topics.property_update_responses
+        template_topic = self.topics.property_update_responses
         template_topic = topic_util.topic_template_fill_in(template_topic, interface_name=self._root.name, property_name=self.name, **kwargs)
         return template_topic
 
@@ -74,14 +75,53 @@ class IpcProperty(InterfaceComponent):
         return self._version
 
     @property
+    def payload(self) -> Payload:
+        """The property's wire body."""
+        return self._payload
+
+    @property
+    def value(self) -> Arg:
+        """The single value that makes up the property.
+
+        Raises when the property has no JSON value -- including when it carries a
+        protobuf message instead, where asking for a single ``Arg`` is a mistake.
+        """
+        if not self._payload.args:
+            raise InvalidStingerStructure(f"Property '{self.name}' has no value.")
+        return self._payload.args[0]
+
+    @property
     def arg_list(self) -> list[Arg]:
-        """The ordered list of values that make up the property."""
-        return self._arg_list
+        """The property's value as a single-element list.
+
+        Templates that render the property payload iterate over this so that
+        properties and the other interface components share one code path.
+        """
+        return self._payload.arg_list
 
     @property
     def read_only(self) -> bool:
         """True if the property is read-only (clients cannot update it)."""
         return self._read_only
+
+    @staticmethod
+    def _value_spec_from_stinger(name: str, prop_spec: dict[str, Any]) -> dict[str, Any]:
+        """Return the arg spec for the property's value.
+
+        A property declares its value with a single ``value`` mapping.  The
+        ``values`` list of earlier spec versions is rejected outright rather
+        than half-read, since a property now holds exactly one value.
+        """
+        if "values" in prop_spec:
+            raise InvalidStingerStructure(f"Property '{name}' uses 'values', which was replaced by a single 'value' in stinger spec version 0.3.0.  Use a struct to hold several fields together.")
+
+        if "value" not in prop_spec:
+            raise InvalidStingerStructure(f"Property '{name}' specification must have a 'value'")
+
+        value_spec = prop_spec["value"]
+        if not isinstance(value_spec, dict):
+            raise InvalidStingerStructure(f"Value for '{name}' property must be a single arg structure.  It is '{type(value_spec)}'")
+        return value_spec
 
     @classmethod
     def new_property_from_stinger(
@@ -92,16 +132,22 @@ class IpcProperty(InterfaceComponent):
     ) -> IpcProperty:
         """Alternative constructor from a Stinger property structure."""
         prop_obj = cls(name, stinger_spec)
-        if "values" not in prop_spec:
-            raise InvalidStingerStructure("Property specification must have 'values'")
-        if not isinstance(prop_spec["values"], list):
-            raise InvalidStingerStructure(f"Values must be a list.  It is '{type(prop_spec['values'])}' ")
 
-        for arg_spec in prop_spec["values"]:
-            if "name" not in arg_spec or "type" not in arg_spec:
-                raise InvalidStingerStructure("Arg must have name and type.")
-            new_arg = Arg.new_arg_from_stinger(arg_spec, stinger_spec)
-            prop_obj.add_arg(new_arg)
+        prop_obj._payload.protobuf = protobuf_ref_from_spec(name, prop_spec, "value")
+        if prop_obj._payload.is_protobuf:
+            if r_o := prop_spec.get("readOnly", False):
+                if not isinstance(r_o, bool):
+                    raise InvalidStingerStructure("'readOnly' in property structure must be a boolean")
+                prop_obj._read_only = r_o
+            if "version" in prop_spec:
+                prop_obj._version = prop_spec["version"]
+            prop_obj.try_set_documentation_from_spec(prop_spec)
+            return prop_obj
+
+        value_spec = cls._value_spec_from_stinger(name, prop_spec)
+        if "name" not in value_spec or "type" not in value_spec:
+            raise InvalidStingerStructure("Value must have name and type.")
+        prop_obj.set_value(Arg.new_arg_from_stinger(value_spec, stinger_spec))
 
         if r_o := prop_spec.get("readOnly", False):
             if not isinstance(r_o, bool):
@@ -116,4 +162,5 @@ class IpcProperty(InterfaceComponent):
         return prop_obj
 
     def __str__(self) -> str:
-        return f"IpcProperty<name={self.name} values=[{', '.join([a.name for a in self.arg_list])}]>"
+        what = self._payload.protobuf.full_name if self._payload.protobuf else self.value.name
+        return f"IpcProperty<name={self.name} value={what}>"

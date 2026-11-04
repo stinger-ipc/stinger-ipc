@@ -1,0 +1,139 @@
+{%- set server_roles = [] -%}
+{%- if stinger.signals|length > 0 %}{% do server_roles.append("emits signals") %}{% endif -%}
+{%- if stinger.methods|length > 0 %}{% do server_roles.append("answers method calls") %}{% endif -%}
+{%- if stinger.commands|length > 0 %}{% do server_roles.append("receives commands") %}{% endif -%}
+{%- if stinger.properties|length > 0 %}{% do server_roles.append("owns the property values") %}{% endif -%}
+{%- set client_roles = [] -%}
+{%- if stinger.signals|length > 0 %}{% do client_roles.append("subscribes to signals") %}{% endif -%}
+{%- if stinger.methods|length > 0 %}{% do client_roles.append("calls methods") %}{% endif -%}
+{%- if stinger.commands|length > 0 %}{% do client_roles.append("sends commands") %}{% endif -%}
+{%- if stinger.properties|length > 0 %}{% do client_roles.append("reads and requests updates to properties") %}{% endif -%}
+# {{stinger.title}}
+{%- if stinger.summary %}
+
+_{{stinger.summary}}_
+{%- endif %}
+
+`{{stinger.rust.package_name}}` is generated Rust code for the **{{stinger.name}}** IPC
+interface. It lets processes on the same machine — or anywhere that can reach the same
+MQTT broker — talk to each other over a shared, strongly typed contract.
+
+Nothing in this crate opens a socket of its own. You supply an MQTT client, and this
+crate turns typed Rust calls into MQTT publishes, and incoming MQTT messages back into
+typed Rust values.
+{%- if stinger.documentation %}
+
+{{stinger.documentation}}
+{%- endif %}
+
+## Server and client
+
+Every interface has exactly two roles.
+
+A **server** is the *provider* of the interface. It {{ server_roles[:-1]|join(', ') }}{% if server_roles|length > 2 %},{% endif %}{% if server_roles|length > 1 %} and {% endif %}{{ server_roles[-1] }}. There may be more than one
+server instance on a broker at once; each one has its own instance id.
+
+A **client** is the *user* of the interface. It {{ client_roles[:-1]|join(', ') }}{% if client_roles|length > 2 %},{% endif %}{% if client_roles|length > 1 %} and {% endif %}{{ client_roles[-1] }}. A client first *discovers* which
+server instances are on the broker, then binds to one.
+
+```text
+   ┌──────────────────────┐                       ┌──────────────────────┐
+   │  {{"%-20.20s"|format(stinger.rust.client_struct_name)}}│                       │  {{"%-20.20s"|format(stinger.rust.server_struct_name)}}│
+   │   (client feature)   │                       │   (server feature)   │
+   └───────────┬──────────┘                       └──────────┬───────────┘
+               │                                             │
+               │  publish / subscribe   publish / subscribe  │
+               │        ┌────────────────────────┐           │
+               └───────►│       MQTT broker      │◄──────────┘
+                        └────────────────────────┘
+```
+
+Because the broker sits in the middle, neither side needs the other to be running to
+start up, and a client can be restarted without the server noticing.
+
+## The four patterns
+
+An interface is built out of four kinds of parts, which differ in which way they travel
+and whether a reply comes back:
+
+| Pattern | Direction | Reply | In this interface |
+|---|---|---|---|
+| **Signal** | server → client | none | {{stinger.signals|length}} |
+| **Command** | client → server | none | {{stinger.commands|length}} |
+| **Method** | client → server | response | {{stinger.methods|length}} |
+| **Property** | server owns it; clients read it and request changes | update response | {{stinger.properties|length}} |
+
+A command is the mirror image of a signal — the same fire-and-forget message travelling
+the other way — or equivalently a method with no response. Because there is no response
+channel, a command that cannot be deserialized is logged and dropped, and the server
+never learns which client sent it.
+
+## What this interface defines
+{%- if stinger.signals|length > 0 %}
+
+### Signals
+{% for sig_name, signal in stinger.signals.items() %}
+- **`{{sig_name}}`** — {{ (signal.documentation or "_no documentation_") | replace("\n", " ") }}
+{%- endfor %}
+{%- endif %}
+{%- if stinger.methods|length > 0 %}
+
+### Methods
+{% for method_name, method in stinger.methods.items() %}
+- **`{{method_name}}`** — {{ (method.documentation or "_no documentation_") | replace("\n", " ") }}
+{%- endfor %}
+{%- endif %}
+{%- if stinger.commands|length > 0 %}
+
+### Commands
+{% for command_name, command in stinger.commands.items() %}
+- **`{{command_name}}`** — {{ (command.documentation or "_no documentation_") | replace("\n", " ") }}
+{%- endfor %}
+{%- endif %}
+{%- if stinger.properties|length > 0 %}
+
+### Properties
+{% for prop_name, prop in stinger.properties.items() %}
+- **`{{prop_name}}`**{% if prop.read_only %} (read-only){% endif %} — {{ (prop.documentation or "_no documentation_") | replace("\n", " ") }}
+{%- endfor %}
+{%- endif %}
+{%- if stinger.enums|length > 0 or stinger.structs|length > 0 %}
+
+### Data types
+{% if stinger.enums|length > 0 %}
+Enums: {% for enum_name in stinger.enums %}`{{enum_name}}`{% if not loop.last %}, {% endif %}{% endfor %}.
+{%- endif %}
+{%- if stinger.structs|length > 0 %}
+
+Structs: {% for struct_name in stinger.structs %}`{{struct_name}}`{% if not loop.last %}, {% endif %}{% endfor %}.
+{%- endif %}
+
+These live in [`payloads`] and are re-exported at the crate root.
+{%- endif %}
+
+## Guides
+
+- [Writing a server](crate::docs::server_guide) — implementing the interface.
+- [Writing a client](crate::docs::client_guide) — consuming the interface.
+
+## Feature flags
+
+The crate has no default features, so a consumer compiles only the half it needs.
+
+| Feature | What it adds |
+|---|---|
+| `client` | The `client` module (`{{stinger.rust.client_struct_name}}`) and the `discovery` module. |
+| `server` | The `server` module (`{{stinger.rust.server_struct_name}}`) and the method-handler trait. |
+| `metrics` | Message and error counters on the client, server, and discovery objects. |
+| `lwt` | MQTT Last Will and Testament support, for announcing that a process has dropped off. |
+
+Payload types, enums, and structs are always compiled in, with or without features.
+
+> **Building these docs:** because nothing is enabled by default, run
+> `cargo doc --all-features --open` to see the client and server pages.
+
+## Generated code
+
+Every file in this crate is generated by Stinger-IPC{% if generator.version %} {{generator.version}}{% endif %} from an interface
+description. Do not edit it — regeneration overwrites the whole crate. Change the
+`*.stinger.yaml` interface definition and regenerate instead.

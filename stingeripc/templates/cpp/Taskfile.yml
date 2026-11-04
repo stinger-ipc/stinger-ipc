@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+tasks:
+  unittest:
+    desc: Build and run the unit tests
+    cmds:
+      - cmake -S . -B build
+      - cmake --build build --parallel
+      - cd build && ctest --output-on-failure
+
+  lint:
+    desc: Check source formatting with clang-format
+    cmds:
+      - find include src examples tests -type f \( -name '*.hpp' -o -name '*.cpp' \) -print0 | xargs -0 clang-format --dry-run --Werror

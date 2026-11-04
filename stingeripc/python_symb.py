@@ -1,9 +1,12 @@
+import re
+import keyword
 from typing import Any
 
 from jacobsjinjatoo import stringmanip
 
 from stingeripc.args import ArgPrimitiveType
-from stingeripc.config import StingerConfig
+from stingeripc.config import ExternalProtobufConfig, StingerConfig
+from stingeripc.exceptions import ProtobufError
 from stingeripc.lang_symb import ISymbolsProvider
 
 
@@ -15,7 +18,13 @@ class PythonSymbolsProvider(ISymbolsProvider):
     """
 
     def for_model(self, model_class_name: str, model) -> object | None:
-        if model_class_name == "StingerSpec":
+        if model_class_name == "ProtobufMessageRef":
+            return PythonProtobufRefSymbols(model, self.config)
+        elif model_class_name == "ProtobufField":
+            return PythonProtobufFieldSymbols(model, self.config)
+        elif model_class_name == "Payload":
+            return PythonPayloadSymbols(model, self.config)
+        elif model_class_name == "StingerSpec":
             return PythonInterfaceSymbols(model, self.config)
         elif model_class_name == "InterfaceStruct":
             return PythonStructSymbols(model, self.config)
@@ -23,6 +32,8 @@ class PythonSymbolsProvider(ISymbolsProvider):
             return PythonEnumSymbols(model)
         elif model_class_name == "IpcMethod":
             return PythonMethodSymbols(model, self.config)
+        elif model_class_name == "IpcCommand":
+            return PythonCommandSymbols(model, self.config)
         elif model_class_name == "IpcProperty":
             return PythonPropertySymbols(model, self.config)
         elif model_class_name == "ArgEnum":
@@ -138,6 +149,16 @@ class PythonArgSymbols(PythonSymbols):
     def __init__(self, arg):
         super().__init__()
         self._arg = arg
+
+    @property
+    def param_name(self) -> str:
+        """Name of the generated parameter that carries this argument.
+
+        Spelled the same way for a JSON argument and for a protobuf field, so a
+        template that documents or forwards "whatever a payload's parameters are"
+        needs only the one attribute whichever encoding the payload uses.
+        """
+        return stringmanip.snake_case(self._arg.name)
 
     @property
     def type(self) -> str:
@@ -323,22 +344,45 @@ class PythonMethodSymbols(PythonSymbols):
 
     @property
     def return_value_annotation(self) -> str:
-        """Python return type annotation for the method's return value(s)."""
+        """Python return type annotation for the method's return value.
+
+        A protobuf method has no single named return value to annotate: its
+        response *is* the message, so that is what a handler returns and what
+        the caller's future resolves to.
+        """
+        if self._method.response_payload.is_protobuf:
+            return self._method.response_payload.python.class_name
         if self._method.return_value is None:
             return "None"
-        if isinstance(self._method.return_value, list):
-            return self.response_class_name
         return self._method.return_value.python.annotation
 
     @property
     def response_class_name(self) -> str:
         """Python class name of the generated method response payload."""
-        return f"{stringmanip.upper_camel_case(self._method.name)}MethodResponse"
+        return self._method.response_payload.python.class_name
 
     @property
     def request_class_name(self) -> str:
         """Python class name of the generated method request payload."""
-        return f"{stringmanip.upper_camel_case(self._method.name)}MethodRequest"
+        return self._method.request_payload.python.class_name
+
+
+class PythonCommandSymbols(PythonSymbols):
+    """Python symbols for an :class:`IpcCommand`."""
+
+    def __init__(self, command, config: StingerConfig | None = None):
+        super().__init__(config)
+        self._command = command
+
+    @property
+    def payload_class_name(self) -> str:
+        """Python class name of the generated command payload."""
+        return self._command.payload.python.class_name
+
+    @property
+    def callback_type_name(self) -> str:
+        """Name of the callback type alias for handlers of this command."""
+        return f"{stringmanip.upper_camel_case(self._command.name)}CommandCallbackType"
 
 
 class PythonPropertySymbols(PythonSymbols):
@@ -349,12 +393,21 @@ class PythonPropertySymbols(PythonSymbols):
         self._prop = prop
 
     @property
+    def is_protobuf(self) -> bool:
+        """True when the property holds a protobuf message rather than a JSON value."""
+        return self._prop.payload.is_protobuf
+
+    @property
     def class_name(self) -> str:
-        """Python class name for the property's value type."""
-        if len(self._prop._arg_list) == 1:
-            return self._prop._arg_list[0].python.class_name
-        else:
-            return f"{stringmanip.upper_camel_case(self._prop.name)}Property"
+        """Python class name for the property's value type.
+
+        A protobuf property's value is the message itself: there is no wrapper
+        model with a single named field, so the value type and the payload type
+        are the same thing.
+        """
+        if self.is_protobuf:
+            return self._prop.payload.python.class_name
+        return self._prop.value.python.class_name
 
     @property
     def type(self) -> str:
@@ -363,33 +416,376 @@ class PythonPropertySymbols(PythonSymbols):
 
     @property
     def local_type(self) -> str:
-        """Unqualified Python type name for the property's value."""
+        """Unqualified Python type name for the property's value.
+
+        A protobuf message has no unqualified name in a generated module's scope:
+        it is only ever reached through its ``_pb2`` module, so the qualified name
+        is the local one.
+        """
+        if self.is_protobuf:
+            return self.class_name
         return self.class_name.split(".")[-1]
 
     @property
     def annotation(self) -> str:
         """Python type annotation for the property's value."""
-        if len(self._prop._arg_list) == 1:
-            return self._prop._arg_list[0].python.annotation
-        else:
-            return f"{stringmanip.upper_camel_case(self._prop.name)}Property"
+        if self.is_protobuf:
+            return self._prop.payload.python.class_name
+        return self._prop.value.python.annotation
 
     @property
     def getter_value_annotation(self) -> str:
         """Python type annotation used by the property getter."""
-        if len(self._prop._arg_list) == 1:
-            return self._prop._arg_list[0].python.annotation
-        return self.model_class_name
+        return self.annotation
 
     @property
     def setter_value_annotation(self) -> str:
-        """Python type annotation used by the property setter."""
-        if len(self._prop._arg_list) == 1:
-            return f"Union[{self._prop._arg_list[0].python.annotation}, {self.model_class_name}]"
-        else:
-            return self.model_class_name
+        """Python type annotation used by the property setter.
+
+        A JSON property accepts either the bare value or the model wrapping it; a
+        protobuf property has only the one form, so the union would be redundant.
+        """
+        if self.is_protobuf:
+            return self.annotation
+        return f"Union[{self.annotation}, {self.model_class_name}]"
 
     @property
     def model_class_name(self) -> str:
         """Python class name of the generated property model."""
-        return f"{stringmanip.upper_camel_case(self._prop.name)}Property"
+        return self._prop.payload.python.class_name
+
+    @property
+    def is_optional(self) -> bool:
+        """True when the property's value may be absent.
+
+        A protobuf message is never optional in this sense: an unset message is
+        still a message, with its fields at their defaults.
+        """
+        if self.is_protobuf:
+            return False
+        return bool(self._prop.value.optional)
+
+    @property
+    def value_param_name(self) -> str:
+        """Name of the parameter a setter takes for this property's value.
+
+        A JSON property names it after its single value; a protobuf property has
+        no field name to borrow, so it is simply the message.
+        """
+        if self.is_protobuf:
+            return "value"
+        return stringmanip.snake_case(self._prop.value.name)
+
+
+# The name of the generated class for each kind of payload.  These reproduce
+# exactly the names the templates used to spell inline, so that routing them through
+# the payload changes no generated output.
+_PYTHON_PAYLOAD_NAMES = {
+    "SIGNAL": lambda name: f"{stringmanip.upper_camel_case(name)}SignalPayload",
+    "COMMAND": lambda name: f"{stringmanip.upper_camel_case(name)}CommandPayload",
+    "METHOD_REQUEST": lambda name: f"{stringmanip.upper_camel_case(name)}MethodRequest",
+    "METHOD_RESPONSE": lambda name: f"{stringmanip.upper_camel_case(name)}MethodResponse",
+    "PROPERTY": lambda name: f"{stringmanip.upper_camel_case(name)}Property",
+}
+
+
+class PythonPayloadSymbols(PythonSymbols):
+    """Python symbols for a :class:`Payload`."""
+
+    def __init__(self, payload, config: StingerConfig | None = None):
+        super().__init__(config)
+        self._payload = payload
+
+    @property
+    def class_name(self) -> str:
+        """Python name of the type that carries this payload."""
+        if self._payload.is_protobuf:
+            return self._payload.protobuf.python.qualified_name
+        return _PYTHON_PAYLOAD_NAMES[self._payload.role.name](self._payload.owner_name)
+
+    @property
+    def struct_name(self) -> str:
+        """Alias for :attr:`class_name`, so templates can use one spelling across languages."""
+        return self.class_name
+
+    @property
+    def params(self) -> list:
+        """What the generated API takes, or hands over, for this payload.
+
+        A JSON payload spreads into its declared arguments; a protobuf payload
+        spreads into the fields of its message, ordered so that the ones a caller
+        may leave out come last.  Either way the entries answer to
+        ``param_name`` and ``annotation``, so a template writes the parameter
+        list once.
+        """
+        if self._payload.is_protobuf:
+            return self._payload.protobuf.param_fields
+        return self._payload.args
+
+    @property
+    def example_params(self) -> list:
+        """The parameters an example call fills in, in :attr:`params` order.
+
+        At most one member of any real ``oneof`` is offered: setting a second
+        would silently clear the first, so an example that passed both would not
+        round-trip.  A proto3 ``optional`` field is exempt -- its one-member
+        oneof is protobuf's own bookkeeping rather than a choice the .proto file
+        declared -- and a JSON payload has no such grouping at all.
+        """
+        if not self._payload.is_protobuf:
+            return self._payload.args
+        chosen: list = []
+        claimed_oneofs: set = set()
+        for field in self._payload.protobuf.param_fields:
+            if field.oneof_name is not None:
+                if field.oneof_name in claimed_oneofs:
+                    continue
+                claimed_oneofs.add(field.oneof_name)
+            chosen.append(field)
+        return chosen
+
+
+class PythonProtobufRefSymbols(PythonSymbols):
+    """Python symbols for a :class:`ProtobufMessageRef`."""
+
+    def __init__(self, ref, config: StingerConfig | None = None):
+        super().__init__(config)
+        self._ref = ref
+
+    @property
+    def module(self) -> str:
+        """Name of the protoc-generated module that defines this message.
+
+        protoc names the module after the .proto *file*, not the protobuf package,
+        so this needs the reference to have been resolved against the sources.
+        """
+        stem = self._ref.proto_file.rsplit("/", 1)[-1]
+        if stem.endswith(".proto"):
+            stem = stem[: -len(".proto")]
+        # protoc turns characters invalid in a module name into underscores.
+        stem = re.sub(r"\W", "_", stem)
+        return f"{stem}_pb2"
+
+    @property
+    def module_package(self) -> str:
+        """Dotted path of the directories between the source root and the .proto file, or ''.
+
+        protoc mirrors the directory a .proto file sits in under its output
+        directory, so ``sub/lens.proto`` becomes the module ``sub.lens_pb2``.
+        """
+        directory = self._ref.proto_file.rsplit("/", 1)[0] if "/" in self._ref.proto_file else ""
+        return ".".join(re.sub(r"\W", "_", part) for part in directory.split("/") if part)
+
+    @property
+    def _external(self) -> ExternalProtobufConfig | None:
+        """Where the host's bindings live, or None when this package bundles this message's."""
+        if self.config is None or self.config.protobuf.mode != "external" or self._ref.is_well_known:
+            return None
+        return self.config.protobuf.external
+
+    @property
+    def is_external(self) -> bool:
+        """True when the host supplies this message's bindings rather than the package bundling them."""
+        return self._external is not None
+
+    @property
+    def external_module_path(self) -> str:
+        """Dotted path the host's copy of this message's module is imported by, e.g. ``generated.camera_pb2``."""
+        package = self.config.protobuf.external.python_package if self.config is not None else ""
+        return ".".join(part for part in (package, self.module_package, self.module) if part)
+
+    def _import_from(self, package: str) -> str:
+        return f"from {package} import {self.module}" if package else f"import {self.module}"
+
+    @property
+    def import_statement(self) -> str:
+        """The import that brings this message's module into a generated module.
+
+        A well-known type comes from the installed protobuf runtime.  Everything
+        else comes from the bindings protoc wrote beside the generated package,
+        or, when the host supplies them, from the configured ``python_package``
+        by absolute import so the host's own copy is the only one in the process.
+        """
+        if self._ref.is_well_known:
+            return f"from google.protobuf import {self.module}"
+        external = self._external
+        if external is not None:
+            return self._import_from(".".join(part for part in (external.python_package, self.module_package) if part))
+        return self._import_from("." + ".".join(part for part in ("proto", self.module_package) if part))
+
+    def absolute_import_statement(self, package_name: str) -> str:
+        """The same import, for a file that lives outside the generated package.
+
+        An example script or a test module cannot reach the bundled bindings
+        relatively, so it names them below the generated package.  Everything
+        else is already spelled absolutely.
+        """
+        if self._ref.is_well_known or self.is_external:
+            return self.import_statement
+        return self._import_from(".".join(part for part in (package_name, "proto", self.module_package) if part))
+
+    @property
+    def qualified_name(self) -> str:
+        """How generated Python code names this message, e.g. ``weather_pb2.CurrentConditions``.
+
+        protoc nests a nested message's class inside its parent's, so the path
+        from the module down through every enclosing message is what names it.
+        """
+        return f"{self.module}.{self._ref.scoped_name}"
+
+
+# The Python type each protobuf scalar kind maps to.  protoc's generated classes
+# accept and hand back exactly these, so a per-field API that spells anything else
+# would not type-check against the message it builds.
+_PYTHON_FIELD_TYPES = {
+    "double": "float",
+    "float": "float",
+    "int32": "int",
+    "int64": "int",
+    "uint32": "int",
+    "uint64": "int",
+    "sint32": "int",
+    "sint64": "int",
+    "fixed32": "int",
+    "fixed64": "int",
+    "sfixed32": "int",
+    "sfixed64": "int",
+    "bool": "bool",
+    "string": "str",
+    "bytes": "bytes",
+    # protoc's Python runtime represents an enum value as a plain int, and the
+    # generated module exposes the names as module-level constants rather than as
+    # a type a signature could name.
+    "enum": "int",
+}
+
+
+class PythonProtobufFieldSymbols(PythonSymbols):
+    """Python symbols for one field of a protobuf message.
+
+    These are what turns a protobuf payload into the same kind of per-field API a
+    JSON payload has always had: the parameter a generated function takes for the
+    field, the constructor keyword that puts it back on the message, and the
+    expression that reads it off again.
+    """
+
+    def __init__(self, field, config: StingerConfig | None = None):
+        super().__init__(config)
+        self._field = field
+
+    @property
+    def param_name(self) -> str:
+        """Name of the generated parameter that carries this field.
+
+        The proto field name itself, because protoc's constructor takes the field
+        names as keywords and a renamed parameter would have to be translated back
+        at every call site.  A name Python reserves gets a trailing underscore,
+        which is the only case where the two differ.
+        """
+        name = self._field.name
+        if keyword.iskeyword(name) or name == "self":
+            return f"{name}_"
+        return name
+
+    @property
+    def base_type(self) -> str:
+        """The Python type of one value of this field, ignoring repetition.
+
+        A group is proto2's abandoned nesting syntax; protoc still parses it but
+        no supported generator models it, so a field that uses one is rejected
+        here rather than mis-generated.
+        """
+        if self._field.kind == "group":
+            raise ProtobufError(f"Protobuf field '{self._field.name}' uses a 'group', which stinger does not support; use a nested message instead.")
+        if self._field.is_message or self._field.is_enum:
+            # protoc's stubs type an enum field as the enum, not as a plain int, and
+            # reject an int where one is expected -- so the generated annotation has
+            # to name it too, or the generated code fails its own type check.
+            return self._field.type_ref.python.qualified_name
+        return _PYTHON_FIELD_TYPES[self._field.kind]
+
+    @property
+    def _annotated_type(self) -> str:
+        """:attr:`base_type`, spelled so it is safe inside a ``typing`` subscript at import time.
+
+        protoc's stubs declare an enum as a class, which is what a type checker
+        needs, but at runtime it is an ``EnumTypeWrapper`` *instance*.  A bare
+        parameter annotation never inspects it, yet ``Callable[[...]]``, ``List[...]``
+        and ``Optional[...]`` do, and Python before 3.11 rejects anything that is not
+        a type -- which crashes the import of a module holding such an alias.  As a
+        string it becomes a forward reference that is never evaluated at runtime,
+        and a type checker reads it as the same type.  A message is a real class,
+        so it stays as it is.
+        """
+        return f'"{self.base_type}"' if self._field.is_enum else self.base_type
+
+    @property
+    def annotation(self) -> str:
+        """Python type annotation for this field's parameter.
+
+        A map becomes a ``Dict``, a repeated field a ``List`` and a field a caller
+        may leave unset an ``Optional`` -- the ``typing`` spellings rather than the
+        builtin generics, since the generated package still supports Python 3.7.
+        """
+        if self._field.is_map:
+            return f"Dict[{self._field.map_key.python.annotation}, {self._field.map_value.python.annotation}]"
+        if self._field.repeated:
+            return f"List[{self._annotated_type}]"
+        if self._field.is_optional_param:
+            return f"Optional[{self._annotated_type}]"
+        return self._annotated_type
+
+    @property
+    def ctor_kwarg(self) -> str:
+        """This field's contribution to a protobuf message constructor call.
+
+        A field whose parameter had to be renamed cannot be passed as a keyword at
+        all -- ``Msg(from=x)`` does not parse -- so it goes through a mapping
+        unpacking instead.  Passing ``None`` is how a field is left unset: the
+        protobuf runtime treats a ``None`` keyword as "not given", for repeated and
+        map fields as much as for singular ones, so an optional parameter needs no
+        guard around it.
+        """
+        name = self._field.name
+        if self.param_name != name:
+            return f'**{{"{name}": {self.param_name}}}'
+        return f"{name}={self.param_name}"
+
+    def read_expr(self, obj_expr: str) -> str:
+        """Expression reading this field back off the message ``obj_expr``.
+
+        A repeated or map field is copied out of its protobuf container into a
+        plain ``list``/``dict``, so a handler is given an ordinary Python value it
+        can keep after the message goes away.  A field with explicit presence
+        reports ``None`` when it is unset, which is the difference between "not
+        given" and "given as the default" that its ``Optional`` parameter promises.
+        """
+        name = self._field.name
+        access = f'getattr({obj_expr}, "{name}")' if self.param_name != name else f"{obj_expr}.{name}"
+        if self._field.is_map:
+            return f"dict({access})"
+        if self._field.repeated:
+            return f"list({access})"
+        if self._field.is_optional_param:
+            return f'{access} if {obj_expr}.HasField("{name}") else None'
+        return access
+
+    def example_value(self, seed: int = 2) -> str:
+        """An example value for this field, as a Python literal.
+
+        Only a scalar has an example that can be made up from the descriptor
+        alone; anything else gets its empty value, which is still a value the
+        generated parameter accepts.
+        """
+        if self._field.is_map:
+            return "{}"
+        if self._field.repeated:
+            return "[]"
+        if self._field.is_message:
+            return f"{self.base_type}()"
+        if self._field.is_enum:
+            # The wrapper object protoc generates for an enum is not callable, so an
+            # example names one of the enum's own values rather than casting a number.
+            values = self._field.type_ref.enum_values
+            return f"{self.base_type}.{values[0]}" if values else "0"
+        return self._field.get_random_example_value(lang="python", seed=seed)

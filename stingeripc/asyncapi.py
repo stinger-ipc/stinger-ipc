@@ -28,12 +28,14 @@ from stinger_python_utils.return_codes import (
 
 from stingeripc.arg_datatypes import InterfaceEnum, InterfaceStruct
 from stingeripc.arg_models import Arg, ArgArray, ArgEnum, ArgStruct, ArgPrimitive
+from stingeripc.ipc_command import IpcCommand
 from stingeripc.ipc_method import IpcMethod
 from stingeripc.ipc_property import IpcProperty
 from stingeripc.ipc_signal import IpcSignal
 from stingeripc.components import StingerSpec
 from stingeripc.args import ArgType
 from stingeripc.config import StingerConfig
+from stingeripc.topics import InterfaceTopics
 from jacobsjinjatoo.stringmanip import lower_camel_case, upper_camel_case
 
 
@@ -112,27 +114,28 @@ def _struct_to_schema(ist: InterfaceStruct) -> Schema:
 
     properties: dict[str, dict] = {}
     required: list[str] = []
-    for member in ist.members:
+    for member in ist.values:
+        prop: dict[str, Any]
         if member.arg_type == ArgType.ENUM:
             assert isinstance(member, ArgEnum)
             if member.optional:
-                prop: dict[str, Any] = {"anyOf": [{"$ref": f"#/components/schemas/{member.enum.name}"}, {"type": "null"}]}
+                prop = {"anyOf": [{"$ref": f"#/components/schemas/{member.enum.name}"}, {"type": "null"}]}
             else:
-                prop: dict[str, Any] = {"$ref": f"#/components/schemas/{member.enum.name}"}
+                prop = {"$ref": f"#/components/schemas/{member.enum.name}"}
         elif member.arg_type == ArgType.STRUCT:
             assert isinstance(member, ArgStruct)
             if member.optional:
-                prop: dict[str, Any] = {"anyOf": [{"$ref": f"#/components/schemas/{member.interface_struct.name}"}, {"type": "null"}]}
+                prop = {"anyOf": [{"$ref": f"#/components/schemas/{member.interface_struct.name}"}, {"type": "null"}]}
             else:
-                prop: dict[str, Any] = {"$ref": f"#/components/schemas/{member.interface_struct.name}"}
+                prop = {"$ref": f"#/components/schemas/{member.interface_struct.name}"}
         elif member.arg_type == ArgType.PRIMITIVE:
             assert isinstance(member, ArgPrimitive)
-            prop: dict[str, Any] = _primitive_type_to_schema(member)
+            prop = _primitive_type_to_schema(member)
         elif member.arg_type == ArgType.ARRAY:
             assert isinstance(member, ArgArray)
-            prop: dict[str, Any] = _array_to_schema(member)
+            prop = _array_to_schema(member)
         else:
-            prop: dict[str, Any] = _other_arg_to_schema(member)
+            prop = _other_arg_to_schema(member)
         if member.description and "description" not in prop:
             prop["description"] = member.description
         properties[member.name] = prop
@@ -149,31 +152,77 @@ def _struct_to_schema(ist: InterfaceStruct) -> Schema:
 def _arg_schema(arg: Arg) -> dict:
     if arg.arg_type == ArgType.ENUM:
         assert isinstance(arg, ArgEnum)
+        if arg.optional:
+            return {"anyOf": [{"$ref": f"#/components/schemas/{arg.enum.name}"}, {"type": "null"}]}
         return {"$ref": f"#/components/schemas/{arg.enum.name}"}
     elif arg.arg_type == ArgType.STRUCT:
         assert isinstance(arg, ArgStruct)
+        if arg.optional:
+            return {"anyOf": [{"$ref": f"#/components/schemas/{arg.interface_struct.name}"}, {"type": "null"}]}
         return {"$ref": f"#/components/schemas/{arg.interface_struct.name}"}
     elif arg.arg_type == ArgType.PRIMITIVE:
         assert isinstance(arg, ArgPrimitive)
         return _primitive_type_to_schema(arg)
-    return {"type": "string"}
+    elif arg.arg_type == ArgType.ARRAY:
+        assert isinstance(arg, ArgArray)
+        return _array_to_schema(arg)
+    return _other_arg_to_schema(arg)
 
 
-def _parameters_for_address(address: str, config: StingerConfig) -> models.channel.Parameters:
+def _parameters_for_address(address: str, topics: InterfaceTopics) -> models.channel.Parameters:
     params: dict = {}
     if "{service_id}" in address:
         params["service_id"] = {"$ref": "#/components/parameters/service_id"}
     if "{client_id}" in address:
         params["client_id"] = {"$ref": "#/components/parameters/client_id"}
-    for topic_param in config.topics.params:
+    for topic_param in topics.params:
         if f"{{{topic_param}}}" in address:
             params[topic_param] = {"$ref": f"#/components/parameters/{topic_param}"}
     return models.channel.Parameters(root=params)
 
 
 def _topic_template_to_regex(topic_template: str) -> str:
-    """Convert a topic template into a regex where placeholders map to [^\}]+."""
+    """Convert a topic template into a regex where placeholders map to [^\\}]+."""
     return re.sub(r"\{[^{}]+\}", r"[^\\}]+", topic_template)
+
+
+def arg_to_schema(arg: Arg) -> Schema:
+    """Wrap a single arg in the one-field JSON object that carries it on the wire."""
+    return arg_list_to_schema([arg])
+
+
+def protobuf_to_schema(ref) -> Schema:
+    """Describe a protobuf message the way AsyncAPI can describe a binary body.
+
+    The body is a serialized protobuf message, not a JSON object, so it is declared
+    as binary rather than given a JSON Schema that would misdescribe it.  The
+    message's own name and fields go in the description, which is the only place a
+    reader of the document can learn what those bytes contain.
+    """
+    fields = ", ".join(f"{field.name} ({field.kind})" for field in ref.param_fields)
+    shape = f"  Its fields are: {fields}." if fields else "  It has no fields."
+    return Schema(
+        **{
+            "type": "string",
+            "format": "binary",
+            "title": ref.full_name,
+            "description": f"The protobuf message `{ref.full_name}`, declared in `{ref.proto_file}`, in its binary wire format.{shape}",
+        }
+    )
+
+
+def payload_to_schema(payload) -> Schema:
+    """The schema for either kind of wire body: a JSON argument list or a protobuf message."""
+    if payload.is_protobuf:
+        return protobuf_to_schema(payload.protobuf)
+    return arg_list_to_schema(payload.arg_list)
+
+
+def payload_encoding(payload) -> str:
+    """How to finish the sentence "the payload ... is encoded as ..."."""
+    if payload.is_protobuf:
+        return f"the protobuf message `{payload.protobuf.full_name}`"
+    return "a JSON object"
 
 
 def arg_list_to_schema(arg_list: list[Arg]) -> Schema:
@@ -195,17 +244,17 @@ class AsyncApiSignalHelper:
         self.config = config
 
     def get_payload_schema(self) -> Schema:
-        return arg_list_to_schema(self.signal.arg_list)
+        return payload_to_schema(self.signal.payload)
 
     def get_message(self) -> models.Message:
         payload_schema = self.get_payload_schema()
         return models.Message(
             name=self.signal.name,
             summary=f"The message for the '{self.signal.name}' signal.",
-            description=f"The payload represents the data for the signal.  It is encoded as a JSON object.",
+            description=f"The payload represents the data for the signal.  It is encoded as {payload_encoding(self.signal.payload)}.",
             payload=payload_schema,
-            contentType="application/json",
-            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+            contentType=self.signal.payload.content_type,
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType=self.signal.payload.content_type)),
         )
 
     def to_channel(self) -> models.Channel:
@@ -215,7 +264,7 @@ class AsyncApiSignalHelper:
             address=address,
             description=self.signal.documentation,
             messages=models.message.Messages(root={self.signal.name: message}),
-            parameters=_parameters_for_address(address, self.config),
+            parameters=_parameters_for_address(address, self.signal.topics),
         )
 
     def to_operation(self) -> models.Operation:
@@ -260,21 +309,21 @@ class AsyncApiMethodHelper:
         return self.method.return_value_name.replace(" ", "_")
 
     def get_request_message(self) -> models.Message:
-        payload_schema = arg_list_to_schema(self.method.arg_list)
+        payload_schema = payload_to_schema(self.method.request_payload)
         response_topic_schema = _topic_template_to_regex(self.method.response_topic())
         return models.Message(
             name=self.request_message_key(),
-            description="""The payload represents the arguments for the method call.  It is encoded as a JSON object.
+            description=f"""The payload represents the arguments for the method call.  It is encoded as {payload_encoding(self.method.request_payload)}.
             
             Correlation data must be provided as an MQTT property.  The data can be any binary data, but must be unique to this method.  Typically, using a UUID is sufficient to ensure uniqueness.  The server will include the same correlation data in the response message, so the client can match responses to requests when multiple requests are in-flight.
             
             A response topic must be provided as an MQTT property.  The server will publish the response message to the provided response topic.  The method-calling client must have a valid subscription to the MQTT response topic.
             """,
             payload=payload_schema,
-            contentType="application/json",
+            contentType=self.method.request_payload.content_type,
             bindings=MessageBindingsObject(
                 mqtt=MQTTMessageBindings(
-                    contentType="application/json",
+                    contentType=self.method.request_payload.content_type,
                     correlationData={"type": "string", "format": "uuid"},
                     responseTopic={"type": "string", "pattern": response_topic_schema},
                 )
@@ -289,7 +338,7 @@ class AsyncApiMethodHelper:
             address=address,
             description=self.method.documentation,
             messages=models.message.Messages(root={self.request_message_key(): message}),
-            parameters=_parameters_for_address(address, self.config),
+            parameters=_parameters_for_address(address, self.method.topics),
         )
 
     def request_to_operation(self) -> models.Operation:
@@ -315,18 +364,19 @@ class AsyncApiMethodHelper:
         )
 
     def get_response_message(self) -> models.Message:
-        payload_schema = arg_list_to_schema(self.method.return_arg_list)
+        payload_schema = payload_to_schema(self.method.response_payload)
+        represents = "return value" if self.method.return_value is not None else "completion"
         return models.Message(
             name=self.method.return_value_name,
-            description="""
-            This payload represents the {% if self.method.return_arg_list | length > 1 %}return values{%elif self.method.return_arg_list | length == 1 %}return value{% else %}completion{% endif %} of the method call response.  It is encoded as a JSON object.
-            
+            description=f"""
+            This payload represents the {represents} of the method call response.  It is encoded as a JSON object.
+
             A "correlation data" MQTT property will be included in the response message, and will match the correlation data provided in the request message, so the client can match responses to requests when multiple requests are in-flight.  Whatever binary data was provided as correlation data in the request will be provided as correlation data in the response.
             (Hint: any blob of data works, so you could include extra tracking information like a timestamp if you needed it).
             """,
             payload=payload_schema,
-            contentType="application/json",
-            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
+            contentType=self.method.response_payload.content_type,
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType=self.method.response_payload.content_type)),
             tags=[models.base.Tag(name="method"), models.base.Tag(name="response")],
         )
 
@@ -338,7 +388,7 @@ class AsyncApiMethodHelper:
             address=address,
             description=self.method.documentation,
             messages=models.message.Messages(root={response_key: message}),
-            parameters=_parameters_for_address(address, self.config),
+            parameters=_parameters_for_address(address, self.method.topics),
         )
 
     def response_to_operation(self) -> models.Operation:
@@ -363,6 +413,69 @@ class AsyncApiMethodHelper:
         )
 
 
+class AsyncApiCommandHelper:
+    def __init__(self, command: IpcCommand, config: StingerConfig):
+        self.command = command
+        self.config = config
+
+    def channel_name(self) -> str:
+        return f"{self.command.name}_command"
+
+    def get_payload_schema(self) -> Schema:
+        return payload_to_schema(self.command.payload)
+
+    def get_message(self) -> models.Message:
+        payload_schema = self.get_payload_schema()
+        return models.Message(
+            name=self.command.name,
+            summary=f"The message for the '{self.command.name}' command.",
+            description="""The payload represents the arguments for the command.  It is encoded as a JSON object.
+
+            No correlation data and no response topic are provided, because a command has no response.
+            """,
+            payload=payload_schema,
+            contentType=self.command.payload.content_type,
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType=self.command.payload.content_type)),
+            tags=[models.base.Tag(name="command")],
+        )
+
+    def to_channel(self) -> models.Channel:
+        message = self.get_message()
+        address = self.command.topic()
+        return models.Channel(
+            address=address,
+            description=self.command.documentation,
+            messages=models.message.Messages(root={self.command.name: message}),
+            parameters=_parameters_for_address(address, self.command.topics),
+        )
+
+    def to_operation(self) -> models.Operation:
+        name = self.channel_name()
+        return models.Operation(
+            summary=f"Send the '{self.command.name}' command.",
+            description=f"""
+            A client publishes a message to the command topic in order to send the command to the server.
+            The server subscribes to the command topic and invokes any handlers it has registered for the command.
+
+            ```plantuml
+            Server -> MQTT Broker: Subscribe
+            Client -> MQTT Broker: '{self.command.name}' Command
+            MQTT Broker -> Server: '{self.command.name}' Command
+            Server -> Server: Execute '{self.command.name}' command handlers
+            ```
+
+            A command is fire-and-forget: there is no response message, so the client never learns whether the
+            server acted on the command.  A server that cannot deserialize or validate a command logs it and
+            drops it.  The message is not retained, so only servers subscribed at the time receive it.
+            """,
+            action="send",
+            channel=models.base.Reference(ref=f"#/channels/{name}"),
+            messages=[models.base.Reference(ref=f"#/channels/{name}/messages/{self.command.name}")],
+            bindings=OperationBindingsObject(mqtt=MQTTOperationBindings(qos=2, retain=False)),
+            tags=[models.base.Tag(name="command")],
+        )
+
+
 class AsyncApiPropertyHelper:
     def __init__(self, prop: IpcProperty, config: StingerConfig):
         self.prop = prop
@@ -378,59 +491,60 @@ class AsyncApiPropertyHelper:
         return f"{self.prop.name}_update_response"
 
     def payload_schema(self) -> Schema:
-        return arg_list_to_schema(self.prop.arg_list)
+        """The property payload.
+
+        A JSON property carries an object with one field, its value; a protobuf
+        property carries the message itself, with no wrapper around it.
+        """
+        return payload_to_schema(self.prop.payload)
 
     def _payload_ref(self) -> Schema:
         return Schema(**{"$ref": f"#/components/schemas/{self.prop.name}_property"})
 
     def get_value_message(self) -> models.Message:
+        debug_info_header = {
+            "type": "string",
+            "description": "A optional (not likely to be provided) string that the client should log or print for debugging purposes.",
+        }
+        if self.config.properties.version_tracking:
+            description = f"""The payload represents the current value of the property.  It is encoded as a JSON object.
+
+            The `PropertyValue` user property value (an integer provided as an MQTT string) is a version number that increments with each new value of the property.
+            A client typically stores this value in order to provide it in update requests.
+            """
+            headers = Schema(
+                type="object",
+                properties={
+                    "PropertyValue": {"type": "integer", "description": "An integer that increments with each new value of the property."},
+                    "DebugInfo": debug_info_header,
+                },
+                required=["PropertyValue"],
+            )
+        else:
+            description = """The payload represents the current value of the property.  It is encoded as a JSON object."""
+            headers = Schema(type="object", properties={"DebugInfo": debug_info_header})
         return models.Message(
             name=f"{upper_camel_case(self.prop.name)}PropertyValue",
             title=f"{self.prop.name} value",
             summary=f"The current value of the '{self.prop.name}' property.",
-            description=f"""The payload represents the current value of the property.  It is encoded as a JSON object.
-
-            The `PropertyValue` user property value (an integer provided as an MQTT string) is a version number that increments with each new value of the property.
-            A client typically stores this value in order to provide it in update requests.
-            """,
+            description=description,
             payload=self._payload_ref(),
-            contentType="application/json",
-            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType="application/json")),
-            headers=Schema(
-                type="object",
-                properties={
-                    "PropertyValue": {"type": "integer", "description": "An integer that increments with each new value of the property."},
-                    "DebugInfo": {
-                        "type": "string",
-                        "description": "A optional (not likely to be provided) string that the client should log or print for debugging purposes.",
-                    },
-                },
-                required=["PropertyValue"],
-            ),
+            contentType=self.prop.payload.content_type,
+            bindings=MessageBindingsObject(mqtt=MQTTMessageBindings(contentType=self.prop.payload.content_type)),
+            headers=headers,
             tags=[models.base.Tag(name="property"), models.base.Tag(name="value")],
         )
 
     def get_request_message(self) -> models.Message:
-        return models.Message(
-            name=f"{upper_camel_case(self.prop.name)}UpdateRequest",
-            summary=f"A request to update the '{self.prop.name}' property.",
-            description="""The payload represents the new property value that the client wants to set.
+        if self.config.properties.version_tracking:
+            description = """The payload represents the new property value that the client wants to set.
             
                 The entirety of the JSON object must be provided, and will completely replace the
                 current value of the property if the update is accepted.
                 
                 The `PropertyVersion` user property value (a number provided as an MQTT string)
-                should be the same `PropertyVersion` value that was most recently received.""",
-            payload=self._payload_ref(),
-            contentType="application/json",
-            bindings=MessageBindingsObject(
-                mqtt=MQTTMessageBindings(
-                    contentType="application/json",
-                    correlationData={"type": "string", "format": "uuid"},
-                    responseTopic={"type": "string", "pattern": _topic_template_to_regex(self.prop.response_topic())},
-                )
-            ),
-            headers=Schema(
+                should be the same `PropertyVersion` value that was most recently received."""
+            headers = Schema(
                 type="object",
                 properties={
                     "PropertyValue": {
@@ -439,15 +553,42 @@ class AsyncApiPropertyHelper:
                     },
                 },
                 required=["PropertyValue"],
+            )
+        else:
+            description = """The payload represents the new property value that the client wants to set.
+            
+                The entirety of the JSON object must be provided, and will completely replace the
+                current value of the property if the update is accepted."""
+            headers = Schema(type="object", properties={})
+        return models.Message(
+            name=f"{upper_camel_case(self.prop.name)}UpdateRequest",
+            summary=f"A request to update the '{self.prop.name}' property.",
+            description=description,
+            payload=self._payload_ref(),
+            contentType=self.prop.payload.content_type,
+            bindings=MessageBindingsObject(
+                mqtt=MQTTMessageBindings(
+                    contentType=self.prop.payload.content_type,
+                    correlationData={"type": "string", "format": "uuid"},
+                    responseTopic={"type": "string", "pattern": _topic_template_to_regex(self.prop.response_topic())},
+                )
             ),
+            headers=headers,
             tags=[models.base.Tag(name="property"), models.base.Tag(name="update"), models.base.Tag(name="request")],
         )
 
     def get_response_message(self) -> models.Message:
-        return models.Message(
-            name=f"{upper_camel_case(self.prop.name)}UpdateResponse",
-            summary=f"The response after updating the '{self.prop.name}' property.",
-            description="""The payload represents the latest value of the property after the update attempt.
+        return_code_header = {
+            "type": "integer",
+            "description": " | ".join([f"{code.name}: {code.value}" for code in MethodReturnCode]),
+            "enum": [code.value for code in MethodReturnCode],
+        }
+        debug_info_header = {
+            "type": "string",
+            "description": "A string describing why the update was unsuccessful, if applicable.",
+        }
+        if self.config.properties.version_tracking:
+            description = """The payload represents the latest value of the property after the update attempt.
             
             If the property update was successful, then there should be a `ReturnCode` user property with value `0`, and the payload should match the value that was sent in the update request.
             The `PropertyValue` user property will be the newest version of the property value after the update.
@@ -457,16 +598,8 @@ class AsyncApiPropertyHelper:
             If the property update was unsuccessful, then there should be a `ReturnCode` user property with a non-zero value, and the payload will contain the server's current value for the property.
             The `PropertyValue` user property will be the version of the current property value (which may or may not be what it was before).
             The `DebugInfo` user property should contain a string describing why the update was unsuccessful, and the client should log or print it for debugging purposes, but the client is not to specifically parse the `DebugInfo` for programatic meaning.
-            """,
-            payload=self._payload_ref(),
-            contentType="application/json",
-            bindings=MessageBindingsObject(
-                mqtt=MQTTMessageBindings(
-                    contentType="application/json",
-                    correlationData={"type": "string", "format": "uuid"},
-                )
-            ),
-            headers=Schema(
+            """
+            headers = Schema(
                 type="object",
                 properties={
                     "PropertyValue": {
@@ -474,18 +607,42 @@ class AsyncApiPropertyHelper:
                         "description": "This is the current version of the property.  The version in the request must match the version of the property value for the update to be accepted.  This prevents lost updates when multiple clients are updating the same property.",
                         "minimum": -1,
                     },
-                    "ReturnCode": {
-                        "type": "integer",
-                        "description": " | ".join([f"{code.name}: {code.value}" for code in MethodReturnCode]),
-                        "enum": [code.value for code in MethodReturnCode],
-                    },
-                    "DebugInfo": {
-                        "type": "string",
-                        "description": "A string describing why the update was unsuccessful, if applicable.",
-                    },
+                    "ReturnCode": return_code_header,
+                    "DebugInfo": debug_info_header,
                 },
                 required=["PropertyValue", "ReturnCode", "DebugInfo"],
+            )
+        else:
+            description = """The payload represents the latest value of the property after the update attempt.
+            
+            If the property update was successful, then there should be a `ReturnCode` user property with value `0`, and the payload should match the value that was sent in the update request.
+            The `DebugInfo` user property is usually empty or unset on success, but is not required to be empty.  If provided, the
+            client should log or print the provided `DebugInfo` string for debugging purposes.
+
+            If the property update was unsuccessful, then there should be a `ReturnCode` user property with a non-zero value, and the payload will contain the server's current value for the property.
+            The `DebugInfo` user property should contain a string describing why the update was unsuccessful, and the client should log or print it for debugging purposes, but the client is not to specifically parse the `DebugInfo` for programatic meaning.
+            """
+            headers = Schema(
+                type="object",
+                properties={
+                    "ReturnCode": return_code_header,
+                    "DebugInfo": debug_info_header,
+                },
+                required=["ReturnCode", "DebugInfo"],
+            )
+        return models.Message(
+            name=f"{upper_camel_case(self.prop.name)}UpdateResponse",
+            summary=f"The response after updating the '{self.prop.name}' property.",
+            description=description,
+            payload=self._payload_ref(),
+            contentType=self.prop.payload.content_type,
+            bindings=MessageBindingsObject(
+                mqtt=MQTTMessageBindings(
+                    contentType=self.prop.payload.content_type,
+                    correlationData={"type": "string", "format": "uuid"},
+                )
             ),
+            headers=headers,
             tags=[models.base.Tag(name="property"), models.base.Tag(name="update"), models.base.Tag(name="response")],
         )
 
@@ -497,7 +654,7 @@ class AsyncApiPropertyHelper:
             address=address,
             description=self.prop.documentation,
             messages=models.message.Messages(root={self.prop.name: self.get_value_message()}),
-            parameters=_parameters_for_address(address, self.config),
+            parameters=_parameters_for_address(address, self.prop.topics),
             tags=[models.base.Tag(name="property"), models.base.Tag(name="value")],
         )
 
@@ -532,7 +689,7 @@ class AsyncApiPropertyHelper:
             description=self.prop.documentation,
             address=address,
             messages=models.message.Messages(root={self.prop.name: self.get_request_message()}),
-            parameters=_parameters_for_address(address, self.config),
+            parameters=_parameters_for_address(address, self.prop.topics),
         )
 
     def update_request_to_operation(self) -> models.Operation:
@@ -571,7 +728,7 @@ class AsyncApiPropertyHelper:
             address=address,
             description=self.prop.documentation,
             messages=models.message.Messages(root={self.prop.name: self.get_response_message()}),
-            parameters=_parameters_for_address(address, self.config),
+            parameters=_parameters_for_address(address, self.prop.topics),
         )
 
     def update_response_to_operation(self) -> models.Operation:
@@ -606,7 +763,7 @@ class AsyncApiPropertyHelper:
         )
 
 
-def _interface_info_schema(config: StingerConfig) -> Schema:
+def _interface_info_schema(topics: InterfaceTopics) -> Schema:
     properties: dict[str, Any] = {
         "interface_name": {"type": "string"},
         "title": {"type": "string"},
@@ -619,9 +776,14 @@ def _interface_info_schema(config: StingerConfig) -> Schema:
             "additionalProperties": {"type": "string"},
             "description": "Maps method names to their version string, for methods that declare a version.",
         },
+        "commands": {
+            "type": "object",
+            "additionalProperties": {"type": "string"},
+            "description": "Maps command names to their version string, for commands that declare a version.",
+        },
     }
     required = ["interface_name", "title", "version", "instance", "connection_topic", "timestamp"]
-    for topic_param in config.topics.params:
+    for topic_param in topics.params:
         properties[topic_param] = {"type": "string"}
         required.append(topic_param)
     return Schema(type="object", properties=properties, required=required)
@@ -636,7 +798,7 @@ class AsyncApiInterfaceInfoHelper:
         return "interface_info"
 
     def get_payload_schema(self) -> Schema:
-        return _interface_info_schema(self.config)
+        return _interface_info_schema(self.spec.topics)
 
     def get_message(self) -> models.Message:
         return models.Message(
@@ -655,7 +817,7 @@ class AsyncApiInterfaceInfoHelper:
             address=address,
             description=f"Advertisement/discovery channel for the '{self.spec.name}' interface.",
             messages=models.message.Messages(root={self.channel_name(): message}),
-            parameters=_parameters_for_address(address, self.config),
+            parameters=_parameters_for_address(address, self.spec.topics),
         )
 
     def to_operation(self) -> models.Operation:
@@ -704,6 +866,10 @@ def stinger_to_asyncapi(spec: StingerSpec, config: StingerConfig | None = None) 
         operations[method_helper.request_channel_name()] = method_helper.request_to_operation()
         channels[method_helper.response_channel_name()] = method_helper.response_to_channel()
         operations[method_helper.response_channel_name()] = method_helper.response_to_operation()
+    for command_name, command in spec.commands.items():
+        command_helper = AsyncApiCommandHelper(command, config_obj)
+        channels[command_helper.channel_name()] = command_helper.to_channel()
+        operations[command_helper.channel_name()] = command_helper.to_operation()
     for prop_name, prop in spec.properties.items():
         prop_helper = AsyncApiPropertyHelper(prop, config_obj)
         schemas[f"{prop.name}_property"] = prop_helper.payload_schema()
@@ -723,6 +889,7 @@ def stinger_to_asyncapi(spec: StingerSpec, config: StingerConfig | None = None) 
             tags=[
                 models.base.Tag(name="signal"),
                 models.base.Tag(name="method"),
+                models.base.Tag(name="command"),
                 models.base.Tag(name="property"),
                 models.base.Tag(name="discovery"),
             ],
@@ -738,7 +905,7 @@ def stinger_to_asyncapi(spec: StingerSpec, config: StingerConfig | None = None) 
         "service_id": models.Parameter(description="The ID of the service/instance"),
         "client_id": models.Parameter(description="The MQTT Client ID"),
     }
-    for topic_param in config_obj.topics.params:
+    for topic_param in spec.topics.params:
         if topic_param not in component_parameters:
             component_parameters[topic_param] = models.Parameter(description=f"Topic parameter '{topic_param}'")
 

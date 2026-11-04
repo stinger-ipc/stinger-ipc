@@ -112,7 +112,7 @@ class InterfaceEnum(BaseModel):
 class InterfaceStruct(BaseModel):
     """A named structured type defined by the interface.
 
-    A struct is an ordered collection of member :class:`Arg` objects.  It is
+    A struct is an ordered collection of value :class:`Arg` objects.  It is
     assigned a language ``class_name`` (upper camel case) used by the generated
     code.
     """
@@ -120,25 +120,20 @@ class InterfaceStruct(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     name: str = Field(..., description="The name of the struct")
-    members: list[Arg] = Field(default_factory=list, description="The ordered list of member arguments that make up the struct")
+    values: list[Arg] = Field(default_factory=list, description="The ordered list of value arguments that make up the struct")
     documentation: Optional[str] = Field(default=None, description="A brief description of the struct")
 
     def model_post_init(self, __context) -> None:
         LanguageSymbolMixin.enhance(self)
 
-    def add_member(self, arg: Arg):
-        """Append a member argument to the struct."""
-        self.members.append(arg)
+    def add_value(self, arg: Arg):
+        """Append a value argument to the struct."""
+        self.values.append(arg)
 
     @property
     def class_name(self):
         """The upper-camel-case class name used for this struct in generated code."""
         return stringmanip.upper_camel_case(self.name)
-
-    @property
-    def values(self) -> list[Arg]:
-        """The struct's member arguments (alias for ``members``)."""
-        return self.members
 
     @classmethod
     def new_struct_from_stinger(
@@ -149,16 +144,16 @@ class InterfaceStruct(BaseModel):
     ) -> InterfaceStruct:
         """Construct an InterfaceStruct from a parsed Stinger struct spec dict.
 
-        Each entry in the spec's ``members`` list is parsed into an :class:`Arg`
+        Each entry in the spec's ``values`` list is parsed into an :class:`Arg`
         using the owning :class:`StingerSpec` to resolve referenced enums and
         structs.
         """
         istruct = cls(name=name)
-        for memb in spec.get("members", []):
-            if not isinstance(memb, dict):
-                raise InvalidStingerStructure("Struct members must be dicts")
-            arg = Arg.new_arg_from_stinger(memb, stinger_spec=stinger_spec)
-            istruct.add_member(arg)
+        for val in spec.get("values", []):
+            if not isinstance(val, dict):
+                raise InvalidStingerStructure("Struct values must be dicts")
+            arg = Arg.new_arg_from_stinger(val, stinger_spec=stinger_spec)
+            istruct.add_value(arg)
         documentation = spec.get("documentation", None)
         if documentation is not None and not isinstance(documentation, str):
             raise InvalidStingerStructure("Struct documentation must be a string")
@@ -166,7 +161,7 @@ class InterfaceStruct(BaseModel):
         return istruct
 
     def __str__(self) -> str:
-        return f"<InterfaceStruct members={[m.name for m in self.members]}>"
+        return f"<InterfaceStruct values={[v.name for v in self.values]}>"
 
     def __repr__(self):
         return f"InterfaceStruct(name={self.name})"

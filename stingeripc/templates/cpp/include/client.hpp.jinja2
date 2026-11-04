@@ -8,6 +8,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 */
 {% import 'partials/args.jinja2' as ar %}
 {% import 'partials/properties.jinja2' as pr %}
+{% import 'partials/payload.jinja2' as pl %}
 #pragma once
 
 #include <cstdint>
@@ -16,7 +17,18 @@ It contains enumerations used by the {{stinger.name}} interface.
 #include <memory>
 #include <exception>
 #include <mutex>
+#include <condition_variable>
 #include <chrono>
+#include <thread>
+#include <utility>
+#include <vector>
+{%- if stinger.uses_protobuf() %}
+// A per-field protobuf signature names these directly: a `std::string` for a
+// `string` or `bytes` field, a `std::vector`/`std::map` for a repeated or map
+// field, and a `std::optional` for one that tracks presence.
+#include <optional>
+#include <string>
+{%- endif %}
 #include <rapidjson/document.h>
 #include <stinger/mqtt/properties.hpp>
 #include <stinger/utils/iconnection.hpp>
@@ -24,6 +36,9 @@ It contains enumerations used by the {{stinger.name}} interface.
 #include "{{stinger.cpp.enum_header_file}}"
 #include "method_payloads.hpp"
 #include "signal_payloads.hpp"
+#include "command_payloads.hpp"
+{%- import "partials/codec.jinja2" as codec %}
+{{- codec.imports(stinger) }}
 #include "discovery.hpp"
 
 {%if stinger.properties | length > 0 %}#include "{{stinger.cpp.property_struct_header_file}}"{%endif%}
@@ -40,6 +55,19 @@ public:
     static constexpr const char NAME[] = "{{stinger.name}}";
     // This is the version of the API contract.
     static constexpr const char INTERFACE_VERSION[] = "{{stinger.version}}";
+    {%- if stinger.properties|length > 0 %}
+    // How long a property getter or update request waits for the server's current value
+    // after subscribing to that property's value topic.
+    static constexpr std::chrono::seconds PROPERTY_VALUE_TIMEOUT{5};
+    {%- endif %}
+    {%- for method_name, method in stinger.methods.items() %}
+    // How long a `{{method_name}}` call waits for the server's response before its future is
+    // failed with a TIMEOUT exception and its bookkeeping discarded.  It is also the
+    // request message's expiry interval, so the broker stops trying to deliver a request
+    // whose caller has already stopped listening.  Declared as `timeout: {{method.timeout}}` on
+    // the '{{method_name}}' method.
+    static constexpr std::chrono::seconds {{method_name | CONST_CASE}}_METHOD_TIMEOUT{ {{-method.timeout-}} };
+    {%- endfor %}
 
     // Constructor taking a connection object.
     {{stinger.cpp.client_class_name}}(std::shared_ptr<stinger::utils::IConnection> broker, const InstanceInfo& instanceInfo);
@@ -50,21 +78,37 @@ public:
     {%for sig_name, sig in stinger.signals.items()%}
     // Register a callback for the `{{sig_name}}` signal.  {%if sig.arg_list|length > 0 and sig.arg_list[0].optional %}The argument is optional.{%endif%}
     // The provided method will be called whenever a `{{sig_name}}` is received.
-    void register{{sig_name | UpperCamelCase}}Callback(const std::function<void({%for arg in sig.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>& cb);
+    // Registering a callback is what subscribes to the `{{sig_name}}` signal.
+    void register{{sig_name | UpperCamelCase}}Callback(const std::function<void({{ pl.param_types(sig.payload) }})>& cb);
     {%endfor%}
     {%endif%}
     {%if stinger.methods|length > 0 -%}
     // ------------------- METHODS --------------------
     {%for method_name, method in stinger.methods.items()%}
     // Calls the `{{method_name}}` method.
-    // Returns a future.  When that future resolves, it will have the returned value. {{method.return_value}}
-    std::future<{{method.cpp.return_value_class}}> {{method_name | camelCase}}({%for arg in method.arg_list%}{{arg.cpp.temp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%});
+    // Returns a future.  When that future resolves, it will have the {%if not method.has_response%}method's completion{%elif method.response_payload.is_protobuf%}`{{method.response_payload.protobuf.full_name}}` response message{%else%}`{{method.return_value.name}}` return value{%endif%}.
+    std::future<{{method.cpp.return_value_class}}> {{method_name | camelCase}}({%if method.request_payload.is_protobuf%}{{ pl.params(method.request_payload) }}{%else%}{%for arg in method.arg_list%}{{arg.cpp.temp_type}} {{arg.name}}{%if not loop.last%}, {%endif%}{%endfor%}{%endif%});
+    {%endfor%}
+    {%endif%}
+    {%if stinger.commands|length > 0 -%}
+    // ------------------- COMMANDS -------------------
+    {%for command_name, command in stinger.commands.items()%}
+    // Sends the `{{command_name}}` command to the server.
+    // Commands are fire-and-forget: there is no response, so nothing is returned and
+    // the client never learns whether the server acted on it.
+    void send{{command_name | UpperCamelCase}}Command({{ pl.func_params(command.payload) }});
+{%- if not command.payload.is_protobuf %}
+
+    // Sends an already-built '{{command_name}}' payload, for callers that hold the
+    // payload object rather than its individual values.
+    void send{{command_name | UpperCamelCase}}CommandPayload(const {{command.payload.cpp.class_name}}& payload);
+{%- endif %}
     {%endfor%}
     {%endif%}
     {%if stinger.properties|length > 0 -%}
     // ---------------- PROPERTIES ------------------
     {%for prop_name, prop in stinger.properties.items()%}
-    {{ pr.public_declarations(prop_name, prop, true) | indent(4) }}
+    {{ pr.public_declarations(prop_name, prop, true, config) | indent(4) }}
     {%endfor%}
     {%endif%}
 private:
@@ -79,33 +123,81 @@ private:
 
     // Internal method for receiving messages from the broker.
     void _receiveMessage(const stinger::mqtt::Message& msg);
+    {%- for command_name, command in stinger.commands.items() %}
+    {%- if command.payload.is_protobuf %}
+
+    // Publishes an already-built '{{command_name}}' message.  A protobuf command's
+    // public API is per-field, so this is where the message actually goes out.
+    void _publish{{command_name | UpperCamelCase}}Command(const {{command.payload.cpp.class_name}}& commandPayload);
+    {%- endif %}
+    {%- endfor %}
     {%if stinger.signals|length > 0 %}
     // ------------------ SIGNALS --------------------
     {%for sig_name, sig in stinger.signals.items()%}
     // List of callbacks to be called whenever the `{{sig_name}}` signal is received.
-    std::vector<std::function<void({%for arg in sig.arg_list%}{{arg.cpp.temp_type}}{%if not loop.last%}, {%endif%}{%endfor%})>> _{{sig_name | lowerCamelCase}}SignalCallbacks;
+    std::vector<std::function<void({{ pl.param_types(sig.payload) }})>> _{{sig_name | lowerCamelCase}}SignalCallbacks;
     std::mutex _{{sig_name | lowerCamelCase}}SignalCallbacksMutex;
 
     // MQTT Subscription ID for `{{sig_name}}` signal receptions.
     int _{{sig_name | lowerCamelCase}}SignalSubscriptionId = -1;
+
+    // Mutex for protecting the subscription bookkeeping above.  Kept separate from
+    // `_{{sig_name | lowerCamelCase}}SignalCallbacksMutex` so that a message delivered during Subscribe()
+    // cannot deadlock against the thread doing the subscribing.
+    std::mutex _{{sig_name | lowerCamelCase}}SignalSubscriptionMutex;
+
+    // Subscribes to the `{{sig_name}}` signal's topic, at most once.
+    void _subscribeTo{{sig_name | UpperCamelCase}}Signal();
     {%endfor%}
     {%endif%}
     {%if stinger.methods|length > 0 -%}
     // ------------------- METHODS --------------------
 
+    // An in-flight method call: the promise waiting to be resolved, and the point in time
+    // after which the call is given up on so that neither the promise nor its map entry
+    // outlives a server that never answers.
+    template <typename ReturnType>
+    struct PendingMethodCall
+    {
+        std::promise<ReturnType> promise;
+        std::chrono::steady_clock::time_point deadline;
+    };
+
     {%-for method_name, method in stinger.methods.items()%}
-    // Holds promises for pending `{{method_name}}` method calls.
-    std::map<std::vector<std::byte>, std::promise<{{method.cpp.return_value_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
+    // Holds promises for pending `{{method_name}}` method calls.  Entries are added by the
+    // calling thread and removed by the broker's thread or the timeout thread, so every
+    // access takes the mutex below.
+    std::map<std::vector<std::byte>, PendingMethodCall<{{method.cpp.return_value_class}}>> _pending{{method_name|UpperCamelCase}}MethodCalls;
+    std::mutex _pending{{method_name|UpperCamelCase}}MethodCallsMutex;
     int _{{method_name | lowerCamelCase}}MethodSubscriptionId = -1;
     // This is called internally to process responses to `{{method_name}}` method calls.
     void _handle{{method_name|UpperCamelCase}}Response(const stinger::mqtt::Message& msg);
     {%endfor%}
+
+    // How often the timeout thread below looks for method calls that have passed their
+    // deadline.  A call is therefore failed at some point within this interval of its
+    // own timeout, which is close enough for a timeout measured in seconds.
+    static constexpr std::chrono::milliseconds METHOD_TIMEOUT_SWEEP_INTERVAL{500};
+
+    // Background thread that fails method calls the server never responded to.  One
+    // thread serves every method, rather than a timer per call.
+    std::thread _methodTimeoutThread;
+    std::mutex _methodTimeoutMutex;
+    std::condition_variable _methodTimeoutCondition;
+    bool _stopMethodTimeoutThread = false;
+
+    // Body of `_methodTimeoutThread`: sweep, wait, repeat until the client shuts down.
+    void _runMethodTimeoutThread();
+
+    // Fails every pending method call whose deadline has passed.  Called only from the
+    // timeout thread, and never while holding `_methodTimeoutMutex`.
+    void _failTimedOutMethodCalls();
     {%endif%}
     {%if stinger.properties|length > 0 -%}
     // ---------------- PROPERTIES ------------------
     int _anyPropertyUpdateResponseSubscriptionId = -1;
     {%for prop_name, prop in stinger.properties.items()%}
-    {{pr.private_declarations(prop_name, prop, true) | indent(4)}}
+    {{pr.private_declarations(prop_name, prop, true, config) | indent(4)}}
     {%endfor%}
     {%endif%}
 };

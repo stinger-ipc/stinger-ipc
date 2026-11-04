@@ -1,6 +1,7 @@
 from jacobsjinjatoo import stringmanip
 
 from stingeripc.args import ArgPrimitiveType
+from stingeripc.config import StingerConfig
 from stingeripc.lang_symb import ISymbolsProvider
 
 
@@ -12,12 +13,20 @@ class CppSymbolsProvider(ISymbolsProvider):
     """
 
     def for_model(self, model_class_name: str, model) -> object | None:
-        if model_class_name == "StingerSpec":
+        if model_class_name == "ProtobufMessageRef":
+            return CppProtobufRefSymbols(model, self.config)
+        elif model_class_name == "ProtobufField":
+            return CppProtobufFieldSymbols(model)
+        elif model_class_name == "Payload":
+            return CppPayloadSymbols(model)
+        elif model_class_name == "StingerSpec":
             return CppInterfaceSymbols(model)
         elif model_class_name == "IpcProperty":
             return CppPropertySymbols(model)
         elif model_class_name == "IpcMethod":
             return CppMethodSymbols(model)
+        elif model_class_name == "IpcCommand":
+            return CppCommandSymbols(model)
         elif model_class_name == "InterfaceEnum":
             return CppEnumSymbols(model)
         elif model_class_name == "InterfaceStruct":
@@ -44,8 +53,8 @@ class CppSymbolsProvider(ISymbolsProvider):
 class CppSymbols:
     """Base class for C++ symbol providers."""
 
-    def __init__(self):
-        pass
+    def __init__(self, config: StingerConfig | None = None):
+        self.config = config
 
 
 class CppInterfaceSymbols(CppSymbols):
@@ -113,9 +122,43 @@ class CppPropertySymbols(CppSymbols):
         self._prop = prop
 
     @property
+    def is_protobuf(self) -> bool:
+        """True when the property holds a protobuf message rather than a JSON value."""
+        return self._prop.payload.is_protobuf
+
+    @property
     def property_struct_name(self) -> str:
         """C++ struct name generated for the property."""
-        return f"{stringmanip.upper_camel_case(self._prop.name)}Property"
+        return self._prop.payload.cpp.struct_name
+
+    @property
+    def is_optional(self) -> bool:
+        """True when the property's value may be absent.
+
+        A protobuf message is never optional in this sense: an unset message is
+        still a message, with its fields at their defaults.
+        """
+        if self.is_protobuf:
+            return False
+        return bool(self._prop.value.optional)
+
+    @property
+    def temp_type(self) -> str:
+        """C++ type used for a local holding the property's value."""
+        if self.is_protobuf:
+            return self._prop.payload.cpp.struct_name
+        return self._prop.value.cpp.temp_type
+
+    @property
+    def value_type(self) -> str:
+        """C++ type of the property's value.
+
+        A protobuf property's value is the message itself: there is no wrapper
+        struct with a single named field to unwrap.
+        """
+        if self.is_protobuf:
+            return self._prop.payload.cpp.struct_name
+        return self._prop.value.cpp.type
 
 
 class CppMethodSymbols(CppSymbols):
@@ -127,21 +170,44 @@ class CppMethodSymbols(CppSymbols):
 
     @property
     def return_value_class(self) -> str:
-        from stingeripc.components import Arg, ArgPrimitive, ArgStruct
+        """C++ type that the method's handler returns, or ``void`` when it returns nothing.
 
-        if self._method._return_value is None:
+        A protobuf response has no single ``Arg`` to unwrap: the handler builds the
+        response message itself and the caller's future resolves to it, so the type
+        is the message class.
+        """
+        from stingeripc.components import ArgPrimitive, ArgStruct
+
+        if self._method.response_payload.is_protobuf:
+            return self._method.response_payload.cpp.struct_name
+        return_value = self._method.return_value
+        if return_value is None:
             return "void"
-        elif isinstance(self._method._return_value, Arg):
-            if isinstance(self._method._return_value, ArgPrimitive) and self._method._return_value.type == ArgPrimitiveType.STRING:
-                if self._method._return_value.optional:
-                    return "std::optional<std::string>"
-                return "std::string"
-            elif isinstance(self._method._return_value, ArgStruct) and self._method._return_value.optional:
-                return f"std::optional<{self._method._return_value.cpp.type}>"  # type: ignore[attr-defined]
-            return self._method._return_value.cpp.type  # type: ignore[attr-defined]
-        elif isinstance(self._method._return_value, list):
-            return stringmanip.upper_camel_case(self._method.return_value_name)
-        raise RuntimeError(f"Unhandled return value type: {self._method._return_value}")
+        if isinstance(return_value, ArgPrimitive) and return_value.type == ArgPrimitiveType.STRING:
+            if return_value.optional:
+                return "std::optional<std::string>"
+            return "std::string"
+        if isinstance(return_value, ArgStruct) and return_value.optional:
+            return f"std::optional<{return_value.cpp.type}>"  # type: ignore[attr-defined]
+        return return_value.cpp.type
+
+    @property
+    def return_struct_name(self) -> str:
+        """C++ struct name of the method's generated response payload."""
+        return self._method.response_payload.cpp.struct_name
+
+
+class CppCommandSymbols(CppSymbols):
+    """C++ symbols for an :class:`IpcCommand`."""
+
+    def __init__(self, command):
+        super().__init__()
+        self._command = command
+
+    @property
+    def payload_struct_name(self) -> str:
+        """C++ struct name of the command's generated payload."""
+        return self._command.payload.cpp.struct_name
 
 
 class CppEnumSymbols(CppSymbols):
@@ -342,3 +408,311 @@ class CppArgArraySymbols(CppArgSymbols):
     def rapidjson_type(self) -> str:
         """RapidJSON type used when (de)serializing arrays (always ``Array``)."""
         return "Array"
+
+
+# The name of the generated struct for each kind of payload.  These reproduce
+# exactly the names the templates used to spell inline, so that routing them through
+# the payload changes no generated output.
+_CPP_PAYLOAD_NAMES = {
+    "SIGNAL": lambda name: f"{stringmanip.upper_camel_case(name)}Payload",
+    "COMMAND": lambda name: f"{stringmanip.upper_camel_case(name)}CommandPayload",
+    "METHOD_REQUEST": lambda name: f"{stringmanip.upper_camel_case(name)}RequestArguments",
+    "METHOD_RESPONSE": lambda name: stringmanip.upper_camel_case(f"{name} return value"),
+    "PROPERTY": lambda name: f"{stringmanip.upper_camel_case(name)}Property",
+}
+
+
+class CppPayloadSymbols(CppSymbols):
+    """C++ symbols for a :class:`Payload`."""
+
+    def __init__(self, payload):
+        super().__init__()
+        self._payload = payload
+
+    @property
+    def struct_name(self) -> str:
+        """C++ name of the type that carries this payload."""
+        if self._payload.is_protobuf:
+            return self._payload.protobuf.cpp.qualified_name
+        return _CPP_PAYLOAD_NAMES[self._payload.role.name](self._payload.owner_name)
+
+    @property
+    def class_name(self) -> str:
+        """Alias for :attr:`struct_name`, so templates can use one spelling across languages."""
+        return self.struct_name
+
+
+class CppProtobufRefSymbols(CppSymbols):
+    """C++ symbols for a :class:`ProtobufMessageRef`."""
+
+    def __init__(self, ref, config: StingerConfig | None = None):
+        super().__init__(config)
+        self._ref = ref
+
+    @property
+    def namespace(self) -> str:
+        """The C++ namespace protoc puts this message in, from its protobuf package."""
+        return "::".join(p for p in self._ref.package.split(".") if p)
+
+    @property
+    def include(self) -> str:
+        """The ``#include`` argument, brackets and all, for this message's header.
+
+        A well-known type's header ships with libprotobuf and is found on the
+        include path; the interface's own headers protoc wrote into the generated
+        library are quoted and relative to it.  When the host supplies the
+        bindings the header is instead found on the include path, under the
+        configured ``cpp_include_dir``.
+        """
+        header = self._ref.proto_file.replace(".proto", ".pb.h")
+        if self._ref.is_well_known:
+            return f"<{header}>"
+        if self.config is not None and self.config.protobuf.mode == "external":
+            include_dir = self.config.protobuf.external.cpp_include_dir.strip("/")
+            return f'"{include_dir}/{header}"' if include_dir else f'"{header}"'
+        return f'"proto/{header}"'
+
+    @property
+    def scoped_name(self) -> str:
+        """The message's name below its namespace, e.g. ``Analytics::DetectionEvent``.
+
+        protoc declares a nested message as a class inside its parent, so the
+        enclosing messages spell out the same way the namespace does.
+        """
+        return "::".join(self._ref.scoped_name.split("."))
+
+    @property
+    def qualified_name(self) -> str:
+        """How generated C++ code names this message, e.g. ``::weather::v1::CurrentConditions``."""
+        ns = self.namespace
+        return f"::{ns}::{self.scoped_name}" if ns else f"::{self.scoped_name}"
+
+
+# What protoc's C++ backend spells each scalar field kind as.  A message or enum
+# field's type is the generated class, which only its resolved reference knows.
+_CPP_SCALAR_TYPES = {
+    "double": "double",
+    "float": "float",
+    "int32": "int32_t",
+    "sint32": "int32_t",
+    "sfixed32": "int32_t",
+    "int64": "int64_t",
+    "sint64": "int64_t",
+    "sfixed64": "int64_t",
+    "uint32": "uint32_t",
+    "fixed32": "uint32_t",
+    "uint64": "uint64_t",
+    "fixed64": "uint64_t",
+    "bool": "bool",
+    "string": "std::string",
+    # protoc gives a `bytes` field a std::string too; the bytes are simply not text.
+    "bytes": "std::string",
+}
+
+# The field kinds that fit in a register, and so are taken by value rather than by
+# const reference.  An enum is one of them; its generated type is an `enum` proper.
+_CPP_TRIVIAL_KINDS = frozenset(_CPP_SCALAR_TYPES) - {"string", "bytes"}
+
+# Reserved words of C++ itself.  protoc appends an underscore to an accessor whose
+# field name is one of these, and a generated parameter has to dodge them too.
+_CPP_KEYWORDS = frozenset("""alignas alignof and and_eq asm auto bitand bitor bool break case catch char char8_t char16_t char32_t class
+    compl concept const consteval constexpr constinit const_cast continue co_await co_return co_yield decltype default
+    delete do double dynamic_cast else enum explicit export extern false float for friend goto if inline int long
+    mutable namespace new noexcept not not_eq nullptr operator or or_eq private protected public register
+    reinterpret_cast requires return short signed sizeof static static_assert static_cast struct switch template this
+    thread_local throw true try typedef typeid typename union unsigned using virtual void volatile wchar_t while xor
+    xor_eq""".split())
+
+# Locals the generated client and server declare around a per-field parameter list.
+# A parameter that shadowed one of these would compile but would not mean what the
+# surrounding statement says, so it gets the same trailing underscore a keyword does.
+_CPP_TEMPLATE_LOCALS = frozenset("""msg errMsg topic topicArgs topicParams payload payloadStr payloadHandler payloadHandlers signalPayload
+    commandPayload commandProperties requestArgs returnPayload returnValue correlationData responseTopic responseFuture
+    promise lock cb handler handlers value doc e out kv item itr ok future server client conn broker instanceId
+    instanceInfo subscriptionId noSubId optContentType optCorrelationData optResponseTopic""".split())
+
+
+class CppProtobufFieldSymbols(CppSymbols):
+    """C++ symbols for one :class:`ProtobufField`.
+
+    These say how protoc's generated class names the field -- what type it holds,
+    what its accessors are called -- so that a generated per-field API can take the
+    field as a parameter and put it on the message without the template knowing
+    anything about protobuf's C++ backend.
+    """
+
+    def __init__(self, field):
+        super().__init__()
+        self._field = field
+
+    @property
+    def base_type(self) -> str:
+        """The C++ type of one value of this field, before repetition or presence.
+
+        A repeated field's element type, a map's value type, and the type inside the
+        ``std::optional`` of a field with presence are all this.
+        """
+        from stingeripc.exceptions import InvalidStingerStructure
+
+        field = self._field
+        if field.kind == "group":
+            raise InvalidStingerStructure(f"protobuf field '{field.name}' is a proto2 group, which the generated C++ API does not support.")
+        if field.is_message or field.is_enum:
+            if field.type_ref is None:
+                raise InvalidStingerStructure(f"protobuf field '{field.name}' names the type '{field.type_name}', which was never resolved.")
+            return field.type_ref.cpp.qualified_name
+        scalar = _CPP_SCALAR_TYPES.get(field.kind)
+        if scalar is None:
+            raise InvalidStingerStructure(f"protobuf field '{field.name}' has the unsupported type '{field.kind}'.")
+        return scalar
+
+    @property
+    def value_type(self) -> str:
+        """The C++ type a caller holds this field's whole value in.
+
+        A map is a ``std::map`` rather than protobuf's own ``Map``, and a repeated
+        field a ``std::vector`` rather than a ``RepeatedField``: the generated API
+        is the one the application writes against, so it speaks the standard library
+        and the generated code converts at the boundary.
+        """
+        field = self._field
+        if field.is_map:
+            return f"std::map<{field.map_key.cpp.base_type}, {field.map_value.cpp.base_type}>"
+        if field.repeated:
+            return f"std::vector<{self.base_type}>"
+        if field.is_optional_param:
+            return f"std::optional<{self.base_type}>"
+        return self.base_type
+
+    @property
+    def is_trivial(self) -> bool:
+        """True for a singular value small enough to pass in a register."""
+        field = self._field
+        if field.repeated or field.is_map or field.is_optional_param:
+            return False
+        return field.is_enum or field.kind in _CPP_TRIVIAL_KINDS
+
+    @property
+    def param_type(self) -> str:
+        """The C++ type this field is taken as by a generated function."""
+        if self.is_trivial:
+            return self.value_type
+        return f"const {self.value_type}&"
+
+    @property
+    def param_name(self) -> str:
+        """The name a generated function gives this field's parameter.
+
+        lowerCamelCase like a JSON argument's, with a trailing underscore when that
+        would collide with a C++ keyword or with a local the generated code declares
+        around the parameter list.
+        """
+        name = stringmanip.lower_camel_case(self._field.name)
+        if name in _CPP_KEYWORDS or name in _CPP_TEMPLATE_LOCALS:
+            return f"{name}_"
+        return name
+
+    @property
+    def accessor(self) -> str:
+        """The stem protoc builds this field's accessors from.
+
+        protoc lower-cases the field name and, when the result is a C++ keyword,
+        appends an underscore -- so a field named ``class`` is read with ``class_()``
+        and written with ``set_class_()``.
+        """
+        name = self._field.name.lower()
+        if name in _CPP_KEYWORDS:
+            return f"{name}_"
+        return name
+
+    @property
+    def getter(self) -> str:
+        """protoc's getter for this field."""
+        return self.accessor
+
+    @property
+    def setter(self) -> str:
+        """protoc's setter for this field."""
+        return f"set_{self.accessor}"
+
+    @property
+    def adder(self) -> str:
+        """protoc's appender for this repeated field."""
+        return f"add_{self.accessor}"
+
+    @property
+    def mutable(self) -> str:
+        """protoc's mutable accessor for this field."""
+        return f"mutable_{self.accessor}"
+
+    @property
+    def has(self) -> str:
+        """protoc's presence test for this field."""
+        return f"has_{self.accessor}"
+
+    @property
+    def is_comparable(self) -> bool:
+        """True when a generated test can compare this field with ``==``.
+
+        Singular scalars only, and not the floating-point ones: an example value
+        that survives a serialize/parse round trip exactly is what a check like that
+        needs, and the aggregate kinds have no natural spelling for a literal.
+        """
+        field = self._field
+        if field.repeated or field.is_map or field.is_optional_param or not field.is_scalar:
+            return False
+        return field.kind not in ("float", "double")
+
+    def set_statement(self, msg: str, param: str) -> str:
+        """C++ that puts the value of ``param`` onto the message named ``msg``.
+
+        Each shape of field is written a different way -- a scalar through its
+        setter, a message by assigning through ``mutable_``, a repeated field or a
+        map an element at a time -- and a field with presence only when the caller
+        supplied one.
+        """
+        field = self._field
+        if field.is_map:
+            return f"for (const auto& kv : {param}) {{ (*{msg}.{self.mutable}())[kv.first] = kv.second; }}"
+        if field.repeated:
+            if field.is_message:
+                return f"for (const auto& item : {param}) {{ *{msg}.{self.adder}() = item; }}"
+            return f"for (const auto& item : {param}) {{ {msg}.{self.adder}(item); }}"
+        if field.is_optional_param:
+            return f"if ({param}) {{ {self._singular_set(msg, f'*{param}')} }}"
+        return self._singular_set(msg, param)
+
+    def _singular_set(self, msg: str, value: str) -> str:
+        if self._field.is_message:
+            return f"*{msg}.{self.mutable}() = {value};"
+        return f"{msg}.{self.setter}({value});"
+
+    def extract_expr(self, msg: str) -> str:
+        """A C++ expression reading this field's :attr:`value_type` off ``msg``.
+
+        The aggregate kinds are copied out of protobuf's own containers, since a
+        ``RepeatedField`` is not a ``std::vector`` and a map entry is not a
+        ``std::pair``; a field with presence reads as an empty optional when unset.
+        """
+        field = self._field
+        if field.is_map:
+            return f"[&] {{ {self.value_type} out; for (const auto& kv : {msg}.{self.getter}()) {{ out.emplace(kv.first, kv.second); }} return out; }}()"
+        if field.repeated:
+            return f"{self.value_type}({msg}.{self.getter}().begin(), {msg}.{self.getter}().end())"
+        if field.is_optional_param:
+            return f"{msg}.{self.has}() ? {self.value_type}({msg}.{self.getter}()) : std::nullopt"
+        return f"{msg}.{self.getter}()"
+
+    def example_value(self, seed: int = 2) -> str:
+        """A C++ literal a demo or a test can pass for this field.
+
+        Only a singular scalar has one worth making up; anything else is left at the
+        value an application would get from a default-constructed container, which
+        for a field with presence means no value at all.
+        """
+        field = self._field
+        if field.is_optional_param:
+            return "std::nullopt"
+        if field.repeated or field.is_map or field.is_message or field.is_enum:
+            return f"{self.value_type}{{}}"
+        return field.get_random_example_value(lang="cpp", seed=seed)

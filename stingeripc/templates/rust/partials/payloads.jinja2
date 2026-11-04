@@ -1,0 +1,134 @@
+{#
+    Rendering helpers for serde payload structs (signals, methods, properties,
+    commands and structs).  These macros turn interface arguments into Rust
+    struct fields and generate the JSON-schema validation impl.
+
+    Import into a template with:
+        {% from "partials/payloads.jinja2" import arg_members, validate_schema_impl %}
+
+    Imported macros do not inherit the calling template's context, so anything
+    they need is passed in explicitly.  The macros rely only on the argument
+    models and on the environment's global filters (snake_case, tojson, ...).
+#}
+
+{%macro arg_members(arg_list) -%}
+{%-for arg in arg_list -%}
+    {%-if arg.description%}
+    /// {{arg.description}}
+    {%-endif%}{# end arg description -#}
+    {%-if arg.name != (arg.name | snake_case) %}
+    #[serde(rename = "{{arg.name}}")]
+    {%-endif%} {# end rename if needed #}
+    {%-if arg.arg_type.name.lower() == 'primitive'%}
+    pub {{arg.name|snake_case}}: {{arg.rust.type}},
+    {%-elif arg.arg_type.name.lower() == 'struct'%}
+    pub {{arg.name|snake_case}}: {{arg.rust.type}},
+    {%elif arg.arg_type.name.lower() == 'enum'%}
+    pub {{arg.name|snake_case}}: {{arg.rust.local_type}},
+    {%elif arg.arg_type.name.lower() == 'datetime'%}
+    {%-if arg.optional %}
+    #[serde(
+        serialize_with = "datetime_iso_format::serialize_option",
+        deserialize_with = "datetime_iso_format::deserialize_option"
+    )]
+    pub {{arg.name|snake_case}}: Option<chrono::DateTime<chrono::Utc>>,
+    {%else%}{# not optional datetime #}
+    #[serde(with = "datetime_iso_format")]
+    pub {{arg.name|snake_case}}: chrono::DateTime<chrono::Utc>,
+    {%-endif%} {# datetime optionality #}
+    {%-elif arg.arg_type.name.lower() == 'duration'%}
+    {%-if arg.optional %}
+    #[serde(
+        serialize_with = "duration_iso_format::serialize_option",
+        deserialize_with = "duration_iso_format::deserialize_option"
+    )]
+    pub {{arg.name|snake_case}}: Option<chrono::Duration>,
+    {%else%}{# not optional duration #}
+    #[serde(with = "duration_iso_format")]
+    pub {{arg.name|snake_case}}: chrono::Duration,
+    {%-endif%}{# duration optionality #}
+    {%-elif arg.arg_type.name.lower() == 'binary'%}
+    {%-if arg.optional %}
+    #[serde(
+        serialize_with = "base64_binary_format::serialize_option",
+        deserialize_with = "base64_binary_format::deserialize_option"
+    )]
+    pub {{arg.name|snake_case}}: Option<Vec<u8>>,
+    {%else%}{# not optional binary #}
+    #[serde(with = "base64_binary_format")]
+    pub {{arg.name|snake_case}}: Vec<u8>,
+    {%-endif%}{# binary optionality #}
+    {%-elif arg.arg_type.name.lower() == 'array'%}
+    {%- if arg.element.arg_type.name.lower() == 'datetime' %}
+    {%-if arg.optional %}
+    #[serde(serialize_with = "datetime_iso_format::serialize_option_vec",   
+            deserialize_with = "datetime_iso_format::deserialize_option_vec")]
+    pub {{arg.name|snake_case}}: Option<Vec<chrono::DateTime<chrono::Utc>>>,
+    {%else%}{# not optional array #}
+    #[serde(serialize_with = "datetime_iso_format::serialize_vec", 
+            deserialize_with = "datetime_iso_format::deserialize_vec")]
+    pub {{arg.name|snake_case}}: Vec<chrono::DateTime<chrono::Utc>>,
+    {%endif%}{# array optionality #}
+    {%- elif arg.element.arg_type.name.lower() == 'duration' %}
+    {%-if arg.optional %}
+    #[serde(serialize_with = "duration_iso_format::serialize_option_vec", 
+            deserialize_with = "duration_iso_format::deserialize_option_vec")]
+    pub {{arg.name|snake_case}}: Option<Vec<chrono::Duration>>,
+    {%else%}{# not optional array #}
+    #[serde(serialize_with = "duration_iso_format::serialize_vec", 
+            deserialize_with = "duration_iso_format::deserialize_vec")]
+    pub {{arg.name|snake_case}}: Vec<chrono::Duration>,
+    {%endif%}{# array optionality #}
+    {%- elif arg.element.arg_type.name.lower() == 'binary' %}
+    {%-if arg.optional %}
+    #[serde(serialize_with = "base64_binary_format::serialize_option_vec", 
+            deserialize_with = "base64_binary_format::deserialize_option_vec")]
+    pub {{arg.name|snake_case}}: Option<Vec<Vec<u8>>>,
+    {%else%}{# not optional array #}
+    #[serde(serialize_with = "base64_binary_format::serialize_vec", 
+            deserialize_with = "base64_binary_format::deserialize_vec")]
+    pub {{arg.name|snake_case}}: Vec<Vec<u8>>,
+    {%endif%}{# array optionality #}
+    {%else%}
+    {%-if arg.optional %}
+    pub {{arg.name|snake_case}}: Option<Vec<{{arg.element.rust.type}}>>,
+    {%else%}{# not optional array #}
+    pub {{arg.name|snake_case}}: Vec<{{arg.element.rust.type}}>,
+    {%endif%}{# array optionality #}
+    {%endif%} {# array element cases #}
+    {%-else%} 
+    TEMPLATE ERROR {{arg.arg_type.name}} NOT HANDLED
+    {%-endif-%}
+{%endfor%}
+{%-endmacro %}
+
+{# Emits an `impl` block with a validate_schema() method for a struct.  The method
+   is always generated; fields that declare a JSON schema constraint are checked
+   against their schema using the `jsonschema` crate, and a struct with no such
+   fields simply returns Ok(()). #}
+{%macro validate_schema_impl(struct_name, arg_list) -%}
+{%-set schema_args = arg_list | selectattr('value_schema') | list -%}
+#[allow(dead_code)]
+impl {{struct_name}} {
+    /// Validate fields that declare a JSON schema constraint.
+    ///
+    /// Returns `Ok(())` if all schema-constrained fields conform to their schema,
+    /// or if no field declares a schema.  Returns `Err` with a description if a
+    /// constrained field's value does not conform.
+    pub fn validate_schema(&self) -> Result<(), String> {
+        {%-for arg in schema_args%}
+        {
+            let schema: serde_json::Value = serde_json::from_str(r##"{{arg.value_schema | tojson}}"##)
+                .map_err(|e| format!("embedded schema for field '{{arg.name}}' is invalid: {}", e))?;
+            let instance = serde_json::to_value(&self.{{arg.name | snake_case}})
+                .map_err(|e| format!("could not serialize field '{{arg.name}}': {}", e))?;
+            let validator = jsonschema::validator_for(&schema)
+                .map_err(|e| format!("could not build validator for field '{{arg.name}}': {}", e))?;
+            validator.validate(&instance)
+                .map_err(|e| format!("field '{{arg.name}}' failed schema validation: {}", e))?;
+        }
+        {%-endfor%}
+        Ok(())
+    }
+}
+{%-endmacro %}

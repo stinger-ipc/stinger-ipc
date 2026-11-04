@@ -1,3 +1,4 @@
+{%- import "partials/codec.jinja2" as codec -%}
 """
 Tests for {{stinger.name}} client.
 """
@@ -6,35 +7,26 @@ import pytest
 import sys
 from pathlib import Path
 {{ imports.datetime_types(config) }}
-from {{stinger.name | loweronly}}ipc.client import {{stinger.name | UpperCamelCase}}Client, DiscoveredInstance
-{%if stinger.properties | length > 0 -%}
-from {{stinger.name | loweronly}}ipc.property import {{stinger.name | UpperCamelCase}}InitialPropertyValues
+from {{stinger.name | loweronly}}ipc.client import {{stinger.name | UpperCamelCase}}Client, DiscoveredInstance{%if stinger.properties | length > 0 %}, PropertyValueUnavailableError{%endif%}
+{%if stinger.properties | length > 0 or stinger.methods | length > 0 -%}
+from {{stinger.name | loweronly}}ipc import client as client_module
+{%endif-%}
+{%if stinger.methods | length > 0 -%}
+from stinger_python_utils.return_codes import TimeoutStingerMethodException
+{%endif-%}
+{%if stinger.properties | length > 0 or stinger.uses_protobuf() -%}
+from stinger_python_utils.message_creator import MessageCreator
 {%endif-%}
 from {{stinger.name | loweronly}}ipc.interface_types import *
 from pyqttier.mock import MockConnection
 import json
-from typing import Dict, Any
+from typing import Dict, Any{% if stinger.uses_protobuf() %}, List, Optional{% endif %}
 
 def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
     """Convert a Pydantic model to a JSON-serializable dict."""
     json_str = model.model_dump_json(by_alias=True)
     return json.loads(json_str)
 
-{%if stinger.properties | length > 0 %}
-@pytest.fixture
-def initial_property_values():
-    initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
-        {%-for prop_name, prop in stinger.properties.items()%}
-        {{prop_name|snake_case}}={%if prop.arg_list|length > 1%}{{prop_name|UpperCamelCase}}Property(
-            {%-for arg in prop.arg_list%}
-            {{arg.name|snake_case}}={{arg.get_random_example_value()}},
-            {%-endfor%}
-        ){%else%}{{prop.arg_list[0].get_random_example_value()}}
-        {%-endif%},
-        {%-endfor%}
-    )
-    return initial_property_values
-{%endif%}
 
 @pytest.fixture
 def mock_connection():
@@ -44,18 +36,15 @@ def mock_connection():
 
 
 @pytest.fixture
-def client(mock_connection{%if stinger.properties | length > 0 %}, initial_property_values{%endif%}):
+def client(mock_connection):
     """Fixture providing a {{stinger.name}} client with mocked connection."""
     mock_discovered_instance = DiscoveredInstance(
         instance_id="x",
-        {%if stinger.properties | length > 0 -%}
-        initial_property_values=initial_property_values,
-        {%endif%}{# any properties #}
         info={{stinger.name|UpperCamelCase}}InterfaceInfo(
             instance="x",
             connection_topic="{{stinger.interface_info_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
             timestamp="2024-01-01T00:00:00Z",
-            {%-for topic_param in config.topics.params %}
+            {%-for topic_param in stinger.topics.params %}
             {{topic_param|snake_case}}="x",
             {%-endfor%}
         ),
@@ -75,34 +64,100 @@ class TestClient:
         assert client is not None, "Client failed to initialize"
         assert client.service_id == "x", "Client service_id does not match expected value"
 
-{%if stinger.properties | length > 0 %}
-class TestClientProperties:
+{%if stinger.signals | length > 0 %}
+class TestClientSignals:
+    """The client subscribes to a signal only once a handler is registered."""
 
-    def test_client_properties_initialization(self, client, initial_property_values):
-        """Test that client properties are initialized correctly."""
-        {%for prop_name, prop in stinger.properties.items()%}
-        assert hasattr(client, '{{prop_name|snake_case}}'), "Client missing property '{{prop_name|snake_case}}'"
-        {%-if prop.arg_list|length > 1 or not prop.arg_list[0].optional%}
-        assert client.{{prop_name|snake_case}} is not None, "Property '{{prop_name|snake_case}}' not initialized properly"
-        {%-endif%}
-        assert client.{{prop_name|snake_case}} == initial_property_values.{{prop_name|snake_case}}, "Property '{{prop_name|snake_case}}' value does not match expected value"
-        {%endfor%}
+    {%for sig_name, sig in stinger.signals.items()%}
+    def test_{{sig_name|snake_case}}_subscribes_when_handler_registered(self, mock_connection, client):
+        before = mock_connection.get_subscription_count()
+
+        client.receive_{{sig_name|snake_case}}(lambda **kwargs: None)
+        assert mock_connection.get_subscription_count() == before + 1, "Registering a '{{sig_name|snake_case}}' handler did not subscribe to the signal"
+
+        # A second handler of either kind reuses the one subscription.
+        client.receive_{{sig_name|snake_case}}{% if sig.payload.is_protobuf %}(lambda **kwargs: None){% else %}_payload(lambda payload: None){% endif %}
+        assert mock_connection.get_subscription_count() == before + 1, "Registering a second '{{sig_name|snake_case}}' handler subscribed again"
+    {%- if sig.payload.is_protobuf %}
+
+    def test_{{sig_name|snake_case}}_delivers_the_fields_to_every_handler(self, mock_connection, client):
+        """A protobuf signal spreads into its message's fields, the way a JSON signal spreads into its arguments."""
+        received = [] # type: list
+        client.receive_{{sig_name|snake_case}}(lambda **kwargs: received.append(kwargs))
+        client.receive_{{sig_name|snake_case}}(lambda **kwargs: received.append(kwargs))
+
+        signal_data = {{ codec.example_kwargs_dict(sig.payload) }} # type: Dict[str, Any]
+        sent = {{sig.payload.python.class_name}}(**signal_data)
+        topic = "{{sig.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
+        mock_connection.simulate_message({{ codec.signal_message(sig.payload, "topic", "sent") }})
+
+        assert len(received) == 2, f"Both '{{sig_name|snake_case}}' handlers should have been called, but got {received}"
+        for kwargs in received:
+            assert {{sig.payload.python.class_name}}(**kwargs) == sent, f"A handler was given {kwargs} rather than the fields of the message that was sent"
+    {%- endif %}
+    {%endfor%}
+{%endif%}
+
+{%if stinger.properties | length > 0 %}
+{%for prop_name, prop in stinger.properties.items()%}
+def publish_{{prop_name|snake_case}}_value(mock_connection, value{%if config.properties.version_tracking%}, version: int = 1{%endif%}):
+    """Delivers a '{{prop_name}}' property value to the client, the way the server would."""
+    topic = "{{prop.value_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
+    prop_obj = {{ codec.property_wrap(prop, 'value') }}
+    mock_connection.simulate_message({{ codec.property_state_message(prop.payload, "topic", "prop_obj", "version" if config.properties.version_tracking else "None") }})
+{%endfor%}
+
+class TestClientProperties:
+    """The client subscribes to a property only once the application asks for it."""
 
     {%for prop_name, prop in stinger.properties.items()%}
+    def test_{{prop_name|snake_case}}_subscribes_when_handler_registered(self, mock_connection, client):
+        before = mock_connection.get_subscription_count()
+
+        client.{{prop_name|snake_case}}_changed(lambda value: None)
+        assert mock_connection.get_subscription_count() == before + 1, "Registering a '{{prop_name|snake_case}}' handler did not subscribe to the property"
+
+        # A second handler reuses the one subscription.
+        client.{{prop_name|snake_case}}_changed(lambda value: None)
+        assert mock_connection.get_subscription_count() == before + 1, "Registering a second '{{prop_name|snake_case}}' handler subscribed again"
+
+    def test_{{prop_name|snake_case}}_getter_subscribes_and_returns_value(self, mock_connection, client):
+        before = mock_connection.get_subscription_count()
+        expected_{{prop_name|snake_case}} = {{ codec.property_example(prop) }}
+
+        # The getter blocks until a value arrives, so subscribe first (by registering a
+        # handler), deliver the value, and only then read it.
+        client.{{prop_name|snake_case}}_changed(lambda value: None)
+        assert mock_connection.get_subscription_count() == before + 1, "Not subscribed to the '{{prop_name|snake_case}}' property value topic"
+        publish_{{prop_name|snake_case}}_value(mock_connection, expected_{{prop_name|snake_case}})
+
+        assert client.{{prop_name|snake_case}} == expected_{{prop_name|snake_case}}, "Property '{{prop_name|snake_case}}' getter did not return the received value"
+
+    def test_{{prop_name|snake_case}}_getter_raises_without_a_value(self, monkeypatch, mock_connection, client):
+        # Nothing publishes a value, so the getter should give up and raise.
+        monkeypatch.setattr(client_module, "PROPERTY_VALUE_TIMEOUT_SECONDS", 0.05)
+        before = mock_connection.get_subscription_count()
+
+        with pytest.raises(PropertyValueUnavailableError):
+            _ = client.{{prop_name|snake_case}}
+
+        assert mock_connection.get_subscription_count() == before + 1, "The '{{prop_name|snake_case}}' getter did not subscribe to the property"
+
+    {%- if not prop.payload.is_protobuf %}{#- a protobuf property has no example field values to compare #}
     {%- if not prop.read_only %}
     def test_{{prop_name|snake_case}}_setter(self, mock_connection, client):
+        {%if config.properties.version_tracking-%}
+        # An update request carries the version of the value the client last saw, so the
+        # property has to have been received before it can be set.
+        {%else-%}
+        # The setter waits for the server's current value, so the property has to have been
+        # received before it can be set.
+        {%endif-%}
+        client.{{prop_name|snake_case}}_changed(lambda value: None)
+        publish_{{prop_name|snake_case}}_value(mock_connection, {{ codec.property_example(prop) }})
         mock_connection.clear_published_messages()
 
-        new_{{prop_name | snake_case}}_value =
-            {%-if prop.arg_list | length > 1%}
-            {{-prop.python.class_name}}(
-                {%for arg in prop.arg_list%}
-                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
-                {%endfor%}
-            )
-            {%-else-%}
-            {{prop.arg_list[0].get_random_example_value()}}
-            {%endif%}
+        new_{{prop_name | snake_case}}_value = {{ codec.property_example(prop) }}
         client.{{prop_name|snake_case}} = new_{{prop_name | snake_case}}_value
 
         published_msg = mock_connection.published_messages[-1]
@@ -110,19 +165,53 @@ class TestClientProperties:
         assert published_msg.retain is False, "Property '{{prop_name|snake_case}}' setter published message with incorrect retain flag"
         assert published_msg.content_type == "application/json", "Property '{{prop_name|snake_case}}' setter published message with incorrect content type"
         published_msg_json_obj = json.loads(published_msg.payload)
-        {%-if prop.arg_list | length > 1%}
-        assert json.loads(new_{{prop_name | snake_case}}_value.model_dump_json(by_alias=True)) == published_msg_json_obj, "Property '{{prop_name|snake_case}}' setter did not publish the correct JSON payload"
-        {%else%}
-        new_{{prop_name | snake_case}}_obj = {{-prop.python.model_class_name}}({{prop.arg_list[0].name|snake_case}}=new_{{prop_name | snake_case}}_value)
+        new_{{prop_name | snake_case}}_obj = {{ codec.property_wrap(prop, 'new_' ~ (prop_name|snake_case) ~ '_value') }}
         assert json.loads(new_{{prop_name | snake_case}}_obj.model_dump_json(by_alias=True)) == published_msg_json_obj, "Property '{{prop_name|snake_case}}' setter did not publish the correct JSON payload"
-        {%endif%}
+
+    def test_{{prop_name|snake_case}}_setter_raises_without_a_value(self, monkeypatch, client):
+        monkeypatch.setattr(client_module, "PROPERTY_VALUE_TIMEOUT_SECONDS", 0.05)
+
+        with pytest.raises(PropertyValueUnavailableError):
+            client.{{prop_name|snake_case}} = {{ codec.property_example(prop) }}
     {%endif%}{# don't generate for readonly#}
-    {%-endfor%}{# each property#}
+    {%- endif %}
+    {%endfor%}{# each property#}
 {%endif%}
 {%if stinger.methods | length > 0 %}
 class TestClientMethods:
 
     {%for method_name, method in stinger.methods.items()%}
+    {%- if method.request_payload.is_protobuf %}
+    def test_{{method_name|snake_case}}_method_call_sends_request(self, mock_connection, client):
+        """A protobuf method takes the request's fields and publishes the message it builds from them."""
+        request_data = {{ codec.example_kwargs_dict(method.request_payload) }} # type: Dict[str, Any]
+        request = {{method.request_payload.python.class_name}}(**request_data)
+        client.{{method_name|snake_case}}(**request_data)
+        assert len(mock_connection.published_messages) == 1, "No message was published for '{{method_name|snake_case}}' method call"
+        message = mock_connection.published_messages[0]
+        expected_topic = "{{method.request_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
+        assert message.topic == expected_topic, f"Incorrect topic for '{{method_name|snake_case}}' method call: {message.topic}"
+        assert message.content_type == "{{ config.protobuf.mime_type }}", f"'{{method_name|snake_case}}' request was published as '{message.content_type}'"
+        assert message.payload == request.SerializeToString(), "Published payload is not the serialized request message"
+
+    def test_{{method_name|snake_case}}_response_resolves_to_the_message(self, mock_connection, client):
+        """The future for a protobuf method resolves to the response message, not to a field of it."""
+        fut = client.{{method_name|snake_case}}({{ codec.example_payload(method.request_payload, method.arg_list) }})
+        request_msg = mock_connection.published_messages[0]
+
+        expected = {{method.python.return_value_annotation}}()
+        mock_connection.simulate_message(MessageCreator.binary_response_message(
+            request_msg.response_topic,
+            expected.SerializeToString(),
+            "{{ config.protobuf.mime_type }}",
+            0,
+            request_msg.correlation_data,
+        ))
+
+        result = fut.result(1)
+        assert isinstance(result, {{method.python.return_value_annotation}}), f"The future resolved to {type(result)} rather than the response message"
+        assert result == expected, "The future did not resolve to the response that was sent"
+    {%- else %}
     def test_{{method_name|snake_case}}_method_call_sends_request(self, mock_connection, client):
         kwargs = {
         {%-for arg in method.arg_list%}
@@ -134,5 +223,70 @@ class TestClientMethods:
         message = mock_connection.published_messages[0]
         expected_topic = "{{method.request_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
         assert message.topic == expected_topic, f"Incorrect topic for '{{method_name|snake_case}}' method call: {message.topic}"
+    {%- endif %}
+
+    def test_{{method_name|snake_case}}_times_out_when_the_server_never_responds(self, monkeypatch, client):
+        """A '{{method_name}}' call nothing answers fails its future rather than waiting forever,
+        and leaves no entry behind in the pending-response map."""
+        monkeypatch.setattr(client_module, "{{method_name | CONST_CASE}}_METHOD_TIMEOUT_SECONDS", 0.05)
+        {%- if method.request_payload.is_protobuf %}
+        fut = client.{{method_name|snake_case}}({{ codec.example_payload(method.request_payload, method.arg_list) }})
+        {%- else %}
+        fut = client.{{method_name|snake_case}}({%for arg in method.arg_list%}{{arg.get_random_example_value()}}{%if not loop.last%}, {%endif%}{%endfor%})
+        {%- endif %}
+        with pytest.raises(TimeoutStingerMethodException):
+            fut.result(2)
+        assert client._pending_method_responses == {}, "The timed-out '{{method_name}}' call was left in the pending-response map"
+
+    {%endfor%}
+{%endif%}
+{%if stinger.commands | length > 0 %}
+class TestClientCommands:
+
+    {%for command_name, command in stinger.commands.items()%}
+    {%- if command.payload.is_protobuf %}
+    def test_send_{{command_name|snake_case}}_publishes_command(self, mock_connection, client):
+        """A protobuf command takes the message's fields and publishes the message it builds from them."""
+        command_data = {{ codec.example_kwargs_dict(command.payload) }} # type: Dict[str, Any]
+        payload = {{command.python.payload_class_name}}(**command_data)
+        client.send_{{command_name|snake_case}}(**command_data)
+
+        published_list = mock_connection.find_published("{{command.topic() | regex_replace("\{[A-Za-z_]+\}", "+") }}")
+        assert len(published_list) == 1, f"No message was published for the '{{command_name|snake_case}}' command.  Messages: {mock_connection.published_messages}"
+
+        message = published_list[0]
+        expected_topic = "{{command.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
+        assert message.topic == expected_topic, f"Incorrect topic for the '{{command_name|snake_case}}' command: {message.topic}"
+        assert message.qos == {{stinger.command_qos}}, "Command '{{command_name|snake_case}}' was published with incorrect QoS"
+        assert message.retain is False, "Command '{{command_name|snake_case}}' was published with incorrect retain flag"
+        assert message.content_type == "{{ config.protobuf.mime_type }}", "Command '{{command_name|snake_case}}' was published with incorrect content type"
+        assert message.response_topic is None, "Command '{{command_name|snake_case}}' must not carry a response topic"
+        assert message.payload == payload.SerializeToString(), "Published payload is not the serialized command message"
+    {%- else %}
+    def test_send_{{command_name|snake_case}}_publishes_command(self, mock_connection, client):
+        kwargs = {
+        {%-for arg in command.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value()}},
+        {%endfor-%}
+        } # type: Dict[str, Any]
+        client.send_{{command_name|snake_case}}(**kwargs)
+
+        published_list = mock_connection.find_published("{{command.topic() | regex_replace("\{[A-Za-z_]+\}", "+") }}")
+        assert len(published_list) == 1, f"No message was published for the '{{command_name|snake_case}}' command.  Messages: {mock_connection.published_messages}"
+
+        message = published_list[0]
+        expected_topic = "{{command.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
+        assert message.topic == expected_topic, f"Incorrect topic for the '{{command_name|snake_case}}' command: {message.topic}"
+        assert message.qos == {{stinger.command_qos}}, "Command '{{command_name|snake_case}}' was published with incorrect QoS"
+        assert message.retain is False, "Command '{{command_name|snake_case}}' was published with incorrect retain flag"
+        assert message.content_type == "application/json", "Command '{{command_name|snake_case}}' was published with incorrect content type"
+        assert message.response_topic is None, "Command '{{command_name|snake_case}}' must not carry a response topic"
+
+        # Verify payload
+        expected_obj = {{command.python.payload_class_name}}(**kwargs) # type: ignore[arg-type]
+        expected_dict = to_jsonified_dict(expected_obj)
+        payload_dict = json.loads(message.payload.decode('utf-8'))
+        assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
+    {%- endif %}
     {%endfor%}
 {%endif%}

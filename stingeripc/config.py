@@ -1,11 +1,10 @@
 """Configuration models for Stinger IPC."""
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pathlib import Path
-from typing import List
-import tomllib
-from .topic_util import get_argument_position
+from typing import Any, List, Literal, Optional, Union
 import re
+import tomllib
 
 
 class ServerConfig(BaseModel):
@@ -24,12 +23,20 @@ class PropertyConfig(BaseModel):
     """Configuration options for properties."""
 
     stinger_owned_values: bool = Field(default=True, description="Whether the stinger-server owns property values")
+    version_tracking: bool = Field(
+        default=True,
+        description="Whether properties carry a monotonic version counter (the 'PropertyVersion' user property) used to reject out-of-sync updates",
+    )
 
 
 class PythonConfig(BaseModel):
     """Python-specific configuration options."""
 
     python37: bool = Field(default=False, description="Generate Python 3.7 compatible code")
+    legacy_protobuf: bool = Field(
+        default=False,
+        description="Generate protobuf bindings for the old protobuf 3.x runtime (3.9 and later, before 4). For targets whose installed protobuf predates 3.20",
+    )
     package_suffix: str = Field(default="ipc", description="Suffix to append to generated Python package names")
 
 
@@ -48,66 +55,87 @@ class CppConfig(BaseModel):
     package_suffix: str = Field(default="ipc", description="Suffix to append to generated C++ namespace and filenames")
 
 
-class TopicConfig(BaseModel):
-    """Configuration for which topic schemas to use"""
-
-    params: List[str] = Field(default_factory=list, description="List of parameters to include in topic templates")
-    signals: str = Field(default="{interface_name}/{service_id}/signal/{signal_name}", description="Topic template for signals")
-    property_values: str = Field(default="{interface_name}/{service_id}/property/{property_name}/value", description="Topic template for property values")
-    property_updates: str = Field(default="{interface_name}/{service_id}/property/{property_name}/update", description="Topic template for property updates")
-    property_update_responses: str = Field(default="client/{client_id}/{interface_name}/property/{property_name}/update/response", description="Topic template for property update responses")
-    method_requests: str = Field(default="{interface_name}/{service_id}/method/{method_name}/request", description="Topic template for method requests")
-    method_responses: str = Field(default="client/{client_id}/{interface_name}/method/{method_name}/response", description="Topic template for method responses")
-    interface_discovery: str = Field(default="{interface_name}/{service_id}/interface", description="Topic template for interface discovery")
-    lwt: str = Field(default="client/{client_id}/online", description="Topic template for Last Will and Testament messages")
-
-    @field_validator("property_values")
-    @classmethod
-    def validate_property_values(cls, v: str) -> str:
-        if get_argument_position(v, "property_name") is None:
-            raise ValueError('"property_values" topic template must contain {property_name} placeholder')
-        if get_argument_position(v, "service_id") is None:
-            raise ValueError('"property_values" topic template must contain {service_id} placeholder')
-        return v
-
-    @field_validator("property_update_responses")
-    @classmethod
-    def validate_property_update_responses(cls, v: str) -> str:
-        if get_argument_position(v, "property_name") is None:
-            raise ValueError('"property_update_responses" topic template must contain {property_name} placeholder')
-        return v
-
-    @field_validator("method_responses")
-    @classmethod
-    def validate_method_responses(cls, v: str) -> str:
-        if get_argument_position(v, "method_name") is None:
-            raise ValueError('"method_responses" topic template must contain {method_name} placeholder')
-        return v
-
-    @field_validator("params")
-    @classmethod
-    def validate_params(cls, v: List[str]) -> List[str]:
-        reserved_params = {"interface_name", "service_id", "signal_name", "property_name", "method_name", "client_id", "instance_id"}
-        for param in v:
-            if param in reserved_params:
-                raise ValueError(f"Custom topic parameters cannot use reserved names: {param}")
-        for param in v:
-            if not re.match(r"^[a-zA-Z0-9]+(_[a-zA-Z0-9]+)*$", param):
-                raise ValueError(f"Custom topic parameters must be alphanumeric with optional underscores, but no consecutive underscores: {param}")
-        return v
-
-    @model_validator(mode="after")
-    def validate_topic_values(self) -> "TopicConfig":
-        if self.property_update_responses == self.method_responses:
-            raise ValueError('"property_update_responses" and "method_responses" topic templates must be different to avoid routing conflicts')
-        return self
-
-
 class LanguagePluginConfig(BaseModel):
     """Configuration for languages that are provided via plugins"""
 
     name: str = Field(..., description="Name of the language plugin")
     model_config = ConfigDict(extra="allow")
+
+
+_DOTTED_IDENTIFIER = re.compile(r"^[A-Za-z_]\w*(\.[A-Za-z_]\w*)*$")
+_RUST_PATH = re.compile(r"^(::)?[A-Za-z_]\w*(::[A-Za-z_]\w*)*$")
+
+
+class ExternalProtobufConfig(BaseModel):
+    """Where each language finds protobuf bindings that the host supplies, used when ``[protobuf] mode = "external"``."""
+
+    python_package: str = Field(
+        default="",
+        description="Python package the externally supplied _pb2 modules are imported from. Empty means they are top-level modules on sys.path",
+    )
+    cpp_include_dir: str = Field(
+        default="",
+        description="Directory prefix of the externally supplied .pb.h headers, as used in an #include. Empty means the headers are at the top of the include path",
+    )
+    cpp_cmake_target: str = Field(
+        default="",
+        description="CMake target providing the externally supplied C++ bindings, linked PUBLIC to the generated library. Empty means the consumer links them",
+    )
+    rust_module: str = Field(
+        default="",
+        description="Rust module path holding the externally supplied prost types, e.g. 'camera_protos'",
+    )
+    rust_dependency: str = Field(
+        default="",
+        description="A Cargo.toml dependency line, written verbatim, that makes rust_module available to the generated crate. Optional",
+    )
+
+    @field_validator("python_package")
+    @classmethod
+    def validate_python_package(cls, v: str) -> str:
+        if v and not _DOTTED_IDENTIFIER.match(v):
+            raise ValueError(f"python_package '{v}' is not a dotted Python module path")
+        return v
+
+    @field_validator("rust_module")
+    @classmethod
+    def validate_rust_module(cls, v: str) -> str:
+        if v and not _RUST_PATH.match(v):
+            raise ValueError(f"rust_module '{v}' is not a Rust module path (expected something like 'camera_protos' or 'crate::bindings')")
+        return v
+
+
+class ProtobufConfig(BaseModel):
+    """Configuration for the hand-written protocol buffer definitions an interface draws on."""
+
+    mode: Literal["bundled", "external"] = Field(
+        default="bundled",
+        description="'bundled' copies the .proto files into the generated output and compiles them there. 'external' leaves that to the host, which supplies the bindings itself (see 'external')",
+    )
+    external: ExternalProtobufConfig = Field(
+        default_factory=ExternalProtobufConfig,
+        description="Where the externally supplied bindings live, per language. Used only when mode is 'external'",
+    )
+
+    path: str = Field(
+        default="protos",
+        description="Directory holding the .proto files, resolved relative to the .stinger.yaml file",
+    )
+    protoc: Optional[str] = Field(
+        default=None,
+        description="The protoc executable to use; auto-detected when unset",
+    )
+    mime_type: Union[str, bool] = Field(default="application/protobuf", description="The mime type used in the MQTTv5 content-type property")
+
+    @field_validator("mime_type")
+    @classmethod
+    def validate_method_responses(cls, v: Union[str, bool]) -> Union[str, bool]:
+        if isinstance(v, str):
+            if "/" not in v:
+                raise ValueError("Protobuf mime type does not look like a valid mime type (missing '/')")
+        elif v is True:
+            raise ValueError("A TRUE value for protobuf mime type does not have a valid meaning")
+        return v
 
 
 class DiscoveryConfig(BaseModel):
@@ -126,9 +154,10 @@ class StingerConfig(BaseModel):
     properties: PropertyConfig = Field(default_factory=PropertyConfig, description="Property generation options")
     server: ServerConfig = Field(default_factory=ServerConfig, description="Server code generation options")
     client: ClientConfig = Field(default_factory=ClientConfig, description="Client code generation options")
-    topics: TopicConfig = Field(default_factory=TopicConfig, description="Topic schema configuration")
     discovery: DiscoveryConfig = Field(default_factory=DiscoveryConfig, description="Service discovery configuration")
+    protobuf: ProtobufConfig = Field(default_factory=ProtobufConfig, description="Protobuf related configuration")
     language: dict[str, LanguagePluginConfig] = Field(default_factory=dict, description="Language plugin configurations")
+
     model_config = ConfigDict(strict=True)
 
 
@@ -152,4 +181,37 @@ def load_config(config_path: Path) -> StingerConfig:
     with config_path.open(mode="rb") as f:
         config_dict = tomllib.load(f)
 
+    if "topics" in config_dict:
+        raise ValueError(f"{config_path}: topic templates are declared in the interface's .stinger.yaml file (under a top-level 'topics:' key), not in a config file")
+
     return StingerConfig(**config_dict)
+
+
+def _deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    """Merge ``override`` into ``base``, descending into tables both sides define."""
+    merged = dict(base)
+    for key, value in override.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_merge(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
+def merge_configs(configs: List[StingerConfig]) -> StingerConfig:
+    """Combine configs in order, later ones overriding earlier ones.
+
+    The merge descends into each section, so a later file that sets one key of a
+    section (say ``[protobuf] mode``) leaves the other keys an earlier file set
+    for that section (``[protobuf] path``) alone.  Only keys a file actually set
+    take part, so a file never resets a value to its default.
+    """
+    merged: dict[str, Any] = {}
+    for config in configs:
+        merged = _deep_merge(merged, config.model_dump(exclude_unset=True))
+    return StingerConfig.model_validate(merged)
+
+
+def load_configs(config_paths: Optional[List[Path]]) -> StingerConfig:
+    """Load each config file and merge them, later files overriding earlier ones."""
+    return merge_configs([load_config(path) for path in config_paths or []])

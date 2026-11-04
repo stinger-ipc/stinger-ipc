@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import importlib.resources
 from pathlib import Path
 
 from rich import print
@@ -13,7 +14,8 @@ from stingeripc.loading import parse_yaml_file
 
 from stingeripc import filtering
 from stingeripc.asyncapi import stinger_to_asyncapi
-from stingeripc.config import StingerConfig, load_config
+from stingeripc.tools.generic_generator import resolve_protobuf_messages
+from stingeripc.config import StingerConfig, load_configs
 from stingeripc.interface import StingerInterface
 
 from . import generic_generator
@@ -72,16 +74,9 @@ def asyncapi(
     """
     input_obj = parse_yaml_file(input_file)
 
-    config_obj = StingerConfig()
-    if config:
-        for config_file in config:
-            print(f"⚙️  [bold cyan]CONFIG:[/bold cyan] {config_file}")
-            file_config = load_config(config_file)
-            # Merge configs - later files override earlier ones
-            # Use model_validate to ensure nested models are properly instantiated
-            merged_dict = config_obj.model_dump(exclude_unset=True)
-            merged_dict.update(file_config.model_dump(exclude_unset=True))
-            config_obj = StingerConfig.model_validate(merged_dict)
+    for config_file in config or []:
+        print(f"⚙️  [bold cyan]CONFIG:[/bold cyan] {config_file}")
+    config_obj = load_configs(config)
     assert isinstance(config_obj, StingerConfig), "Config not a Stinger Config"
     for k, v in config_obj.model_dump().items():
         print(f"🔧{k:>10.10}: {v}")
@@ -93,6 +88,11 @@ def asyncapi(
     else:
         stinger_yaml = input_obj
     stinger = StingerInterface.from_dict(stinger_yaml, config_obj)
+
+    # A protobuf payload is only a name until it is matched against the .proto
+    # sources, and the document has to describe the message it names, so resolve
+    # before rendering just as code generation does.
+    resolve_protobuf_messages(stinger, config_obj, input_file)
 
     result = stinger_to_asyncapi(stinger, config_obj)
 
@@ -110,7 +110,13 @@ def asyncapi(
 
 
 @app.command()
-def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)]):
+def validate(
+    input_file: Annotated[Path, typer.Argument(..., exists=True, file_okay=True, dir_okay=False, readable=True)],
+    config: Annotated[
+        Optional[list[Path]],
+        typer.Option("--config", "-c", exists=True, file_okay=True, dir_okay=False, readable=True, help="TOML configuration file; needed to check protobuf message names against your .proto sources"),
+    ] = None,
+):
     """Validate a Stinger interface YAML file.
 
     INPUT_FILE is the .stinger.yaml file
@@ -120,12 +126,12 @@ def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_o
     if not stingeripc_version:
         print(f"❌  [bold red]Missing required 'stingeripc.version' field in {input_file}[/bold red]")
         sys.exit(1)
-    schema_dir = Path(__file__).parent.parent / "schema"
-    schema_compat = "0.2" if stingeripc_version.startswith("0.2") else "0.1"
-    schema_file = schema_dir / schema_compat / "schema.yaml"
+    # Each schema directory validates one minor version of the format; anything
+    # older than 0.2 is covered by the 0.1 schema.
+    schema_compat = next((v for v in ("0.3", "0.2") if stingeripc_version.startswith(v)), "0.1")
+    schema_text = importlib.resources.files("stingeripc").joinpath("schemas", schema_compat, "schema.yaml").read_text()
     yaml = YAML(typ="safe")
-    with schema_file.open("r") as f:
-        schema_obj = yaml.load(f)
+    schema_obj = yaml.load(schema_text)
     validator = jsonschema_rs.validator_for(schema_obj)
 
     error_count = 0
@@ -135,8 +141,17 @@ def validate(input_file: Annotated[Path, typer.Argument(..., exists=True, file_o
         error_count += 1
         print(f"Error: {error}")
         print(f"Location: {error.instance_path}")
+    config_obj = load_configs(config)
+
     try:
-        StingerInterface(input_obj, StingerConfig())
+        # from_dict parses the whole interface -- signals, methods, commands and
+        # properties -- where the plain constructor reads only the 'interface' block
+        # and so would not catch a malformed element.
+        interface = StingerInterface.from_dict(input_obj, config_obj)
+        # Only checkable when a [protobuf] path was configured; without one the
+        # interface file is still validated, just not against the .proto sources.
+        if interface.uses_protobuf() and config_obj.protobuf is not None:
+            generic_generator.resolve_protobuf_messages(interface, config_obj, input_file)
     except Exception as e:
         if error_count == 0:
             print(f"❌  [bold red]Validation errors found in {input_file}:[/bold red]")

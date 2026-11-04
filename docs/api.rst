@@ -24,6 +24,9 @@ Interface elements
 .. automodule:: stingeripc.ipc_method
    :members:
 
+.. automodule:: stingeripc.ipc_command
+   :members:
+
 .. automodule:: stingeripc.ipc_property
    :members:
 
@@ -43,6 +46,9 @@ Configuration and loading
 -------------------------
 
 .. automodule:: stingeripc.config
+   :members:
+
+.. automodule:: stingeripc.topics
    :members:
 
 .. automodule:: stingeripc.loading

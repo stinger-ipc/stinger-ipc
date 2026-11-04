@@ -4,6 +4,8 @@ from typing import Dict, List, Literal, Optional
 
 from pydantic import BaseModel as PydanticBaseModel, Field
 
+from .topics import InterfaceTopics
+
 
 class BaseModel(PydanticBaseModel):
     @property
@@ -123,7 +125,7 @@ AnyArg = IntegerArg | NumberArg | StringArg | BooleanArg | DateTimeArg | Duratio
 class InterfaceStruct(BaseModel):
     name: str = Field(..., description="The name of the struct field")
     documentation: Optional[str] = Field(None, description="A brief description of the struct field")
-    members: List[AnyArg] = Field(..., description="A list of members in the struct")
+    values: List[AnyArg] = Field(..., description="A list of values in the struct")
 
 
 class ComponentExport(BaseModel):
@@ -137,16 +139,20 @@ class InterfaceComponent(BaseModel):
 
 
 class InterfaceSignal(InterfaceComponent):
-    payload: List[AnyArg] = Field([], description="A list of arguments for the signal")
+    values: List[AnyArg] = Field([], description="A list of arguments for the signal")
 
 
 class InterfaceMethod(InterfaceComponent):
     arguments: List[AnyArg] = Field([], description="A list of arguments for the method")
-    returnValues: List[AnyArg] = Field([], description="A list of return values for the method")
+    returnValue: Optional[AnyArg] = Field(None, description="The value returned by the method, if it returns one")
+
+
+class InterfaceCommand(InterfaceComponent):
+    arguments: List[AnyArg] = Field([], description="A list of arguments for the command")
 
 
 class InterfaceProperty(InterfaceComponent):
-    values: List[AnyArg] = Field(..., description="A list of values for the property")
+    value: AnyArg = Field(..., description="The single value held by the property")
     readOnly: Optional[bool] = Field(False, description="Whether the property is read-only")
 
 
@@ -157,4 +163,6 @@ class StingerSpec(BaseModel):
     structs: Optional[Dict[str, InterfaceStruct]] = Field(None, description="A dictionary of structs used in the interface")
     signals: Optional[Dict[str, InterfaceSignal]] = Field(None, description="A dictionary of signals in the interface")
     methods: Optional[Dict[str, InterfaceMethod]] = Field(None, description="A dictionary of methods in the interface")
+    commands: Optional[Dict[str, InterfaceCommand]] = Field(None, description="A dictionary of commands in the interface")
     properties: Optional[Dict[str, InterfaceProperty]] = Field(None, description="A dictionary of properties in the interface")
+    topics: Optional[InterfaceTopics] = Field(None, description="The broker topic templates this interface's messages travel on")

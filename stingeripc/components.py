@@ -3,18 +3,20 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Optional, TYPE_CHECKING
 
-from stingeripc.config import StingerConfig, TopicConfig
+from stingeripc.config import StingerConfig
+from stingeripc.topics import InterfaceTopics
 
 if TYPE_CHECKING:
     from stingeripc.ipc_signal import IpcSignal
     from stingeripc.ipc_method import IpcMethod
+    from stingeripc.ipc_command import IpcCommand
     from stingeripc.ipc_property import IpcProperty
+    from stingeripc.payload import Payload, ProtobufMessageRef
 
 from . import topic_util
 from .args import ArgPrimitiveType, ArgType
 from .exceptions import InvalidConfiguration, InvalidStingerStructure
 from .lang_symb import *
-from .exceptions import InvalidStingerStructure, InvalidConfiguration
 from jacobsjinjatoo import stringmanip
 from pydantic import BaseModel, ConfigDict, PrivateAttr
 from stingeripc.arg_models import (
@@ -37,7 +39,7 @@ from stingeripc.arg_datatypes import InterfaceConstant, InterfaceEnum, Interface
 
 
 class InterfaceComponent(BaseModel):
-    """Base class for the elements of an interface: signals, methods, and properties.
+    """Base class for the elements of an interface: signals, methods, commands, and properties.
 
     Every interface component has a unique ``name`` within the interface and an
     optional human-readable ``documentation`` string.  Instances also hold a
@@ -57,6 +59,11 @@ class InterfaceComponent(BaseModel):
         super().__init__(name=name)
         self._config = root._config
         self._root = root
+
+    @property
+    def topics(self) -> InterfaceTopics:
+        """The topic templates declared by the interface this component belongs to."""
+        return self._root.topics
 
     def set_documentation(self, documentation: str) -> "InterfaceComponent":
         """Set the documentation string for this component and return self.
@@ -82,29 +89,30 @@ class StingerSpec:
     """Root model of a parsed Stinger IPC interface.
 
     Holds the interface metadata (name, version, title, summary, documentation,
-    license) and the collections of signals, methods, properties, enums,
-    structs, and constants defined by the interface.  It also exposes the
+    license) and the collections of signals, methods, commands, properties,
+    enums, structs, and constants defined by the interface.  It also exposes the
     helpers used by the templates to compute topics and answer feature
     questions (e.g. whether the interface uses enums, binary payloads, or JSON
     schema constraints).
     """
 
-    def __init__(self, interface: dict[str, Any], config: StingerConfig):
+    def __init__(self, stinger: dict[str, Any], config: StingerConfig):
         LanguageSymbolMixin.enhance(self, config)
         self._config = config
+        self.topics = self.new_topics_from_stinger(stinger)
+        interface = stinger.get("interface")
+        if not isinstance(interface, dict):
+            raise InvalidStingerStructure("Interface didn't appear to have a correct type")
         try:
             self._name: str = interface["name"]
             self._version: str = interface["version"]
         except KeyError as e:
             raise InvalidStingerStructure(f"Missing interface property in {interface}: {e}")
-        except TypeError:
-            raise InvalidStingerStructure(f"Interface didn't appear to have a correct type")
 
         assert isinstance(config, StingerConfig), f"Config must be a StingerConfig object. Got {type(config)}"
-        assert isinstance(config.topics, TopicConfig), f"Config must have a TopicConfig object in its 'topics' property. Got {type(config.topics)}"
 
-        if not topic_util.is_valid_topic_template(self._config.topics.interface_discovery, self._config.topics.params):
-            raise InvalidConfiguration(f"Interface discovery topic template '{self._config.topics.interface_discovery}' is not valid. ")
+        if not topic_util.is_valid_topic_template(self.topics.interface_discovery, self.topics.params):
+            raise InvalidConfiguration(f"Interface discovery topic template '{self.topics.interface_discovery}' is not valid. ")
 
         self._summary = interface.get("summary")
         self._title = interface.get("title")
@@ -114,6 +122,7 @@ class StingerSpec:
         self.signals: dict[str, IpcSignal] = {}
         self.properties: dict[str, IpcProperty] = {}
         self.methods: dict[str, IpcMethod] = {}
+        self.commands: dict[str, IpcCommand] = {}
         self.enums: dict[str, InterfaceEnum] = {}
         self.structs: dict[str, InterfaceStruct] = {}
         self.constants: dict[str, InterfaceConstant] = {}
@@ -151,9 +160,19 @@ class StingerSpec:
         The topic is derived from the configured ``interface_discovery`` topic
         template, with the interface name filled in.
         """
-        topic_template = self._config.topics.interface_discovery
+        topic_template = self.topics.interface_discovery
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name)
         return topic_template
+
+    def interface_info_subscription_topic(self) -> str:
+        """Return the MQTT filter matching the advertisement of every instance.
+
+        Every placeholder left in the ``interface_discovery`` topic template --
+        the service id and any custom topic parameters -- is replaced with the
+        single-level wildcard ``+``, so one subscription discovers all running
+        instances of this interface.
+        """
+        return topic_util.topic_template_to_mqtt_filter(self.interface_info_topic())
 
     @property
     def summary(self) -> str:
@@ -188,6 +207,13 @@ class StingerSpec:
 
         assert isinstance(method, IpcMethod)
         self.methods[method.name] = method
+
+    def add_command(self, command: IpcCommand):
+        """Register a command on the interface, keyed by its name."""
+        from stingeripc.ipc_command import IpcCommand
+
+        assert isinstance(command, IpcCommand)
+        self.commands[command.name] = command
 
     def add_property(self, prop: IpcProperty):
         """Register a property on the interface, keyed by its name."""
@@ -224,10 +250,86 @@ class StingerSpec:
         """True if any argument anywhere in the interface declares a JSON schema constraint."""
         return any(arg.value_schema for arg in self._all_args())
 
+    def all_payloads(self) -> list["Payload"]:
+        """Every wire body in the interface, in a stable order.
+
+        A signal, command or property contributes one payload; a method
+        contributes two, since its request and response are encoded independently.
+        Templates that generate per-payload code (a serializer, a type
+        declaration) iterate this rather than re-deriving the set element by element.
+        """
+        payloads = []
+        for signal in self.signals.values():
+            payloads.append(signal.payload)
+        for method in self.methods.values():
+            payloads.append(method.request_payload)
+            payloads.append(method.response_payload)
+        for command in self.commands.values():
+            payloads.append(command.payload)
+        for prop in self.properties.values():
+            payloads.append(prop.payload)
+        return payloads
+
+    def uses_protobuf(self) -> bool:
+        """True if any payload in the interface is a protobuf message."""
+        return any(payload.is_protobuf for payload in self.all_payloads())
+
+    def protobuf_content_type(self) -> str:
+        """The media type this interface's protobuf messages are published with.
+
+        The same value every protobuf ``Payload`` reports, since it comes from
+        ``[protobuf] mime_type`` rather than from the individual message.  Languages
+        that emit one blanket encoder for all protobuf payloads read it from here.
+        """
+        mime_type = self._config.protobuf.mime_type
+        return mime_type if isinstance(mime_type, str) else "application/protobuf"
+
+    def uses_well_known_protobuf(self) -> bool:
+        """True if any protobuf message the interface names is one of protobuf's well-known types.
+
+        Those come from the protobuf runtime rather than from this interface's own
+        .proto files, and some languages need an extra dependency to reach them.
+        A message a payload's field merely refers to counts, since a generated
+        signature naming that field spells its type.
+        """
+        return any(ref.is_well_known for ref in self.protobuf_messages())
+
+    def uses_json(self) -> bool:
+        """True if any payload in the interface is a JSON argument list."""
+        return any(not payload.is_protobuf for payload in self.all_payloads())
+
+    def all_protobuf_refs(self) -> list["ProtobufMessageRef"]:
+        """Every protobuf reference in the interface, including repeats.
+
+        Two elements naming the same message each hold their own reference object,
+        so resolution has to visit all of them; :meth:`protobuf_messages` collapses
+        them by name and is for imports and compiler invocations instead.
+        """
+        return [payload.protobuf for payload in self.all_payloads() if payload.protobuf]
+
+    def protobuf_messages(self) -> list["ProtobufMessageRef"]:
+        """Every distinct protobuf declaration the interface's generated code names, sorted by name.
+
+        The payloads' own messages, plus the messages and enums their fields are
+        typed with: a generated API that takes a message apart field by field
+        mentions those types too, so an import or include list built from this has
+        to cover them.  De-duplicated because two elements may share one message,
+        and generated imports and compiler invocations must mention it only once.
+        """
+        by_name = {ref.full_name: ref for ref in self.all_protobuf_refs()}
+        for ref in list(by_name.values()):
+            for referenced in ref.referenced_types:
+                by_name.setdefault(referenced.full_name, referenced)
+        return [by_name[name] for name in sorted(by_name)]
+
+    def protobuf_files(self) -> list[str]:
+        """Every distinct .proto file the interface draws messages from, sorted."""
+        return sorted({ref.proto_file for ref in self.protobuf_messages()})
+
     def _all_args(self) -> list["Arg"]:
         """Flat list of every argument that appears anywhere in the interface.
 
-        Struct members and array element types are included recursively so that
+        Struct values and array element types are included recursively so that
         callers can reason about the full set of data types actually used.
         """
         top_level: list["Arg"] = []
@@ -237,8 +339,10 @@ class StingerSpec:
             top_level += prop.arg_list
         for method in self.methods.values():
             top_level += method.arg_list + method.return_arg_list
+        for command in self.commands.values():
+            top_level += command.arg_list
         for struct in self.structs.values():
-            top_level += struct.members
+            top_level += struct.values
 
         collected: list["Arg"] = []
         stack = list(top_level)
@@ -248,9 +352,9 @@ class StingerSpec:
             element = getattr(arg, "element", None)
             if element is not None:
                 stack.append(element)
-            members = getattr(arg, "members", None)
-            if members is not None:
-                stack.extend(members)
+            values = getattr(arg, "values", None)
+            if values is not None:
+                stack.extend(values)
         return collected
 
     def _uses_arg_type(self, arg_type: ArgType) -> bool:
@@ -296,6 +400,11 @@ class StingerSpec:
         return 2
 
     @property
+    def command_qos(self) -> int:
+        """QoS level used when publishing/subscribing to command topics."""
+        return 2
+
+    @property
     def method_request_qos(self) -> int:
         """QoS level used when publishing method request messages."""
         return 2
@@ -306,7 +415,7 @@ class StingerSpec:
         The `method_name` placeholder is replaced with the MQTT wildcard `+`
         so a single subscription receives responses for all methods.
         """
-        topic_template = self._config.topics.method_responses
+        topic_template = self.topics.method_responses
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, method_name="+")
         return topic_template
 
@@ -331,7 +440,7 @@ class StingerSpec:
         The `property_name` placeholder is replaced with the MQTT wildcard
         `+` so a single subscription receives responses for all properties.
         """
-        topic_template = self._config.topics.property_update_responses
+        topic_template = self.topics.property_update_responses
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, property_name="+")
         return topic_template
 
@@ -346,7 +455,7 @@ class StingerSpec:
         The ``property_name`` placeholder is replaced with the MQTT wildcard
         ``+`` so a single subscription receives values for all properties.
         """
-        topic_template = self._config.topics.property_values
+        topic_template = self.topics.property_values
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, property_name="+")
         return topic_template
 
@@ -356,30 +465,60 @@ class StingerSpec:
         The ``signal_name`` placeholder is replaced with the MQTT wildcard ``+``
         so a single subscription receives all signals.
         """
-        topic_template = self._config.topics.signals
+        topic_template = self.topics.signals
         topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, signal_name="+")
         return topic_template
+
+    def all_commands_topic(self) -> str:
+        """Return the topic template that matches messages for every command.
+
+        The ``command_name`` placeholder is replaced with the MQTT wildcard
+        ``+`` so a single subscription receives all commands.
+        """
+        topic_template = self.topics.commands
+        topic_template = topic_util.topic_template_fill_in(topic_template, interface_name=self.name, command_name="+")
+        return topic_template
+
+    @staticmethod
+    def new_topics_from_stinger(stinger: dict[str, Any]) -> InterfaceTopics:
+        """Build the interface's topic templates from a parsed Stinger YAML dict.
+
+        The templates live under ``configuration.topics``.  An interface that declares
+        none of them gets the default templates.
+        """
+        configuration = stinger.get("configuration") or {}
+        if not isinstance(configuration, dict):
+            raise InvalidStingerStructure(f"'configuration' must be a mapping, got {type(configuration)}")
+        topics_spec = configuration.get("topics") or {}
+        if not isinstance(topics_spec, dict):
+            raise InvalidStingerStructure(f"'configuration.topics' must be a mapping of topic templates, got {type(topics_spec)}")
+        try:
+            return InterfaceTopics(**topics_spec)
+        except ValueError as e:
+            raise InvalidStingerStructure(f"Invalid 'configuration.topics' section: {e}")
 
     @classmethod
     def new_spec_from_stinger(cls, stinger: dict[str, Any], config: StingerConfig) -> StingerSpec:
         """Construct a fully populated StingerSpec from a parsed Stinger YAML dict.
 
         Validates the declared format version, then builds the enums, structs,
-        constants, signals, methods, and properties in dependency order (enums
-        and structs first because other elements may reference them).
+        constants, signals, methods, commands, and properties in dependency
+        order (enums and structs first because other elements may reference
+        them).
         """
         if "stingeripc" not in stinger:
             raise InvalidStingerStructure("Missing 'stingeripc' format version")
         if "version" not in stinger["stingeripc"]:
             raise InvalidStingerStructure("Stinger spec version not present")
-        if stinger["stingeripc"]["version"] not in ["0.0.7", "0.1.0", "0.1.1"]:
+        if stinger["stingeripc"]["version"] not in ["0.3.0"]:
             raise InvalidStingerStructure(f"Unsupported stinger spec version {stinger['stingeripc']['version']}")
 
-        stinger_spec = StingerSpec(stinger["interface"], config)
+        stinger_spec = StingerSpec(stinger, config)
         stinger_spec._spec_version = stinger["stingeripc"]["version"]
 
         from stingeripc.ipc_signal import IpcSignal
         from stingeripc.ipc_method import IpcMethod
+        from stingeripc.ipc_command import IpcCommand
         from stingeripc.ipc_property import IpcProperty
 
         # Enums must come before other components because other components may use enum values.
@@ -435,6 +574,19 @@ class StingerSpec:
                     stinger_spec.add_method(method)
         except TypeError as e:
             raise InvalidStingerStructure(f"Method specification appears to be invalid: {e}")
+
+        try:
+            if "commands" in stinger:
+                for command_name, command_spec in stinger["commands"].items():
+                    command = IpcCommand.new_command_from_stinger(
+                        command_name,
+                        command_spec,
+                        stinger_spec,
+                    )
+                    assert command is not None, f"Did not create command from {command_name} and {command_spec}"
+                    stinger_spec.add_command(command)
+        except TypeError as e:
+            raise InvalidStingerStructure(f"Command specification appears to be invalid: {e}")
 
         try:
             if "properties" in stinger:

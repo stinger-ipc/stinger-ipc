@@ -9,6 +9,7 @@ It contains enumerations used by the {{stinger.name}} interface.
 
 {% import "partials/imports.jinja2" as imports %}
 {% import "partials/payloads.jinja2" as payloads %}
+{%- import "partials/codec.jinja2" as codec %}
 
 from pydantic import BaseModel, Field, PlainValidator, PlainSerializer, ConfigDict
 {{ imports.datetime_types(config) }}
@@ -18,6 +19,7 @@ import base64
 import jsonschema
 from pydantic import model_validator
 {%endif%}
+{{- codec.imports(stinger) }}
 {%if stinger.uses_enums()%}from enum import IntEnum{%endif%}
 
 {%- if config.python.python37 %}
@@ -43,10 +45,11 @@ class {{stinger.name|UpperCamelCase}}InterfaceInfo(BaseModel):
     title: str = Field(default="{{stinger.title or stinger.name}}")
     version: str = Field(default="{{stinger.version}}")
     methods: Dict[str, str] = Field(default_factory=dict, description="Maps method names to their version string, for methods that declare a version.")
+    commands: Dict[str, str] = Field(default_factory=dict, description="Maps command names to their version string, for commands that declare a version.")
     instance: str
     connection_topic: str
     timestamp: str
-    {%-for topic_param in config.topics.params%}
+    {%-for topic_param in stinger.topics.params%}
     {{topic_param|snake_case}}: str
     {%-endfor%}
 
@@ -54,7 +57,7 @@ class {{stinger.name|UpperCamelCase}}InterfaceInfo(BaseModel):
 {%-for ie_name, ie in stinger.enums.items() %}
 class {{ie_name | UpperCamelCase }}(IntEnum):
     """ Interface enum `{{ie_name}}`.
-    {{ ie.documentation or "_No description exists for this enumeration._" }}
+    {{ (ie.documentation or "_No description exists for this enumeration._") | indent(4) }}
     """
     {%-for item in ie.items %}
     {{item.name | CONST_CASE}} = {{item.integer}}
@@ -65,38 +68,43 @@ class {{ie_name | UpperCamelCase }}(IntEnum):
 {%-for istruct_name, istruct in stinger.structs.items() %}
 class {{istruct_name | UpperCamelCase }}(BaseModel):
     """ Interface struct `{{istruct_name}}`. """
-    {{payloads.field_list(istruct.members)|indent(4)}}
-    {{payloads.validate_schema_method(istruct.members)|indent(4)}}
+    {{payloads.field_list(istruct.values)|indent(4)}}
+    {{payloads.validate_schema_method(istruct.values)|indent(4)}}
 {%endfor%}
 
 # There are {{stinger.signals|length}} signal definitions
 {%-for signal_name, signal in stinger.signals.items()%}
-class {{signal_name|UpperCamelCase}}SignalPayload(BaseModel):
+{%- if not signal.payload.is_protobuf %}
+class {{signal.payload.python.class_name}}(BaseModel):
     """ Interface signal `{{signal_name}}`. {%if signal.documentation%}
-    
-    {{signal.documentation}}{%endif%}
+
+    {{signal.documentation | indent(4)}}{%endif%}
     """
     {{payloads.field_list(signal.arg_list)|indent(4)}}
     {{payloads.validate_schema_method(signal.arg_list)|indent(4)}}
+{%- endif %}
 {%endfor%}
 
 # There are {{stinger.properties|length}} property definitions
 {%-for prop_name, prop in stinger.properties.items()%}
+{%- if not prop.payload.is_protobuf %}
 class {{prop.python.model_class_name}}(BaseModel):
-    """ Interface property `{{prop_name}}` (multi-value struct).{%if prop.documentation%}
-    
-    {{prop.documentation}}{%endif%}
+    """ Interface property `{{prop_name}}` payload.{%if prop.documentation%}
+
+    {{prop.documentation | indent(4)}}{%endif%}
     """
     {{payloads.field_list(prop.arg_list)|indent(4)}}
     {{payloads.validate_schema_method(prop.arg_list)|indent(4)}}
+{%- endif %}
 {%endfor%}
 
 # There are {{stinger.methods|length}} method definitions
 {%- for method_name, method in stinger.methods.items()%}
+{%- if not method.request_payload.is_protobuf %}
 class {{method.python.request_class_name}}(BaseModel):
     """ Interface method `{{method_name}}` request object. {%if method.documentation%}
 
-    {{method.documentation}}{%endif%}
+    {{method.documentation | indent(4)}}{%endif%}
     """
     {{payloads.field_list(method.arg_list)|indent(4)}}
     {{payloads.validate_schema_method(method.arg_list)|indent(4)}}
@@ -104,8 +112,22 @@ class {{method.python.request_class_name}}(BaseModel):
 class {{method.python.response_class_name}}(BaseModel):
     """ Interface method `{{method_name}}` response object. {%if method.documentation%}
 
-    {{method.documentation}}{%endif%}
+    {{method.documentation | indent(4)}}{%endif%}
     """
     {{payloads.field_list(method.return_arg_list)|indent(4)}}
     {{payloads.validate_schema_method(method.return_arg_list)|indent(4)}}
+{%- endif %}
+{%endfor%}
+
+# There are {{stinger.commands|length}} command definitions
+{%-for command_name, command in stinger.commands.items()%}
+{%- if not command.payload.is_protobuf %}
+class {{command.python.payload_class_name}}(BaseModel):
+    """ Interface command `{{command_name}}`. {%if command.documentation%}
+
+    {{command.documentation | indent(4)}}{%endif%}
+    """
+    {{payloads.field_list(command.arg_list)|indent(4)}}
+    {{payloads.validate_schema_method(command.arg_list)|indent(4)}}
+{%- endif %}
 {%endfor%}

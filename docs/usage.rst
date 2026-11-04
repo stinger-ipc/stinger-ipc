@@ -12,7 +12,7 @@ A very brief example of an interface description is:
 .. code-block:: yaml
 
    stingeripc:
-     version: 0.1.0
+     version: 0.3.0
 
    interface:
      name: Example
@@ -21,7 +21,7 @@ A very brief example of an interface description is:
    signals:
 
      foo:
-       payload:
+       values:
          - name: message
            type: string
 
@@ -33,9 +33,23 @@ A very brief example of an interface description is:
            type: integer
          - name: right
            type: integer
-       returnValues:
-         - name: sum
+       returnValue:
+         name: sum
+         type: integer
+
+   commands:
+
+     set_volume:
+       arguments:
+         - name: level
            type: integer
+
+   properties:
+
+     favorite_number:
+       value:
+         name: number
+         type: integer
 
 The ``stinger-ipc`` command provides two main subcommands for working with
 Stinger interface files.
@@ -130,6 +144,40 @@ used like this:
        left + right
    });
 
+Commands
+--------
+
+A **command** is a fire-and-forget message sent from a client to a server.  The
+client publishes the command's arguments and never learns whether the server
+acted on them.  Because there is no response channel, a server that cannot
+deserialize or validate an incoming command can only log and drop it.
+
+A command declares its payload with ``arguments:``, the same key a method uses:
+
+.. code-block:: yaml
+
+   commands:
+
+     set_volume:
+       documentation: Tell the server to change the playback volume.
+       arguments:
+         - name: level
+           type: integer
+
+Clients send a command, and servers register handlers for it.  Unlike a method,
+a command may have **any number of handlers, and all of them are optional** —
+a command that arrives with no handler registered is logged and dropped.
+
+.. code-block:: python
+
+   # Python client
+   client.send_set_volume(level=7)
+
+   # Python server
+   @server.receive_set_volume
+   def on_set_volume(level: int):
+       print(f"Setting volume to {level}")
+
 Schema validation
 -----------------
 
@@ -146,3 +194,9 @@ field has no schema:
 The Rust **server** calls these at every publish/consume boundary (method
 request/response, property update/publish, signal emit), failing with the
 appropriate ``MethodReturnCode`` rather than sending non-conforming data.
+
+The example values that appear in generated demos, tests, and documentation also
+respect the constraint, so generated code never rejects its own examples.  If a
+constraint is written so that no example value can satisfy it — a ``pattern``, or
+a range with nothing in it — generation fails with a message naming the argument,
+rather than quietly emitting a value that would be rejected.

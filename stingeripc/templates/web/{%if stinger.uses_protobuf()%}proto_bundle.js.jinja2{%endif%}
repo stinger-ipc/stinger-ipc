@@ -1,0 +1,11 @@
+// The protobuf schema this page decodes and encodes with.
+//
+// A protobuf.js `Root.fromJSON` document, built at generation time from the
+// descriptor set protoc produces for this interface's .proto sources, together
+// with any well-known types the interface names.  The browser needs a schema to
+// read protobuf bytes at all, and shipping it as data keeps the page free of a
+// build step.
+//
+// Field names are spelled as the .proto file spells them, so a field is called
+// the same thing here as in the Python, Rust and C++ output.
+window.STINGER_PROTO = {{ utils.protobufjs_bundle() }};

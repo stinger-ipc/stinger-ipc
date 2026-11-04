@@ -131,3 +131,25 @@ def get_argument_position(template: str, argument: str) -> int | None:
             return segment_index
 
     return None
+
+
+def topic_template_to_mqtt_filter(template: str) -> str:
+    """Convert a topic template into an MQTT topic filter.
+
+    Every remaining ``{placeholder}`` becomes a single-level ``+`` wildcard, so
+    the result matches the topic of any instance regardless of what the
+    placeholders resolve to.
+
+    Args:
+        template: The template string to convert.
+
+    Returns:
+        An MQTT topic filter.
+    """
+    formatter = Formatter()
+    result = []
+    for literal_text, field_name, _, _ in formatter.parse(template):
+        result.append(literal_text)
+        if field_name is not None:
+            result.append("+")
+    return "".join(result)

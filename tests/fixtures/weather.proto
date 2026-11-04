@@ -1,0 +1,14 @@
+syntax = "proto3";
+package weather.v1;
+
+message CurrentConditions {
+  float temperature = 1;
+  string description = 2;
+  message Wind {
+    float speed = 1;
+  }
+}
+
+message Forecast {
+  repeated CurrentConditions days = 1;
+}

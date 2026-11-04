@@ -1,5 +1,5 @@
 stingeripc:
-  version: 0.1.1
+  version: 0.3.0
 
 interface:
   name: prop-only
@@ -7,11 +7,22 @@ interface:
   title: Property Only Interface
   summary: Example StingerAPI interface which only has properties, plus a struct and an enum.
 
+configuration:
+
+  topics:
+    params: ["prefix"]
+    signals: "{prefix}/{interface_name}/{service_id}/signal/{signal_name}"
+    propertyValues: "{prefix}/{interface_name}/{service_id}/property/{property_name}/value"
+    propertyUpdates: "{prefix}/{interface_name}/{service_id}/property/{property_name}/update"
+    commands: "{prefix}/{interface_name}/{service_id}/command/{command_name}"
+    methodRequests: "{prefix}/{interface_name}/{service_id}/method/{method_name}/request"
+    interfaceDiscovery: "{prefix}/{interface_name}/{service_id}/interface"
+
 structures:
 
   address:
     documentation: Structure representing a mailing address.
-    members:
+    values:
       - name: street
         type: string
         description: The street address.
@@ -42,14 +53,14 @@ properties:
 
   home_address:
     documentation: The current home address.
-    values:
-      - name: address
-        type: struct
-        structName: address
+    value:
+      name: address
+      type: struct
+      structName: address
 
   favorite_country:
     documentation: The user's favorite country.
-    values:
-      - name: country
-        type: enum
-        enumName: country
+    value:
+      name: country
+      type: enum
+      enumName: country

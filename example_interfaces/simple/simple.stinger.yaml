@@ -1,5 +1,5 @@
 stingeripc:
-  version: 0.1.0
+  version: 0.3.0
 
 interface:
   name: Simple
@@ -7,10 +7,21 @@ interface:
   title: Simple Example Interface
   summary: Example StingerAPI interface which demonstrates just a bit.
 
+configuration:
+
+  topics:
+    params: ["prefix"]
+    signals: "{prefix}/{interface_name}/{service_id}/signal/{signal_name}"
+    propertyValues: "{prefix}/{interface_name}/{service_id}/property/{property_name}/value"
+    propertyUpdates: "{prefix}/{interface_name}/{service_id}/property/{property_name}/update"
+    commands: "{prefix}/{interface_name}/{service_id}/command/{command_name}"
+    methodRequests: "{prefix}/{interface_name}/{service_id}/method/{method_name}/request"
+    interfaceDiscovery: "{prefix}/{interface_name}/{service_id}/interface"
+
 structures:
 
   person:
-    members:
+    values:
       - name: name
         type: string
         description: The name of the person
@@ -30,7 +41,7 @@ enums:
 signals:
   
   person_entered:
-    payload:
+    values:
       - name: person
         type: struct
         structName: person
@@ -46,18 +57,30 @@ methods:
         schema:
           minimum: 0
           maximum: 10000
-    returnValues:
-      - name: my_number
-        type: integer
-        description: My favorite number
+    returnValue:
+      name: my_number
+      type: integer
+      description: My favorite number
   
+commands:
+
+  ring_the_bell:
+    documentation: A simple command telling the server to ring the school bell.
+    arguments:
+      - name: times
+        type: integer
+        description: How many times to ring the bell.
+        schema:
+          minimum: 1
+          maximum: 12
+
 properties:
 
   school:
-    values:
-      - name: name
-        type: string
-        description: The name of the school where the person studies.
+    value:
+      name: name
+      type: string
+      description: The name of the school where the person studies.
 
 constants:
 

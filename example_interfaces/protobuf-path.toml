@@ -1,0 +1,4 @@
+# Where hand-written .proto files live, relative to the .stinger.yaml that names them.
+# TODO: consider if relative to the .stinger.yaml file is the best approach
+[protobuf]
+path = "protos"

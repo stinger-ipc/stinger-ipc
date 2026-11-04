@@ -5,12 +5,23 @@ version: '3'
 vars:
   THREADS: '{{default "16" .THREADS}}'
   INTERFACES: [full, simple, testable, signal_only, weather, "prop-only"]
+  # Interfaces whose payloads include protobuf messages.  Kept separate from
+  # INTERFACES so the all-JSON list stays a clean control group when checking that a
+  # change leaves existing generated output untouched.
+  PROTO_INTERFACES: [protoweather]
+  PROTO_CONFIG: ./example_interfaces/protobuf-path.toml
   GENERATED_DIR: '{{default "./generated" .GENERATED_DIR}}'
 
 tasks:
+  # The aggregate tasks below use `cmds` rather than `deps` because `deps` run in
+  # parallel, and each stage transitively depends on the stage before it.  Run in
+  # parallel, two stages can therefore drive the same sub-task in the same directory at
+  # once -- two concurrent `make -j` runs in one build directory can truncate a static
+  # archive.  `cmds` run in sequence, and each stage still fans out over the interfaces
+  # in parallel through its own deps, so little parallelism is lost.
   default:
     desc: Generate and compile all interfaces
-    deps:
+    cmds:
       - task: python:generate
       - task: python:unittest
       - task: cpp:compile
@@ -22,23 +33,26 @@ tasks:
 
   python:
     desc: Generate, test, and type check all Python interfaces
-    deps:
+    cmds:
       - task: python:generate
       - task: python:unittest
       - task: python:mypy
+      - task: python:docs
 
   cpp:
-    desc: Generate, compile, and test all C++ interfaces
-    deps:
+    desc: Generate, compile, lint, and test all C++ interfaces
+    cmds:
       - task: cpp:generate
       - task: cpp:compile
+      - task: cpp:lint
       - task: cpp:unittest
 
   rust:
-    desc: Generate, check, and test all Rust interfaces
-    deps:
+    desc: Generate, check, lint, and test all Rust interfaces
+    cmds:
       - task: rust:generate
       - task: rust:check
+      - task: rust:lint
       - task: rust:unittest
 
   validate:*:
@@ -56,6 +70,8 @@ tasks:
     deps:
       - for: { var: INTERFACES }
         task: validate:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: validate:{{ .ITEM }}
     
   python:generate:*:
     desc: Generate Python code for an interface
@@ -70,8 +86,8 @@ tasks:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/python/**"
     cmds:
       - mkdir -p {{.GENERATED_DIR}}/{{.IFACE}}/python/
-      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python/
-      - uv run black --target-version py312 --exclude '.venv' {{.GENERATED_DIR}}/{{.IFACE}}/python/
+      - uv run stinger generate {{.CLI_ARGS}} --language python --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python/
+      - uv run black --target-version py312 --exclude '.venv|/proto/' {{.GENERATED_DIR}}/{{.IFACE}}/python/
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -89,10 +105,56 @@ tasks:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/python37/**"
     cmds:
       - mkdir -p {{.GENERATED_DIR}}/{{.IFACE}}/python37/
-      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/python37.toml --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python37/
-      - uv run black --target-version py37 --exclude '.venv' {{.GENERATED_DIR}}/{{.IFACE}}/python37/
+      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/python37.toml --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python37/
+      - uv run black --target-version py37 --exclude '.venv|/build/|\.egg-info' {{.GENERATED_DIR}}/{{.IFACE}}/python37/
     vars:
       IFACE: '{{index .MATCH 0}}'
+
+  python37:unittest:*:
+    desc: Run generated Python 3.7 unit tests for an interface in Docker
+    dir: "{{.GENERATED_DIR}}/{{.IFACE}}/python37/"
+    deps:
+      - task: python37:generate:{{index .MATCH 0}}
+    sources:
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/python37/tests/**"
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/python37/src/**"
+    cmds:
+      - docker run --rm -v "$PWD:/workspace" -w /workspace python:3.7-slim sh -c "pip install --no-cache-dir --quiet pytest . && python -m pytest -vv"
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  python37:unittest:
+    desc: Run generated Python 3.7 unit tests for all interfaces in Docker
+    deps:
+      - for: { var: INTERFACES }
+        task: python37:unittest:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: python37:unittest:{{ .ITEM }}
+
+  # The 3.7 target runs the last mypy that supports 3.7, which knows a different set
+  # of error codes and a different typing module than the modern one -- so a generated
+  # project can type-check cleanly on one and not the other.  Checked here rather than
+  # assumed.
+  python37:mypy:*:
+    desc: Type check generated Python 3.7 code for an interface in Docker
+    dir: "{{.GENERATED_DIR}}/{{.IFACE}}/python37/"
+    deps:
+      - task: python37:generate:{{index .MATCH 0}}
+    sources:
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/python37/tests/**"
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/python37/src/**"
+    cmds:
+      - task lint
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  python37:mypy:
+    desc: Type check generated Python 3.7 code for all interfaces in Docker
+    deps:
+      - for: { var: INTERFACES }
+        task: python37:mypy:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: python37:mypy:{{ .ITEM }}
 
   python-alt1:generate:*:
     desc: Generate Python code for an interface with alternative settings
@@ -108,7 +170,7 @@ tasks:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/**"
     cmds:
       - mkdir -p {{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/
-      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/app-owned-props.toml --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/
+      - uv run stinger generate {{.CLI_ARGS}} --language python --config ./example_interfaces/app-owned-props.toml --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml {{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/
       - uv run black --target-version py312 {{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/
     vars:
       IFACE: '{{index .MATCH 0}}'
@@ -118,9 +180,15 @@ tasks:
     deps:
       - for: { var: INTERFACES }
         task: python:generate:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: python:generate:{{ .ITEM }}
       - for: { var: INTERFACES }
         task: python37:generate:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: python37:generate:{{ .ITEM }}
       - for: { var: INTERFACES }
+        task: python-alt1:generate:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
         task: python-alt1:generate:{{ .ITEM }}
 
   python:unittest:*:
@@ -131,10 +199,8 @@ tasks:
     sources:
       - example_interfaces/{{.IFACE}}/python/tests/**
       - example_interfaces/{{.IFACE}}/python/src/**
-    generates:
-      - "{{.GENERATED_DIR}}/{{.IFACE}}/python/tests/junit.xml"
     cmds:
-      - uv run pytest -vv --junit-xml=junit.xml
+      - task unittest
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -147,7 +213,7 @@ tasks:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/tests/*.py"
       - "{{.GENERATED_DIR}}/{{.IFACE}}/python-alt1/src/*.py"
     cmds:
-      - uv run pytest -vv
+      - task unittest
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -156,8 +222,16 @@ tasks:
     deps:
       - for: { var: INTERFACES }
         task: python:unittest:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: python:unittest:{{ .ITEM }}
       - for: { var: INTERFACES }
         task: python-alt1:unittest:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: python-alt1:unittest:{{ .ITEM }}
+      - for: { var: INTERFACES }
+        task: python37:unittest:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: python37:unittest:{{ .ITEM }}
 
   python:mypy:*:
     desc: Run mypy type checking for an interface
@@ -168,10 +242,10 @@ tasks:
       - ./src/**
       - ./tests/**
     cmds:
-      - uv run mypy ./src/ ./tests/
+      - task lint
     vars:
       IFACE: '{{index .MATCH 0}}'
-    
+
   python-alt1:mypy:*:
     desc: Run mypy type checking for an interface generated with alternative settings
     dir: generated/{{.IFACE}}/python-alt1/
@@ -181,7 +255,7 @@ tasks:
       - ./src/**
       - ./tests/**
     cmds:
-      - uv run mypy ./src/ ./tests/
+      - task lint
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -190,15 +264,37 @@ tasks:
     deps:
       - for: { var: INTERFACES }
         task: python:mypy:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: python:mypy:{{ .ITEM }}
       - for: { var: INTERFACES }
         task: python-alt1:mypy:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: python-alt1:mypy:{{ .ITEM }}
 
-  python:
-    desc: Run all python releated tasks
+  python:docs:*:
+    desc: Build Sphinx API docs for an interface
+    dir: generated/{{.IFACE}}/python/
     deps:
-      - task: python:generate
-      - task: python:unittest
-      - task: python:mypy
+      - task: python:generate:{{index .MATCH 0}}
+    sources:
+      - ./src/**
+      - ./docs/**
+      - ./examples/**
+    generates:
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/python/docs/_build/html/**"
+    cmds:
+      - uv sync --group docs
+      - uv run sphinx-build -W -b html docs docs/_build/html
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  python:docs:
+    desc: Build Sphinx API docs for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: python:docs:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: python:docs:{{ .ITEM }}
 
   cpp:generate:*:
     desc: Generate C++ code for an interface
@@ -217,7 +313,7 @@ tasks:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/cmake/**"
       - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/tests/**"
     cmds:
-      - uv run stinger generate {{.CLI_ARGS}} --language cpp --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/"
+      - uv run stinger generate {{.CLI_ARGS}} --language cpp --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/"
       - clang-format --style=file:clang-format-config.yaml {{.GENERATED_DIR}}/{{.IFACE}}/cpp/include/*.hpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/src/*.cpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/examples/*.cpp {{.GENERATED_DIR}}/{{.IFACE}}/cpp/tests/*.cpp -i
     vars:
       IFACE: '{{index .MATCH 0}}'
@@ -226,6 +322,8 @@ tasks:
     desc: Generate C++ code for all interfaces
     deps:
       - for: { var: INTERFACES }
+        task: cpp:generate:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
         task: cpp:generate:{{ .ITEM }}
 
   cpp:compile:*:
@@ -245,15 +343,18 @@ tasks:
     deps:
       - for: { var: INTERFACES }
         task: cpp:compile:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: cpp:compile:{{ .ITEM }}
 
   cpp:unittest:*:
     desc: Run C++ unit tests for an interface
+    dir: "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/"
     deps:
-      - task: cpp:compile:{{index .MATCH 0}}
+      - task: cpp:generate:{{index .MATCH 0}}
     sources:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/**"
     cmds:
-      - cd "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/build" && ctest --output-on-failure
+      - task unittest
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -262,6 +363,28 @@ tasks:
     deps:
       - for: { var: INTERFACES }
         task: cpp:unittest:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: cpp:unittest:{{ .ITEM }}
+
+  cpp:lint:*:
+    desc: Check C++ source formatting for an interface
+    dir: "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/"
+    deps:
+      - task: cpp:generate:{{index .MATCH 0}}
+    sources:
+      - "{{.GENERATED_DIR}}/{{.IFACE}}/cpp/**"
+    cmds:
+      - task lint
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  cpp:lint:
+    desc: Check C++ source formatting for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: cpp:lint:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: cpp:lint:{{ .ITEM }}
 
   rust:generate:*:
     desc: Generate Rust code for an interface
@@ -273,8 +396,10 @@ tasks:
     generates:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/rust/**"
     cmds:
-      - uv run stinger generate {{.CLI_ARGS}} --language rust --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/rust/"
-      - cd "{{.GENERATED_DIR}}/{{.IFACE}}/rust/" && cargo fmt
+      - uv run stinger generate {{.CLI_ARGS}} --language rust --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/rust/"
+      # Run twice: rustfmt does not always reach a fixed point in one pass on deeply
+      # nested match expressions, so a single run can leave the tree not fully formatted.
+      - cd "{{.GENERATED_DIR}}/{{.IFACE}}/rust/" && cargo fmt && cargo fmt
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -282,6 +407,8 @@ tasks:
     desc: Generate Rust code for all interfaces
     deps:
       - for: { var: INTERFACES }
+        task: rust:generate:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
         task: rust:generate:{{ .ITEM }}
 
   rust:check:*:
@@ -292,20 +419,19 @@ tasks:
     sources:
       - ./**
     cmds:
-      - cargo check
-      - cargo check --example {{.IFACE_SNAKE}}_client_demo --features client
-      - cargo check --example {{.IFACE_SNAKE}}_server_demo --features server
-      - cargo check --all-features
-      - cargo check --example {{.IFACE_SNAKE}}_client_demo --features client,lwt
-      - cargo check --example {{.IFACE_SNAKE}}_server_demo --features server,lwt
+      # Delegated to the generated crate's own Taskfile, which knows what its
+      # examples are called: they are named after the interface, which is not always
+      # what the directory is called (ProtoWeather lives in protoweather/).
+      - task check
     vars:
       IFACE: '{{index .MATCH 0}}'
-      IFACE_SNAKE: '{{index .MATCH 0 | replace "-" "_"}}'
 
   rust:check:
     desc: Check Rust code for all interfaces
     deps:
       - for: { var: INTERFACES }
+        task: rust:check:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
         task: rust:check:{{ .ITEM }}
 
   rust:unittest:*:
@@ -316,7 +442,7 @@ tasks:
     sources:
       - ./**
     cmds:
-      - cargo test --all-features
+      - task unittest
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -325,6 +451,28 @@ tasks:
     deps:
       - for: { var: INTERFACES }
         task: rust:unittest:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: rust:unittest:{{ .ITEM }}
+
+  rust:lint:*:
+    desc: Check Rust formatting and run clippy for an interface
+    dir: "{{.GENERATED_DIR}}/{{.IFACE}}/rust/"
+    deps:
+      - task: rust:generate:{{index .MATCH 0}}
+    sources:
+      - ./**
+    cmds:
+      - task lint
+    vars:
+      IFACE: '{{index .MATCH 0}}'
+
+  rust:lint:
+    desc: Check Rust formatting and run clippy for all interfaces
+    deps:
+      - for: { var: INTERFACES }
+        task: rust:lint:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
+        task: rust:lint:{{ .ITEM }}
 
   asyncapi:generate:*:
     desc: Generate AsyncAPI documentation for an interface
@@ -332,13 +480,12 @@ tasks:
       - task: validate:{{index .MATCH 0}}
     sources:
       - stingeripc/**/*.py
-      - example_interfaces/topic_prefix.toml
       - example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml
     generates:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/asyncapi/**"
     cmds:
       - mkdir -p "{{.GENERATED_DIR}}/{{.IFACE}}/asyncapi/"
-      - uv run stinger asyncapi {{.CLI_ARGS}} --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/asyncapi/"
+      - uv run stinger asyncapi {{.CLI_ARGS}} --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/asyncapi/"
     vars:
       IFACE: '{{index .MATCH 0}}'
 
@@ -357,7 +504,7 @@ tasks:
     generates:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/markdown/*"
     cmds:
-      - uv run stinger generate {{.CLI_ARGS}} --language markdown --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/markdown/"
+      - uv run stinger generate {{.CLI_ARGS}} --language markdown --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/markdown/"
     vars:
       IFACE: '{{index .MATCH 0}}'
   
@@ -365,6 +512,8 @@ tasks:
     desc: Generate markdown documentation for all interfaces
     deps:
       - for: { var: INTERFACES }
+        task: markdown:generate:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
         task: markdown:generate:{{ .ITEM }}
 
   web:generate:*:
@@ -376,7 +525,7 @@ tasks:
     generates:
       - "{{.GENERATED_DIR}}/{{.IFACE}}/web/**"
     cmds:
-      - uv run stinger generate {{.CLI_ARGS}} --language web --config ./example_interfaces/topic_prefix.toml ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/web/"
+      - uv run stinger generate {{.CLI_ARGS}} --language web --config {{.PROTO_CONFIG}} ./example_interfaces/{{.IFACE}}/{{.IFACE}}.stinger.yaml "{{.GENERATED_DIR}}/{{.IFACE}}/web/"
     vars:
       IFACE: '{{index .MATCH 0}}'
   
@@ -384,6 +533,8 @@ tasks:
     desc: Generate web documentation for all interfaces
     deps:
       - for: { var: INTERFACES }
+        task: web:generate:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
         task: web:generate:{{ .ITEM }}
   
   protobuf:generate:*:
@@ -408,6 +559,8 @@ tasks:
     desc: Generate Protobuf code for all interfaces
     deps:
       - for: { var: INTERFACES }
+        task: protobuf:generate:{{ .ITEM }}
+      - for: { var: PROTO_INTERFACES }
         task: protobuf:generate:{{ .ITEM }}
   
   protobuf:check:*:

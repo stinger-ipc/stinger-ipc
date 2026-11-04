@@ -1,0 +1,25 @@
+# How to turn this interface's .proto sources into Rust bindings.
+#
+# Read by the generator after the templates are rendered.  Paths are relative to
+# the output directory; protoc flags may use {out} for the absolute binding
+# output directory.
+#
+# Requires the protoc-gen-prost plugin on PATH (cargo install protoc-gen-prost).
+
+# The .proto sources are copied here so the generated crate is self-contained.
+copy_to = "proto"
+
+# prost writes one .rs per protobuf package here.
+out_dir = "src/proto"
+
+flags = ["--prost_out={out}"]
+
+# prost does not write a module file, so the crate needs one that pulls each
+# generated file into the `proto` module.
+include_module = "src/proto/mod.rs"
+include_module_header = """// Generated protobuf bindings.  DO NOT EDIT.
+//
+// prost writes one file per protobuf package; each is included here so its
+// messages are reachable as `crate::proto::<Message>`.
+
+"""

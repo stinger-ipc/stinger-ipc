@@ -1,5 +1,5 @@
 stingeripc:
-  version: 0.0.7
+  version: 0.3.0
 
 interface:
   name: Full
@@ -7,11 +7,33 @@ interface:
   title: Example Interface
   summary: Example StingerAPI interface which demonstrates many features.
 
+configuration:
+
+  topics:
+    params: ["prefix"]
+    signals: "{prefix}/{interface_name}/{service_id}/signal/{signal_name}"
+    propertyValues: "{prefix}/{interface_name}/{service_id}/property/{property_name}/value"
+    propertyUpdates: "{prefix}/{interface_name}/{service_id}/property/{property_name}/update"
+    commands: "{prefix}/{interface_name}/{service_id}/command/{command_name}"
+    methodRequests: "{prefix}/{interface_name}/{service_id}/method/{method_name}/request"
+    interfaceDiscovery: "{prefix}/{interface_name}/{service_id}/interface"
+
 structures:
+
+  favorite_foods:
+    documentation: Structure representing someone's favorite foods.
+    values:
+      - name: drink
+        type: string
+      - name: slices_of_pizza
+        type: integer
+      - name: breakfast
+        type: string
+        optional: true
 
   lunch:
     documentation: Structure representing a lunch order.
-    members:
+    values:
       - name: drink
         type: boolean
         description: Whether or not lunch comes with a drink
@@ -67,7 +89,7 @@ enums:
 signals:
   
   todayIs:
-    payload:
+    values:
       - name: dayOfMonth
         type: integer
         description: The calendar day of the month.
@@ -76,7 +98,7 @@ signals:
         enumName: dayOfTheWeek
 
   randomWord:
-    payload:
+    values:
       - name: word
         type: string
       - name: time
@@ -93,90 +115,101 @@ methods:
       - name: third
         type: integer
         optional: true
-    returnValues:
-      - name: sum
-        type: integer
+    returnValue:
+      name: sum
+      type: integer
 
   doSomething:
     arguments:
       - name: task_to_do
         type: string
-    returnValues:
-      - name: label
-        type: string
-      - name: identifier
-        type: integer
+    returnValue:
+      name: label
+      type: string
 
   what_time_is_it:
     documentation: Get the current date and time.
     arguments: []
-    returnValues:
-      - name: timestamp
-        type: datetime
+    returnValue:
+      name: timestamp
+      type: datetime
 
   hold_temperature:
     documentation: Hold a temperature for a specified duration.
+    timeout: 30
     arguments:
       - name: temperature_celsius
         type: float
         description: The temperature to hold in degrees Celsius.
-    returnValues:
-      - name: success
-        type: boolean
+    returnValue:
+      name: success
+      type: boolean
+
+commands:
+
+  set_the_table:
+    documentation: |
+      Tell the server to lay the table for a meal.  Nothing is sent back; the
+      client does not learn whether the table was actually set.
+    arguments:
+      - name: seats
+        type: integer
+        description: How many places to lay.
+      - name: day
+        type: enum
+        enumName: dayOfTheWeek
+        description: The day the meal is served.
+      - name: serve_at
+        type: datetime
+        description: When the meal should be served.
+        optional: true
+
+  clear_the_table:
+    documentation: Tell the server that the meal is over and the table can be cleared.
+    arguments: []
 
 properties:
 
   favorite_number:
     documentation: |
       My favorite number
-    values:
-      - name: number
-        type: integer
+    value:
+      name: number
+      type: integer
 
   favorite_foods:
-    values:
-      - name: drink
-        type: string
-      - name: slices_of_pizza
-        type: integer
-      - name: breakfast
-        type: string
-        optional: true
+    value:
+      name: foods
+      type: struct
+      structName: favorite_foods
 
   lunch_menu:
-    values:
-      - name: monday
+    value:
+      name: menu
+      type: array
+      itemType:
         type: struct
         structName: lunch
-      - name: tuesday
-        type: struct
-        structName: lunch
-        description: Tuesday's lunch menu.
+      description: The lunch served on each day of the week, starting with Monday.
     readOnly: true
   
   family_name:
-    documentation: This is to test a property with a single string value.
-    values:
-      - name: family_name
-        type: string
+    documentation: This is to test a property with a string value.
+    value:
+      name: family_name
+      type: string
 
   last_breakfast_time:
-    documentation: This is to test a property with a single datetime value.
-    values:
-      - name: timestamp
-        type: datetime
+    documentation: This is to test a property with a datetime value.
+    value:
+      name: timestamp
+      type: datetime
 
   last_birthdays:
-    documentation: This is to test a property with multiple datetime values.
-    values:
-      - name: mom
+    documentation: This is to test a property with an array of datetime values.
+    value:
+      name: birthdays
+      type: array
+      itemType:
         type: datetime
-      - name: dad
-        type: datetime
-      - name: sister
-        type: datetime
-        optional: true
-      - name: brothers_age
-        type: integer
-        optional: true
-        description: The age of my brothers in years.
+      description: The most recent birthday of each family member.

@@ -1,3 +1,4 @@
+{%- import "partials/codec.jinja2" as codec -%}
 """
 Tests for {{stinger.name}} server.
 """
@@ -5,6 +6,8 @@ Tests for {{stinger.name}} server.
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 import sys
+import threading
+import time
 from pathlib import Path
 {{ imports.datetime_types(config) }}
 from {{stinger.python.module_name}}.server import {{stinger.name | UpperCamelCase}}Server
@@ -16,15 +19,28 @@ from stinger_python_utils.return_codes import (
     MethodReturnCode
 )
 from pyqttier.mock import MockConnection
-from pyqttier.message import Message
+from pystingerconniface import Message
 import json
 from pydantic import BaseModel
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 def to_jsonified_dict(model: BaseModel) -> Dict[str, Any]:
     """Convert a Pydantic model to a JSON-serializable dict."""
     json_str = model.model_dump_json(by_alias=True)
     return json.loads(json_str)
+
+{%if stinger.methods | length > 0 %}
+def wait_for(predicate, timeout: float = 2.0) -> bool:
+    """The server handles method requests on its own dispatch thread rather than on the
+    thread that delivered the message, so a test has to wait for the handling to land
+    instead of asserting immediately after simulating a request."""
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        if predicate():
+            return True
+        time.sleep(0.001)
+    return predicate()
+{%endif%}
 
 class {{stinger.name|UpperCamelCase}}ServerSetup:
 
@@ -45,12 +61,7 @@ class {{stinger.name|UpperCamelCase}}ServerSetup:
     def get_initial_property_values(self) -> {{stinger.name|UpperCamelCase}}InitialPropertyValues:
         initial_property_values = {{stinger.name|UpperCamelCase}}InitialPropertyValues(
             {%-for prop_name, prop in stinger.properties.items()%}
-            {{prop_name|snake_case}}={%if prop.arg_list|length > 1%}{{prop_name|UpperCamelCase}}Property(
-                {%-for arg in prop.arg_list%}
-                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
-                {%-endfor%}
-            ){%else%}{{prop.arg_list[0].get_random_example_value()}}
-            {%-endif%},
+            {{prop_name|snake_case}}={{ codec.property_example(prop) }},
             {%-endfor%}
         )
         return initial_property_values
@@ -81,7 +92,7 @@ class {{stinger.name|UpperCamelCase}}ServerSetup:
             {%if stinger.properties|length > 0%}
             {%-if config.properties.stinger_owned_values %}self.initial_property_values{%else%}self.get_property_access(){%endif%},
             {%-endif%}
-            {%for topic_param in config.topics.params %}
+            {%for topic_param in stinger.topics.params %}
             "x",
             {%endfor%}
         )
@@ -136,6 +147,7 @@ class Test{{stinger.name|UpperCamelCase}}Server:
 
 class Test{{stinger.name|UpperCamelCase}}ServerProperties:
     {%-for prop_name, prop in stinger.properties.items()%}
+    {%- if not prop.payload.is_protobuf %}{#- a protobuf property has no example field values to compare #}
 
     {%if not config.properties.stinger_owned_values %}
     def test_get_initial_{{prop_name|snake_case}}_property(self, server_setup, server):
@@ -146,7 +158,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
     def test_server_{{prop_name|snake_case}}_property_initialization(self, server, initial_property_values):
         """Test that the {{prop_name|snake_case}} server property is initialized correctly."""
         assert hasattr(server, '{{prop_name|snake_case}}'), "Server missing property '{{prop_name|snake_case}}'"
-        {%if prop.arg_list|length > 1 or not prop.arg_list[0].optional-%}
+        {%if not prop.python.is_optional-%}
         assert server.{{prop_name|snake_case}} is not None, "Property '{{prop_name|snake_case}}' not initialized properly"
         {%endif-%}
         assert server.{{prop_name|snake_case}} == initial_property_values.{{prop_name|snake_case}}, "Property '{{prop_name|snake_case}}' value does not match expected value"
@@ -165,30 +177,18 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
         
         # Verify payload
-        {%-if prop.arg_list | length == 1%}
-        expected_obj = {{prop_name|UpperCamelCase}}Property({{prop.arg_list[0].name|snake_case}}=initial_property_values.{{prop_name|snake_case}})
-        {%-else%}
-        expected_obj = initial_property_values.{{prop_name|snake_case}}
-        {%-endif%}
+        expected_obj = {{ codec.property_wrap(prop, 'initial_property_values.' ~ (prop_name|snake_case)) }}
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode('utf-8'))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
 
+    {% if prop.read_only is not true %}
     def test_{{prop_name|snake_case}}_property_setter(self, server, mock_connection):
         """Test that setting the '{{prop_name|snake_case}}' property publishes the correct message."""
         mock_connection.clear_published_messages()
         server._force_property_publish = True # Backdoor way to force server to publish property updates even if the value hasn't changed.  For unittests only.
 
-        new_{{prop_name | snake_case}}_value =
-            {%-if prop.arg_list | length > 1%}
-            {{-prop.python.class_name}}(
-                {%for arg in prop.arg_list%}
-                {{arg.name|snake_case}}={{arg.get_random_example_value()}},
-                {%endfor%}
-            )
-            {%-else-%}
-            {{prop.arg_list[0].get_random_example_value()}}
-            {%endif%}
+        new_{{prop_name | snake_case}}_value = {{ codec.property_example(prop) }}
         server.{{prop_name|snake_case}} = new_{{prop_name | snake_case}}_value
 
         assert len(mock_connection.published_messages) == 1, f"No message was published for property '{{prop_name|snake_case}}'.  Messages: {mock_connection.published_messages}"
@@ -198,12 +198,9 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         assert published_msg.retain is True, "Property '{{prop_name|snake_case}}' setter published message with incorrect retain flag"
         assert published_msg.content_type == "application/json", "Property '{{prop_name|snake_case}}' setter published message with incorrect content type"
         published_msg_json_obj = json.loads(published_msg.payload)
-        {%-if prop.arg_list | length > 1%}
-        assert json.loads(new_{{prop_name | snake_case}}_value.model_dump_json(by_alias=True)) == published_msg_json_obj, "Property '{{prop_name|snake_case}}' setter did not publish the correct JSON payload"
-        {%else%}
-        new_{{prop_name | snake_case}}_obj = {{-prop.python.model_class_name}}({{prop.arg_list[0].name|snake_case}}=new_{{prop_name | snake_case}}_value)
+        new_{{prop_name | snake_case}}_obj = {{ codec.property_wrap(prop, 'new_' ~ (prop_name|snake_case) ~ '_value') }}
         assert json.loads(new_{{prop_name | snake_case}}_obj.model_dump_json(by_alias=True)) == published_msg_json_obj, "Property '{{prop_name|snake_case}}' setter did not publish the correct JSON payload"
-        {%endif%}
+    {%endif%}{#read/write property#}
 
     {%if not config.properties.stinger_owned_values -%}
     def test_{{prop_name|snake_case}}_receive(self, server, server_setup, mock_connection):
@@ -215,7 +212,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
             "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
             {%-endfor%}
         }
-        prop_obj = {{prop_name|UpperCamelCase}}Property(**prop_data) # type: ignore[arg-type]
+        prop_obj = {{prop.payload.python.class_name}}(**prop_data) # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"3.1415926535"
         incoming_msg = Message(
@@ -226,7 +223,9 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
             response_topic=response_topic,
             correlation_data=correlation_data,
             content_type="application/json",
+            {%if config.properties.version_tracking-%}
             user_properties={"PropertyVersion": str(server._property_{{prop_name|snake_case}}.version)}
+            {%endif%}
         )
         mock_connection.simulate_message(incoming_msg)
 
@@ -266,7 +265,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
             "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
             {%-endfor%}
         }
-        prop_obj = {{prop_name|UpperCamelCase}}Property(**prop_data) # type: ignore[arg-type]
+        prop_obj = {{prop.payload.python.class_name}}(**prop_data) # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"123-41"
         incoming_msg = Message(
@@ -277,7 +276,9 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
             response_topic=response_topic,
             correlation_data=correlation_data,
             content_type="application/json",
+            {%if config.properties.version_tracking-%}
             user_properties={"PropertyVersion": str(server._property_{{prop_name|snake_case}}.version)}
+            {%endif%}
         )
         mock_connection.simulate_message(incoming_msg)
         {%if prop.read_only%}
@@ -297,6 +298,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
     {%endif%} {# end stinger owned values #}
 
     {%if not prop.read_only and config.properties.stinger_owned_values%}
+    {%if config.properties.version_tracking-%}
     def test_{{prop_name|snake_case}}_property_receive_out_of_sync(self, server, mock_connection):
         """Test that receiving a property update for '{{prop_name|snake_case}}' updates the server property and calls callbacks."""
         received_data = None
@@ -315,7 +317,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
             "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
             {%-endfor%}
         }
-        prop_obj = {{prop_name|UpperCamelCase}}Property(**prop_data) # type: ignore[arg-type]
+        prop_obj = {{prop.payload.python.class_name}}(**prop_data) # type: ignore[arg-type]
         response_topic = "client/test/response"
         correlation_data = b"12345-67"
         incoming_msg = Message(
@@ -340,6 +342,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         assert resp.user_properties.get("ReturnCode") == str(MethodReturnCode.OUT_OF_SYNC.value), f"Expected OUT_OF_SYNC return code, got '{resp.user_properties.get('ReturnCode')}'"
         assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
 
+    {%endif-%}
     def test_{{prop_name|snake_case}}_property_receive_nonsense_payload(self, server, mock_connection):
         """Test that receiving a property update for '{{prop_name|snake_case}}' updates the server property and calls callbacks."""
         received_data = None
@@ -363,7 +366,9 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
             content_type="application/json",
             response_topic=response_topic,
             correlation_data=correlation_data,
+            {%if config.properties.version_tracking-%}
             user_properties={"PropertyVersion": str(server._property_{{prop_name|snake_case}}.version)}
+            {%endif%}
         )
         mock_connection.simulate_message(incoming_msg)
 
@@ -400,7 +405,9 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
             content_type="application/json",
             response_topic=response_topic,
             correlation_data=correlation_data,
+            {%if config.properties.version_tracking-%}
             user_properties={"PropertyVersion": str(server._property_{{prop_name|snake_case}}.version)}
+            {%endif%}
         )
         mock_connection.simulate_message(incoming_msg)
 
@@ -415,6 +422,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
         assert resp.correlation_data == correlation_data, "Correlation data in response does not match expected value"
     {%endif%}{# end exclusion of read-only properties #}
 
+    {%- endif %}
     {%endfor%} {# end property foreach #}
 
 {%endif%} {# end properties exist #}
@@ -422,6 +430,22 @@ class Test{{stinger.name|UpperCamelCase}}ServerProperties:
 {%if stinger.signals | length > 0 %}
 class Test{{stinger.name|UpperCamelCase}}ServerSignals:
     {%for signal_name, signal in stinger.signals.items()%}
+    {%- if signal.payload.is_protobuf %}
+    def test_server_emit_{{signal_name|snake_case}}(self, server, mock_connection):
+        """Test that the server can emit the protobuf '{{signal_name|snake_case}}' signal from its fields."""
+        signal_data = {{ codec.example_kwargs_dict(signal.payload) }} # type: Dict[str, Any]
+        payload = {{signal.payload.python.class_name}}(**signal_data)
+        server.emit_{{signal_name|snake_case}}(**signal_data)
+
+        published_list = mock_connection.find_published("{{signal.topic() | regex_replace("\{[A-Za-z_]+\}", "+") }}")
+        assert len(published_list) == 1, "No message was published for signal '{{signal_name|snake_case}}'.  Messages: {mock_connection.published_messages}"
+
+        msg = published_list[0]
+        expected_topic = "{{signal.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}"
+        assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
+        assert msg.content_type == "{{ config.protobuf.mime_type }}", f"Signal '{{signal_name|snake_case}}' was published as '{msg.content_type}'"
+        assert msg.payload == payload.SerializeToString(), "Published payload is not the serialized protobuf message"
+    {%- else %}
     def test_server_emit_{{signal_name|snake_case}}(self, server, mock_connection):
         """Test that the server can emit the '{{signal_name|snake_case}}' signal."""
         signal_data = {
@@ -440,16 +464,56 @@ class Test{{stinger.name|UpperCamelCase}}ServerSignals:
         assert msg.topic == expected_topic, f"Published topic '{msg.topic}' does not match expected '{expected_topic}'"
         
         # Verify payload
-        expected_obj = {{signal_name|UpperCamelCase}}SignalPayload(**signal_data) # type: ignore[arg-type]
+        expected_obj = {{signal.payload.python.class_name}}(**signal_data) # type: ignore[arg-type]
         expected_dict = to_jsonified_dict(expected_obj)
         payload_dict = json.loads(msg.payload.decode('utf-8'))
         assert payload_dict == expected_dict, f"Published payload '{payload_dict}' does not match expected '{expected_dict}'"
+    {%- endif %}
     {%endfor%}
 {%endif%}
 
 {%if stinger.methods | length > 0 %}
 class Test{{stinger.name|UpperCamelCase}}ServerMethods:
     {%for method_name, method in stinger.methods.items()%}
+    {%- if method.request_payload.is_protobuf %}
+    def test_server_handle_{{method_name|snake_case}}_method(self, server, mock_connection):
+        """Test that a protobuf '{{method_name|snake_case}}' request reaches the handler as its fields and the reply is sent back."""
+        handler_callback_data = {{ codec.example_message(method.response_payload) }}
+        received_request = None # type: Any
+        def handler({{ codec.handler_params(method.request_payload, method.arg_list) }}) -> {{method.python.return_value_annotation}}:
+            nonlocal received_request
+            received_request = {{ codec.build_message(method.request_payload) }}
+            return handler_callback_data
+
+        server.handle_{{method_name|snake_case}}(handler)
+
+        request_obj = {{ codec.example_message(method.request_payload) }}
+        response_topic = "client/test/response"
+        correlation_data = b"method-1234"
+        incoming_msg = Message(
+            topic="{{method.request_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
+            payload=request_obj.SerializeToString(),
+            qos=1,
+            retain=False,
+            content_type="{{ config.protobuf.mime_type }}",
+            response_topic=response_topic,
+            correlation_data=correlation_data,
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        # The dispatch thread handles the request, so wait for it to publish the response.
+        assert wait_for(lambda: len(mock_connection.find_published(response_topic)) > 0), f"No response message was published for method '{{method_name|snake_case}}'."
+        assert received_request is not None, "Handler for method '{{method_name|snake_case}}' was not called"
+        assert received_request == request_obj, "Handler was not given the fields of the request that was sent"
+
+        published_list = mock_connection.find_published(response_topic)
+        assert len(published_list) == 1, f"No response message was published for method '{{method_name|snake_case}}'."
+
+        resp_msg = published_list[0]
+        assert resp_msg.correlation_data == correlation_data, "Correlation data in response does not match expected value"
+        assert resp_msg.content_type == "{{ config.protobuf.mime_type }}", f"Response to '{{method_name|snake_case}}' was published as '{resp_msg.content_type}'"
+        assert resp_msg.payload == handler_callback_data.SerializeToString(), "Response payload is not the serialized message the handler returned"
+    {%- else %}
     def test_server_handle_{{method_name|snake_case}}_method(self, server, mock_connection):
         """Test that the server can handle the '{{method_name|snake_case}}' method."""
         handler_callback_data = {{method.get_return_value_random_example_value('python')}}
@@ -471,7 +535,7 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
             "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
             {%-endfor%}
         } # type: Dict[str, Any]
-        method_obj = {{method_name|UpperCamelCase}}MethodRequest(**method_data)
+        method_obj = {{method.request_payload.python.class_name}}(**method_data)
         print(method_obj)
         response_topic = "client/test/response"
         correlation_data = b"method-1234"
@@ -485,6 +549,9 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
             correlation_data=correlation_data,
         )
         mock_connection.simulate_message(incoming_msg)
+
+        # The dispatch thread handles the request, so wait for it to publish the response.
+        assert wait_for(lambda: len(mock_connection.find_published(response_topic)) > 0), f"No response message was published for method '{{method_name|snake_case}}'."
 
         # Verify that handler was called with correct arguments
         assert received_args is not None, "Handler for method '{{method_name|snake_case}}' was not called"
@@ -500,14 +567,170 @@ class Test{{stinger.name|UpperCamelCase}}ServerMethods:
 
         # Verify response payload
         resp_payload = json.loads(resp_msg.payload.decode('utf-8'))
-        {%if method.return_arg_list|length > 1%}
-        expected_resp_dict = to_jsonified_dict(handler_callback_data)
-        {%elif method.return_arg_list|length == 1 %}
-        expected_return_obj = {{method.python.response_class_name}}({{method.return_arg_list[0].name|snake_case}}=handler_callback_data)
-        expected_resp_dict = to_jsonified_dict(expected_return_obj)
-        {%else%}
+        {%if method.return_value is none%}
         expected_resp_dict = {} # type: Dict[str, Any]
+        {%else%}
+        expected_return_obj = {{method.python.response_class_name}}({{method.return_value.name|snake_case}}=handler_callback_data)
+        expected_resp_dict = to_jsonified_dict(expected_return_obj)
         {%endif-%}
         assert resp_payload == expected_resp_dict, f"Response payload '{resp_payload}' does not match expected '{expected_resp_dict}'"
+    {%- endif %}
+
+    def test_{{method_name|snake_case}}_request_does_not_block_delivering_thread(self, server, mock_connection):
+        """A '{{method_name|snake_case}}' handler must not run on the thread that delivered the
+        request.  The application's handler is arbitrarily slow, and running it inline would
+        stall the broker's network loop: no keep-alives, no other subscriptions, no outgoing
+        publishes for as long as the handler takes."""
+        handler_entered = threading.Event()
+        release_handler = threading.Event()
+
+        def handler(*args) -> {{method.python.return_value_annotation}}:
+            handler_entered.set()
+            # Block until the test releases it, but give up eventually so that a regression
+            # to inline handling fails this test rather than hanging the suite.
+            release_handler.wait(timeout=5.0)
+            return {%if method.request_payload.is_protobuf%}{{method.python.return_value_annotation}}(){%else%}{{method.get_return_value_random_example_value('python')}}{%endif%}
+
+        server.handle_{{method_name|snake_case}}(handler)
+
+        {%- if method.request_payload.is_protobuf %}
+        request_payload = {{method.request_payload.python.class_name}}().SerializeToString()
+        content_type = "{{ config.protobuf.mime_type }}"
+        {%- else %}
+        method_data = {
+            {%-for arg in method.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
+            {%-endfor%}
+        } # type: Dict[str, Any]
+        request_obj = {{method.request_payload.python.class_name}}(**method_data)
+        request_payload = request_obj.model_dump_json(by_alias=True).encode('utf-8')
+        content_type = "application/json"
+        {%- endif %}
+        response_topic = "client/test/slow-response"
+        incoming_msg = Message(
+            topic="{{method.request_topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
+            payload=request_payload,
+            qos=1,
+            retain=False,
+            content_type=content_type,
+            response_topic=response_topic,
+            correlation_data=b"method-slow",
+        )
+
+        # Delivering the request must hand control straight back, not wait for the handler.
+        delivery_start = time.monotonic()
+        mock_connection.simulate_message(incoming_msg)
+        delivery_duration = time.monotonic() - delivery_start
+
+        try:
+            assert handler_entered.wait(timeout=2.0), "The '{{method_name|snake_case}}' handler was never called"
+            assert delivery_duration < 0.5, f"Delivering the '{{method_name|snake_case}}' request waited {delivery_duration}s on the handler"
+            # The handler is still blocked, so it cannot have responded yet.
+            assert mock_connection.find_published(response_topic) == [], "A '{{method_name|snake_case}}' response was published before the handler returned"
+        finally:
+            release_handler.set()
+
+        assert wait_for(lambda: len(mock_connection.find_published(response_topic)) == 1), "No '{{method_name|snake_case}}' response was published once the handler returned"
+    {%endfor%}
+{%endif%}
+
+{%if stinger.commands | length > 0 %}
+class Test{{stinger.name|UpperCamelCase}}ServerCommands:
+    {%for command_name, command in stinger.commands.items()%}
+    {%- if command.payload.is_protobuf %}
+    def _{{command_name|snake_case}}_message(self, payload):
+        return Message(
+            topic="{{command.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
+            payload=payload.SerializeToString(),
+            qos={{stinger.command_qos}},
+            retain=False,
+            content_type="{{ config.protobuf.mime_type }}",
+        )
+
+    def test_server_receive_{{command_name|snake_case}}_command(self, server, mock_connection):
+        """Test that a received protobuf '{{command_name|snake_case}}' command reaches every registered handler as its fields."""
+        received = [] # type: List[Any]
+        def handler({{ codec.handler_params(command.payload, command.arg_list) }}) -> None:
+            received.append({{ codec.build_message(command.payload) }})
+
+        # A command allows any number of handlers, so register two of them.
+        server.receive_{{command_name|snake_case}}(handler)
+        server.receive_{{command_name|snake_case}}(handler)
+
+        command_obj = {{ codec.example_message(command.payload) }}
+        mock_connection.clear_published_messages() # ignore the property values and interface info published at startup
+        mock_connection.simulate_message(self._{{command_name|snake_case}}_message(command_obj))
+
+        assert len(received) == 2, f"Both handlers for the '{{command_name|snake_case}}' command should have been called, but got {len(received)} call(s)"
+        for payload in received:
+            assert payload == command_obj, "Handler was not given the fields of the command that was sent"
+
+        # A command is fire-and-forget, so nothing at all may be published in response.
+        assert len(mock_connection.published_messages) == 0, f"The '{{command_name|snake_case}}' command must not publish a response, but published {mock_connection.published_messages}"
+
+    def test_server_{{command_name|snake_case}}_command_without_handler_is_dropped(self, server, mock_connection):
+        """Test that a protobuf '{{command_name|snake_case}}' command with no registered handler is dropped rather than raising."""
+        mock_connection.clear_published_messages() # ignore the property values and interface info published at startup
+        mock_connection.simulate_message(self._{{command_name|snake_case}}_message({{command.python.payload_class_name}}()))
+
+        assert len(mock_connection.published_messages) == 0, f"The '{{command_name|snake_case}}' command must not publish anything, but published {mock_connection.published_messages}"
+    {%- else %}
+    def test_server_receive_{{command_name|snake_case}}_command(self, server, mock_connection):
+        """Test that a received '{{command_name|snake_case}}' command reaches every registered handler."""
+        received_args = [] # type: List[Dict[str, Any]]
+        def handler({%for arg in command.arg_list %}{{arg.name|snake_case}}{%if not loop.last%}, {%endif%}{%endfor%}) -> None:
+            received_args.append({
+                {%-for arg in command.arg_list%}
+                "{{arg.name|snake_case}}": {{arg.name|snake_case}},
+                {%-endfor%}
+            })
+
+        # A command allows any number of handlers, so register two of them.
+        server.receive_{{command_name|snake_case}}(handler)
+        server.receive_{{command_name|snake_case}}(handler)
+
+        command_data = {
+            {%-for arg in command.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
+            {%-endfor%}
+        } # type: Dict[str, Any]
+        command_obj = {{command.python.payload_class_name}}(**command_data)
+        mock_connection.clear_published_messages() # ignore the property values and interface info published at startup
+        incoming_msg = Message(
+            topic="{{command.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
+            payload=command_obj.model_dump_json(by_alias=True).encode('utf-8'),
+            qos={{stinger.command_qos}},
+            retain=False,
+            content_type="application/json",
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert len(received_args) == 2, f"Both handlers for the '{{command_name|snake_case}}' command should have been called, but got {len(received_args)} call(s)"
+        for call_args in received_args:
+            assert call_args == command_data, f"Handler arguments {call_args} do not match expected {command_data}"
+
+        # A command is fire-and-forget, so nothing at all may be published in response.
+        assert len(mock_connection.published_messages) == 0, f"The '{{command_name|snake_case}}' command must not publish a response, but published {mock_connection.published_messages}"
+
+    def test_server_{{command_name|snake_case}}_command_without_handler_is_dropped(self, server, mock_connection):
+        """Test that a '{{command_name|snake_case}}' command with no registered handler is dropped rather than raising."""
+        command_data = {
+            {%-for arg in command.arg_list%}
+            "{{arg.name|snake_case}}": {{arg.get_random_example_value(seed=loop.index)}},
+            {%-endfor%}
+        } # type: Dict[str, Any]
+        command_obj = {{command.python.payload_class_name}}(**command_data)
+        mock_connection.clear_published_messages() # ignore the property values and interface info published at startup
+        incoming_msg = Message(
+            topic="{{command.topic() | regex_replace("\{[A-Za-z_]+\}", "x") }}",
+            payload=command_obj.model_dump_json(by_alias=True).encode('utf-8'),
+            qos={{stinger.command_qos}},
+            retain=False,
+            content_type="application/json",
+        )
+        mock_connection.simulate_message(incoming_msg)
+
+        assert len(mock_connection.published_messages) == 0, f"The '{{command_name|snake_case}}' command must not publish anything, but published {mock_connection.published_messages}"
+    {%- endif %}
     {%endfor%}
 {%endif%}

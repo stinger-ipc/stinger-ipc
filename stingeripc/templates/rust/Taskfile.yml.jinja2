@@ -1,0 +1,30 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: '3'
+
+tasks:
+  unittest:
+    desc: Run the unit tests
+    cmds:
+      - cargo test --all-features
+
+  lint:
+    desc: Check formatting and run clippy
+    cmds:
+      - cargo fmt --check
+      - cargo clippy --all-features -- -D warnings
+
+  # The examples are named after the interface, not after the directory the crate
+  # happens to sit in, so they are spelled here where that name is known rather than
+  # guessed by whatever drives this Taskfile.  Each demo is checked with only the
+  # feature it needs, which is what proves the feature gating is right.
+  check:
+    desc: Type-check the crate, its examples and its documentation
+    cmds:
+      - cargo check
+      - cargo check --example {{stinger.name|snake_case}}_client_demo --features client
+      - cargo check --example {{stinger.name|snake_case}}_server_demo --features server
+      - cargo check --all-features
+      - cargo check --example {{stinger.name|snake_case}}_client_demo --features client,lwt
+      - cargo check --example {{stinger.name|snake_case}}_server_demo --features server,lwt
+      - cargo doc --all-features --no-deps

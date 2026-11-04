@@ -26,27 +26,43 @@ def _collect_used_types(args: list[Dict[str, Any]], used_enums: Set[str], used_s
                 _collect_used_types([item_type], used_enums, used_structs)
 
 
+def _method_return_args(method_spec: Dict[str, Any]) -> list[Dict[str, Any]]:
+    """Return the method's single ``returnValue`` as a list of arg specs (empty, or one entry)."""
+    return_value = method_spec.get("returnValue")
+    if isinstance(return_value, dict):
+        return [return_value]
+    return []
+
+
+def _property_value_args(prop_spec: Dict[str, Any]) -> list[Dict[str, Any]]:
+    """Return the property's single ``value`` as a list of arg specs (empty, or one entry)."""
+    value = prop_spec.get("value")
+    if isinstance(value, dict):
+        return [value]
+    return []
+
+
 def _collect_struct_dependencies(struct_spec: Dict[str, Any], used_enums: Set[str], used_structs: Set[str]) -> None:
-    """Recursively collect enums and structs used by a struct's members."""
-    members = struct_spec.get("members", [])
-    for member in members:
-        member_type = member.get("type")
-        if member_type == "enum":
-            used_enums.add(member["enumName"])
-        elif member_type == "struct":
-            struct_name = member["structName"]
+    """Recursively collect enums and structs used by a struct's values."""
+    values = struct_spec.get("values", [])
+    for value in values:
+        value_type = value.get("type")
+        if value_type == "enum":
+            used_enums.add(value["enumName"])
+        elif value_type == "struct":
+            struct_name = value["structName"]
             # Avoid infinite recursion if structs reference each other
             if struct_name not in used_structs:
                 used_structs.add(struct_name)
-        elif member_type == "array":
-            item_type = member.get("itemType", {})
+        elif value_type == "array":
+            item_type = value.get("itemType", {})
             if isinstance(item_type, dict):
                 _collect_used_types([item_type], used_enums, used_structs)
 
 
 def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, Any]:
     """
-    Filter a StingerInterface to only include methods, properties, signals, and events that specify the given consumer.
+    Filter a StingerInterface to only include methods, commands, properties, signals, and events that specify the given consumer.
 
     Args:
         interface: The original StingerInterface.
@@ -57,6 +73,7 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
 
     Methodology:
         - Methods are included if they have the consumer in their consumers list.
+        - Commands are included if they have the consumer in their consumers list.
         - Properties are included if they have the consumer in their consumers list.
         - Signals are included if they have the consumer in their consumers list
 
@@ -81,9 +98,9 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
             # If consumers specified, only include if consumer_name is in the list
             if consumer_name in consumers:
                 filtered_signals[signal_name] = signal_spec
-                # Collect types used in payload
-                payload = signal_spec.get("payload", [])
-                _collect_used_types(payload, used_enums, used_structs)
+                # Collect types used in the signal's values
+                values = signal_spec.get("values", [])
+                _collect_used_types(values, used_enums, used_structs)
         filtered_dict["signals"] = filtered_signals
 
     # Filter properties
@@ -93,9 +110,8 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
             consumers = prop_spec.get("consumers", [])
             if consumer_name in consumers:
                 filtered_properties[prop_name] = prop_spec
-                # Collect types used in values
-                values = prop_spec.get("values", [])
-                _collect_used_types(values, used_enums, used_structs)
+                # Collect types used in the value
+                _collect_used_types(_property_value_args(prop_spec), used_enums, used_structs)
         filtered_dict["properties"] = filtered_properties
 
     # Filter methods
@@ -108,10 +124,21 @@ def filter_by_consumer(interface: StingerSpec, consumer_name: str) -> Dict[str, 
                 # Collect types used in arguments
                 arguments = method_spec.get("arguments", [])
                 _collect_used_types(arguments, used_enums, used_structs)
-                # Collect types used in return values
-                return_values = method_spec.get("returnValues", [])
-                _collect_used_types(return_values, used_enums, used_structs)
+                # Collect types used in the return value
+                _collect_used_types(_method_return_args(method_spec), used_enums, used_structs)
         filtered_dict["methods"] = filtered_methods
+
+    # Filter commands
+    if "commands" in filtered_dict:
+        filtered_commands = {}
+        for command_name, command_spec in filtered_dict["commands"].items():
+            consumers = command_spec.get("consumers", [])
+            if consumer_name in consumers:
+                filtered_commands[command_name] = command_spec
+                # Collect types used in arguments
+                arguments = command_spec.get("arguments", [])
+                _collect_used_types(arguments, used_enums, used_structs)
+        filtered_dict["commands"] = filtered_commands
 
     # Now collect dependencies from used structs
     interface_dict = cast(Dict[str, Any], interface)  # StingerSpec acts as dict-like
@@ -143,7 +170,7 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
     Also make sure the two versions are compatible, which means the major and minor versions must match.
 
     Raises:
-        ValueError: If any method, property, signal, or event specifies consumers but does not specify a version.
+        ValueError: If any method, command, property, signal, or event specifies consumers but does not specify a version.
     """
 
     def check_args(args: list[Dict[str, Any]], component_name: str, component_type: str) -> None:
@@ -228,9 +255,9 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
             if signal_spec.get("consumers") and not signal_spec.get("version"):
                 raise ValueError(f"Signal '{signal_name}' specifies consumers but does not specify a version")
 
-            # Check payload arguments
-            payload = signal_spec.get("payload", [])
-            check_args(payload, signal_name, "Signal")
+            # Check the signal's values
+            values = signal_spec.get("values", [])
+            check_args(values, signal_name, "Signal")
 
     # Check properties
     if "properties" in interface:
@@ -239,9 +266,8 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
             if prop_spec.get("consumers") and not prop_spec.get("version"):
                 raise ValueError(f"Property '{prop_name}' specifies consumers but does not specify a version")
 
-            # Check values arguments
-            values = prop_spec.get("values", [])
-            check_args(values, prop_name, "Property")
+            # Check the value
+            check_args(_property_value_args(prop_spec), prop_name, "Property")
 
     # Check methods
     if "methods" in interface:
@@ -254,12 +280,22 @@ def check_version_consistency(interface: Dict[str, Any]) -> None:
             arguments = method_spec.get("arguments", [])
             check_args(arguments, method_name, "Method")
 
-            # Check return values
-            return_values = method_spec.get("returnValues", [])
-            check_args(return_values, method_name, "Method")
+            # Check the return value
+            check_args(_method_return_args(method_spec), method_name, "Method")
 
-    # Check struct members recursively
+    # Check commands
+    if "commands" in interface:
+        for command_name, command_spec in interface["commands"].items():
+            # Check if consumers specified but version is missing
+            if command_spec.get("consumers") and not command_spec.get("version"):
+                raise ValueError(f"Command '{command_name}' specifies consumers but does not specify a version")
+
+            # Check arguments
+            arguments = command_spec.get("arguments", [])
+            check_args(arguments, command_name, "Command")
+
+    # Check struct values recursively
     if "structures" in interface:
         for struct_name, struct_spec in interface["structures"].items():
-            members = struct_spec.get("members", [])
-            check_args(members, struct_name, "Struct")
+            values = struct_spec.get("values", [])
+            check_args(values, struct_name, "Struct")

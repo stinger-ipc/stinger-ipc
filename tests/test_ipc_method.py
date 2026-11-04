@@ -1,5 +1,5 @@
 import unittest
-from stingeripc.ipc_method import IpcMethod
+from stingeripc.ipc_method import DEFAULT_METHOD_TIMEOUT_SECONDS, IpcMethod
 from stingeripc.components import StingerSpec, Arg
 from stingeripc.config import StingerConfig
 from stingeripc.exceptions import InvalidStingerStructure
@@ -7,7 +7,7 @@ from stingeripc.exceptions import InvalidStingerStructure
 
 def _make_stinger_spec():
     stinger = {
-        "stingeripc": {"version": "0.0.7"},
+        "stingeripc": {"version": "0.3.0"},
         "interface": {"name": "test_iface", "version": "0.0.1"},
     }
     return StingerSpec.new_spec_from_stinger(stinger, StingerConfig())
@@ -23,6 +23,9 @@ class TestIpcMethodCreateManually(unittest.TestCase):
 
     def test_version_defaults_to_none(self):
         self.assertIsNone(self.method.version)
+
+    def test_timeout_defaults(self):
+        self.assertEqual(self.method.timeout, DEFAULT_METHOD_TIMEOUT_SECONDS)
 
     def test_initial_arg_list_empty(self):
         self.assertEqual(len(self.method.arg_list), 0)
@@ -45,20 +48,11 @@ class TestIpcMethodCreateManually(unittest.TestCase):
         with self.assertRaises(InvalidStingerStructure):
             self.method.add_arg(arg)
 
-    def test_add_return_value_single(self):
+    def test_set_return_value(self):
         arg = Arg.new_arg_from_stinger({"name": "result", "type": "string"})
-        self.method.add_return_value(arg)
+        self.method.set_return_value(arg)
         self.assertEqual(len(self.method.return_arg_list), 1)
         self.assertIs(self.method.return_value, arg)
-
-    def test_add_return_value_multiple(self):
-        a = Arg.new_arg_from_stinger({"name": "sum", "type": "integer"})
-        b = Arg.new_arg_from_stinger({"name": "count", "type": "integer"})
-        self.method.add_return_value(a)
-        self.method.add_return_value(b)
-        self.assertEqual(len(self.method.return_arg_list), 2)
-        self.assertIsInstance(self.method.return_value, list)
-        self.assertEqual(len(self.method.return_value), 2)
 
     def test_documentation_defaults_to_none(self):
         self.assertIsNone(self.method.documentation)
@@ -72,9 +66,7 @@ class TestIpcMethodFromStinger(unittest.TestCase):
                 {"name": "x", "type": "integer"},
                 {"name": "y", "type": "float"},
             ],
-            "returnValues": [
-                {"name": "result", "type": "string"},
-            ],
+            "returnValue": {"name": "result", "type": "string"},
         }
         self.method = IpcMethod.new_method_from_stinger("add", self.method_spec, self.spec)
 
@@ -83,6 +75,9 @@ class TestIpcMethodFromStinger(unittest.TestCase):
 
     def test_version_defaults_to_none(self):
         self.assertIsNone(self.method.version)
+
+    def test_timeout_defaults_when_not_declared(self):
+        self.assertEqual(self.method.timeout, DEFAULT_METHOD_TIMEOUT_SECONDS)
 
     def test_arg_list_populated(self):
         self.assertEqual(len(self.method.arg_list), 2)
@@ -116,6 +111,50 @@ class TestIpcMethodFromStingerWithVersion(unittest.TestCase):
         self.assertEqual(self.method.version, "2.1.0")
 
 
+class TestIpcMethodTimeout(unittest.TestCase):
+    """A method's `timeout` bounds how long its caller waits for the response."""
+
+    def setUp(self):
+        self.spec = _make_stinger_spec()
+
+    def _method(self, **extra):
+        method_spec = {"arguments": [{"name": "x", "type": "integer"}]}
+        method_spec.update(extra)
+        return IpcMethod.new_method_from_stinger("add", method_spec, self.spec)
+
+    def test_declared_timeout_is_used(self):
+        self.assertEqual(self._method(timeout=30).timeout, 30)
+
+    def test_default_is_five_seconds(self):
+        self.assertEqual(DEFAULT_METHOD_TIMEOUT_SECONDS, 5)
+
+    def test_protobuf_method_also_gets_its_timeout(self):
+        """The protobuf branch returns early, so it has to read the timeout too."""
+        method = IpcMethod.new_method_from_stinger(
+            "getThing",
+            {"protobuf": "pkg.Request", "returnProtobuf": "pkg.Response", "timeout": 12},
+            self.spec,
+        )
+        self.assertEqual(method.timeout, 12)
+
+    def test_non_integer_timeout_raises(self):
+        with self.assertRaises(InvalidStingerStructure):
+            self._method(timeout="30")
+
+    def test_boolean_timeout_raises(self):
+        """A bool is an int in Python, but it is not a number of seconds."""
+        with self.assertRaises(InvalidStingerStructure):
+            self._method(timeout=True)
+
+    def test_zero_timeout_raises(self):
+        with self.assertRaises(InvalidStingerStructure):
+            self._method(timeout=0)
+
+    def test_negative_timeout_raises(self):
+        with self.assertRaises(InvalidStingerStructure):
+            self._method(timeout=-1)
+
+
 class TestIpcMethodFromStingerWithDocumentation(unittest.TestCase):
     def test_documentation_set(self):
         spec = _make_stinger_spec()
@@ -132,12 +171,12 @@ class TestIpcMethodFromStingerWithDocumentation(unittest.TestCase):
         self.assertIsNone(method.documentation)
 
 
-class TestIpcMethodFromStingerNoReturnValues(unittest.TestCase):
+class TestIpcMethodFromStingerNoReturnValue(unittest.TestCase):
     def setUp(self):
         self.spec = _make_stinger_spec()
         self.method = IpcMethod.new_method_from_stinger("noop", {"arguments": [{"name": "x", "type": "integer"}]}, self.spec)
 
-    def test_no_return_values(self):
+    def test_no_return_value(self):
         self.assertIsNone(self.method.return_value)
         self.assertEqual(len(self.method.return_arg_list), 0)
 
@@ -166,12 +205,12 @@ class TestIpcMethodFromStingerValidationErrors(unittest.TestCase):
         with self.assertRaises(InvalidStingerStructure):
             IpcMethod.new_method_from_stinger("bad", {"arguments": [{"name": "x"}]}, spec)
 
-    def test_return_values_not_a_list_raises(self):
+    def test_return_value_not_a_mapping_raises(self):
         spec = _make_stinger_spec()
         with self.assertRaises(InvalidStingerStructure):
             IpcMethod.new_method_from_stinger(
                 "bad",
-                {"arguments": [{"name": "x", "type": "integer"}], "returnValues": "not_a_list"},
+                {"arguments": [{"name": "x", "type": "integer"}], "returnValue": [{"name": "result", "type": "string"}]},
                 spec,
             )
 
@@ -180,7 +219,7 @@ class TestIpcMethodFromStingerValidationErrors(unittest.TestCase):
         with self.assertRaises(InvalidStingerStructure):
             IpcMethod.new_method_from_stinger(
                 "bad",
-                {"arguments": [{"name": "x", "type": "integer"}], "returnValues": [{"type": "string"}]},
+                {"arguments": [{"name": "x", "type": "integer"}], "returnValue": {"type": "string"}},
                 spec,
             )
 
@@ -189,7 +228,16 @@ class TestIpcMethodFromStingerValidationErrors(unittest.TestCase):
         with self.assertRaises(InvalidStingerStructure):
             IpcMethod.new_method_from_stinger(
                 "bad",
-                {"arguments": [{"name": "x", "type": "integer"}], "returnValues": [{"name": "result"}]},
+                {"arguments": [{"name": "x", "type": "integer"}], "returnValue": {"name": "result"}},
+                spec,
+            )
+
+    def test_legacy_return_values_raises(self):
+        spec = _make_stinger_spec()
+        with self.assertRaises(InvalidStingerStructure):
+            IpcMethod.new_method_from_stinger(
+                "bad",
+                {"arguments": [{"name": "x", "type": "integer"}], "returnValues": [{"name": "result", "type": "string"}]},
                 spec,
             )
 
@@ -200,41 +248,23 @@ class TestIpcMethodReturnValueProperties(unittest.TestCase):
 
     def test_return_value_name_no_return(self):
         method = IpcMethod.new_method_from_stinger("noop", {"arguments": [{"name": "x", "type": "integer"}]}, self.spec)
-        self.assertEqual(method.return_value_name, "noop return values")
+        self.assertEqual(method.return_value_name, "noop return value")
 
     def test_return_value_name_single_return(self):
-        method = IpcMethod.new_method_from_stinger("add", {"arguments": [{"name": "x", "type": "integer"}], "returnValues": [{"name": "result", "type": "integer"}]}, self.spec)
-        self.assertEqual(method.return_value_name, "add return values")
+        method = IpcMethod.new_method_from_stinger("add", {"arguments": [{"name": "x", "type": "integer"}], "returnValue": {"name": "result", "type": "integer"}}, self.spec)
+        self.assertEqual(method.return_value_name, "add return value")
 
-    def test_return_value_property_name_single(self):
-        method = IpcMethod.new_method_from_stinger("add", {"arguments": [{"name": "x", "type": "integer"}], "returnValues": [{"name": "result", "type": "integer"}]}, self.spec)
+    def test_return_value_property_name(self):
+        method = IpcMethod.new_method_from_stinger("add", {"arguments": [{"name": "x", "type": "integer"}], "returnValue": {"name": "result", "type": "integer"}}, self.spec)
         self.assertEqual(method.return_value_property_name, "result")
 
-    def test_return_value_property_name_multiple(self):
-        method = IpcMethod.new_method_from_stinger(
-            "add",
-            {
-                "arguments": [{"name": "x", "type": "integer"}],
-                "returnValues": [{"name": "sum", "type": "integer"}, {"name": "count", "type": "integer"}],
-            },
-            self.spec,
-        )
-        self.assertEqual(method.return_value_property_name, "add")
+    def test_return_value_property_name_no_return(self):
+        method = IpcMethod.new_method_from_stinger("noop", {"arguments": [{"name": "x", "type": "integer"}]}, self.spec)
+        self.assertEqual(method.return_value_property_name, "noop")
 
     def test_return_value_type_single(self):
-        method = IpcMethod.new_method_from_stinger("add", {"arguments": [{"name": "x", "type": "integer"}], "returnValues": [{"name": "result", "type": "string"}]}, self.spec)
+        method = IpcMethod.new_method_from_stinger("add", {"arguments": [{"name": "x", "type": "integer"}], "returnValue": {"name": "result", "type": "string"}}, self.spec)
         self.assertEqual(method.return_value_type, "primitive")
-
-    def test_return_value_type_multiple(self):
-        method = IpcMethod.new_method_from_stinger(
-            "add",
-            {
-                "arguments": [{"name": "x", "type": "integer"}],
-                "returnValues": [{"name": "sum", "type": "integer"}, {"name": "count", "type": "integer"}],
-            },
-            self.spec,
-        )
-        self.assertEqual(method.return_value_type, "multiple")
 
 
 class TestIpcMethodReturnValueRandomExample(unittest.TestCase):
@@ -247,7 +277,7 @@ class TestIpcMethodReturnValueRandomExample(unittest.TestCase):
         self.assertEqual(method.get_return_value_random_example_value("cpp"), "nullptr")
 
     def test_random_example_single_return(self):
-        method = IpcMethod.new_method_from_stinger("add", {"arguments": [{"name": "x", "type": "integer"}], "returnValues": [{"name": "result", "type": "integer"}]}, self.spec)
+        method = IpcMethod.new_method_from_stinger("add", {"arguments": [{"name": "x", "type": "integer"}], "returnValue": {"name": "result", "type": "integer"}}, self.spec)
         example = method.get_return_value_random_example_value("python")
         self.assertIsInstance(example, int)
 
@@ -257,22 +287,10 @@ class TestIpcMethodReturnValueRandomExample(unittest.TestCase):
             method.get_return_value_random_example_value("ruby")
 
 
-class TestIpcMethodDuplicateReturnValue(unittest.TestCase):
-    def test_duplicate_single_return_value_raises(self):
+class TestIpcMethodSecondReturnValue(unittest.TestCase):
+    def test_setting_a_second_return_value_raises(self):
         spec = _make_stinger_spec()
         method = IpcMethod("test", spec)
-        arg = Arg.new_arg_from_stinger({"name": "result", "type": "string"})
-        method.add_return_value(arg)
+        method.set_return_value(Arg.new_arg_from_stinger({"name": "sum", "type": "integer"}))
         with self.assertRaises(InvalidStingerStructure):
-            method.add_return_value(arg)
-
-    def test_duplicate_in_multiple_raises(self):
-        spec = _make_stinger_spec()
-        method = IpcMethod("test", spec)
-        a = Arg.new_arg_from_stinger({"name": "sum", "type": "integer"})
-        b = Arg.new_arg_from_stinger({"name": "count", "type": "integer"})
-        c = Arg.new_arg_from_stinger({"name": "sum", "type": "integer"})
-        method.add_return_value(a)
-        method.add_return_value(b)
-        with self.assertRaises(InvalidStingerStructure):
-            method.add_return_value(c)
+            method.set_return_value(Arg.new_arg_from_stinger({"name": "count", "type": "integer"}))

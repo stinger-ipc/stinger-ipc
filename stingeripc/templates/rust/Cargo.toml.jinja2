@@ -3,12 +3,16 @@ name = "{{stinger.rust.package_name}}"
 version = "{{stinger.version}}"
 edition = "2021"
 
+# Nothing is enabled by default, so docs must be built with every feature on to
+# include the client and server pages.
+[package.metadata.docs.rs]
+all-features = true
+
 [features]
-default = ["payloads"]
-client = ["payloads", "tracing", "tracing-subscriber", "stinger-rwlock-watch/read_only", "stinger-rwlock-watch/write_request"]
-server = ["payloads", "async-trait", "tracing", "tracing-subscriber", "stinger-rwlock-watch/write_request"]
-payloads = []
-metrics = ["payloads"]
+default = []
+client = ["tracing", "tracing-subscriber", "stinger-rwlock-watch/read_only", "stinger-rwlock-watch/write_request"]
+server = ["async-trait", "tracing", "tracing-subscriber", "stinger-rwlock-watch/write_request"]
+metrics = []
 lwt = ["stinger-mqtt-trait/lwt", "mqttier/lwt", "dep:jsonpath-rust"]
 
 [dependencies]
@@ -32,6 +36,15 @@ jsonpath-rust = { version = "0.7", optional = true }
 {%- if stinger.uses_schemas() %}
 jsonschema = "0.46" # Only needed because this interface declares JSON schema constraints.
 {%- endif %}
+{%- if stinger.uses_protobuf() %}
+prost = "0.13" # Only needed because this interface carries protobuf payloads.
+{%- endif %}
+{%- if stinger.uses_well_known_protobuf() %}
+prost-types = "0.13" # Only needed because this interface carries protobuf well-known types.
+{%- endif %}
+{%- if stinger.uses_protobuf() and config.protobuf.mode == "external" and config.protobuf.external.rust_dependency %}
+{{ config.protobuf.external.rust_dependency }} # Supplies the protobuf bindings; [protobuf] mode is "external".
+{%- endif %}
 {%- if stinger.uses_binary() %}
 base64 = "0.22.1" # Only needed because this interface has binary fields.
 {%- endif %}
@@ -48,6 +61,9 @@ features = [
 [dev-dependencies]
 mqttier = "0.9.1"
 stinger-mqtt-trait = { version = "0.7.1", features = ["mock_client"] }
+# `test-util` lets the tests pause the clock, so a test of a timeout does not have to
+# spend the timeout.
+tokio = { version = "1", features = ["test-util"] }
 
 [[example]]
 name = "{{stinger.name|snake_case}}_client_demo"
@@ -55,6 +71,16 @@ path = "examples/client_demo.rs"
 required-features = ["client"]
 
 [[example]]
-name = "{{stinger.name|snake_case}}_server_demo" 
+name = "{{stinger.name|snake_case}}_server_demo"
 path = "examples/server_demo.rs"
+required-features = ["server"]
+
+[[example]]
+name = "{{stinger.name|snake_case}}_client_integration_test"
+path = "examples/client_integration_test.rs"
+required-features = ["client"]
+
+[[example]]
+name = "{{stinger.name|snake_case}}_server_integration_test"
+path = "examples/server_integration_test.rs"
 required-features = ["server"]

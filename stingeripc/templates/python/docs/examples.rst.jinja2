@@ -1,0 +1,25 @@
+{%if not config.python.python37%}
+Examples
+========
+
+These are the runnable demo scripts generated alongside the ``{{ stinger.python.package_name }}``
+package, kept here in sync with the actual generated code.
+
+Client Demo
+-----------
+
+.. literalinclude:: ../examples/client_demo.py
+   :language: python
+
+Client Demo (class-based)
+--------------------------
+
+.. literalinclude:: ../examples/client_demo_classes.py
+   :language: python
+
+Server Demo
+-----------
+
+.. literalinclude:: ../examples/server_demo.py
+   :language: python
+{%endif%}

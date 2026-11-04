@@ -14,34 +14,16 @@ namespace {{ns}} {
 {%endfor-%}
 namespace {{stinger.name|snake_case}} {
 
-{%if stinger.properties|length > 0%}
-bool InitialPropertyValues::isComplete() const
-{
-    {%-for prop_name, prop in stinger.properties.items() %}
-    if (!{{prop_name | lowerCamelCase}}.has_value())
-    {
-        return false;
-    }
-    {%-endfor%}
-    return true;
-}
-{%endif%}
-
 bool InstanceInfo::isComplete() const
 {
     if (!serviceId.has_value()) {
         return false;
     }
-    {%for topic_param in config.topics.params %}
+    {%for topic_param in stinger.topics.params %}
     if (!{{topic_param | lowerCamelCase}}.has_value()) {
         return false;
     }
     {%endfor%}
-    {%- if stinger.properties|length > 0 %}
-    if (!initial_property_values.isComplete()) {
-        return false;
-    }
-    {%- endif %}
     return true;
 }
 
@@ -51,7 +33,7 @@ void InstanceInfo::UpdateFromRapidJsonObject(const rapidjson::Value& jsonObj)
     {
         serviceId = jsonObj["instance"].GetString();
     }
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     if (jsonObj.HasMember("{{topic_param}}") && jsonObj["{{topic_param}}"].IsString())
     {
         {{topic_param|lowerCamelCase}} = jsonObj["{{topic_param}}"].GetString();
@@ -68,6 +50,17 @@ void InstanceInfo::UpdateFromRapidJsonObject(const rapidjson::Value& jsonObj)
             }
         }
     }
+    if (jsonObj.HasMember("commands") && jsonObj["commands"].IsObject())
+    {
+        commands.clear();
+        for (auto it = jsonObj["commands"].MemberBegin(); it != jsonObj["commands"].MemberEnd(); ++it)
+        {
+            if (it->value.IsString())
+            {
+                commands[it->name.GetString()] = it->value.GetString();
+            }
+        }
+    }
 };
 
 void InstanceInfo::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Document::AllocatorType& allocator) const
@@ -78,7 +71,7 @@ void InstanceInfo::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Doc
     {
         parent.AddMember("service_id", rapidjson::Value(serviceId.value().c_str(), allocator), allocator);
     }
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     if ({{topic_param|lowerCamelCase}}.has_value())
     {
         parent.AddMember("{{topic_param}}", rapidjson::Value({{topic_param|lowerCamelCase}}.value().c_str(), allocator), allocator);
@@ -93,6 +86,15 @@ void InstanceInfo::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Doc
         }
         parent.AddMember("methods", methodsObj, allocator);
     }
+    if (!commands.empty())
+    {
+        rapidjson::Value commandsObj(rapidjson::kObjectType);
+        for (const auto& [commandName, commandVersion] : commands)
+        {
+            commandsObj.AddMember(rapidjson::Value(commandName.c_str(), allocator), rapidjson::Value(commandVersion.c_str(), allocator), allocator);
+        }
+        parent.AddMember("commands", commandsObj, allocator);
+    }
 }
 
 {{stinger.name|UpperCamelCase}}Discovery::{{stinger.name|UpperCamelCase}}Discovery(std::shared_ptr<stinger::utils::IConnection> broker)
@@ -103,12 +105,11 @@ void InstanceInfo::AddToRapidJsonObject(rapidjson::Value& parent, rapidjson::Doc
     topicArgs["service_id"] = "+";
     topicArgs["interface_name"] = "{{stinger.name}}";
     topicArgs["client_id"] = "+";
-    {%-for topic_param in config.topics.params %}
+    {%-for topic_param in stinger.topics.params %}
     topicArgs["{{topic_param}}"] = "+";
     {%-endfor%}
 
     _discoverySubscriptionId = _broker->Subscribe(stinger::utils::format("{{stinger.interface_info_topic()}}", topicArgs), 1);
-    _allPropertySubscriptionId = _broker->Subscribe(stinger::utils::format("{{stinger.all_properties_value_topic()}}", topicArgs), 1);
 
     // Register message callback
     _brokerMessageCallbackHandle = _broker->AddMessageCallback([this](const stinger::mqtt::Message& msg) {
@@ -189,9 +190,9 @@ void {{stinger.name|UpperCamelCase}}Discovery::_onMessage(const stinger::mqtt::M
     if (msg.properties.subscriptionId == _discoverySubscriptionId)
     {
         std::vector<std::string> hashableIdentifiers;
-        const uint8_t instance_id_expected_index = {{utils.topic_template_placeholder_index(config.topics.interface_discovery, "service_id")}};
-        {%-for topic_param in config.topics.params %}
-        const uint8_t {{topic_param}}_expected_index = {{utils.topic_template_placeholder_index(config.topics.interface_discovery, topic_param)}};
+        const uint8_t instance_id_expected_index = {{utils.topic_template_placeholder_index(stinger.topics.interface_discovery, "service_id")}};
+        {%-for topic_param in stinger.topics.params %}
+        const uint8_t {{topic_param}}_expected_index = {{utils.topic_template_placeholder_index(stinger.topics.interface_discovery, topic_param)}};
         {%endfor%}
 
         // Split topic by '/' into vector of strings
@@ -202,7 +203,7 @@ void {{stinger.name|UpperCamelCase}}Discovery::_onMessage(const stinger::mqtt::M
         while (std::getline(ss, part, '/'))
         {
             topicParts.push_back(part);
-            if ((index == instance_id_expected_index){%-for topic_param in config.topics.params %} || (index == {{topic_param}}_expected_index){%endfor%})
+            if ((index == instance_id_expected_index){%-for topic_param in stinger.topics.params %} || (index == {{topic_param}}_expected_index){%endfor%})
             {
                 hashableIdentifiers.push_back(part);
             }
@@ -225,69 +226,7 @@ void {{stinger.name|UpperCamelCase}}Discovery::_onMessage(const stinger::mqtt::M
             _discoveredInstances[instanceHash].UpdateFromRapidJsonObject(document);
             infoPtr = &_discoveredInstances[instanceHash];
         }
-    }{%if stinger.properties|length > 0%}
-    else if (msg.properties.subscriptionId == _allPropertySubscriptionId)
-    {
-        // Parse out identifying information from the topic to find the corresponding InstanceInfo
-        std::vector<std::string> hashableIdentifiers;
-        std::string propertyName;
-        uint32_t propertyVersion = 0;
-        if (msg.properties.propertyVersion.has_value()) {
-            propertyVersion = msg.properties.propertyVersion.value();
-        }
-        const uint8_t instance_id_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, "service_id")}};
-        {%-for topic_param in config.topics.params %}
-        const uint8_t {{topic_param}}_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, topic_param)}};
-        {%endfor%}
-        const uint8_t property_name_expected_index = {{utils.topic_template_placeholder_index(config.topics.property_values, "property_name")}};
-
-        // Split topic by '/' into vector of strings
-        std::vector<std::string> topicParts;
-        std::stringstream ss(msg.topic);
-        std::string part;
-        uint8_t index = 0;
-        while (std::getline(ss, part, '/'))
-        {
-            topicParts.push_back(part);
-            if ((index == instance_id_expected_index){%-for topic_param in config.topics.params %} || (index == {{topic_param}}_expected_index){%endfor%})
-            {
-                hashableIdentifiers.push_back(part);
-            }
-            else if (index == property_name_expected_index)
-            {
-                propertyName = part;
-            }
-            index++;
-        }
-        
-        uint64_t instanceHash = stinger::utils::hashStrings(hashableIdentifiers);
-        
-        auto it = _discoveredInstances.find(instanceHash);
-        if (it == _discoveredInstances.end())
-        {
-            InstanceInfo info;
-            _discoveredInstances[instanceHash] = info;
-            infoPtr = &_discoveredInstances[instanceHash];
-        }
-        else
-        {
-            infoPtr = &it->second;
-        }
-
-        if (infoPtr)
-        {
-            {%for prop_name, prop in stinger.properties.items()%}
-            {%if not loop.first%}else {%endif%}if (propertyName == "{{prop_name}}")
-            {
-                auto propertyObj = {{prop.cpp.property_struct_name}}::FromRapidJsonObject(document);
-                infoPtr->initial_property_values.{{prop_name | lowerCamelCase}} = propertyObj;
-                infoPtr->initial_property_values.{{prop_name | lowerCamelCase}}Version = propertyVersion;
-            }
-            {%endfor%}
-        }
-
     }
-    {%endif%}{# has any properties #}
 
     if (infoPtr && infoPtr->isComplete())
     {
