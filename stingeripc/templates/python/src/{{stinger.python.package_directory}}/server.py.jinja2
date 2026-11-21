@@ -100,6 +100,7 @@ class {{stinger.python.server_class_name}}:
         self._logger.debug("Initializing {{stinger.python.server_class_name}} instance %s", instance_id)
         self._event_loop: Optional[asyncio.AbstractEventLoop] = None
         self._conn = connection
+        self._subscribed_topics: List[str] = []
         self._instance_id = instance_id
         self._topic_template_kwargs = {
             "client_id": self._conn.client_id,
@@ -136,11 +137,11 @@ class {{stinger.python.server_class_name}}:
         self._property_{{prop_name|snake_case}}: PropertyControls[{{prop.python.annotation}}] = PropertyControls(getter=property_access.{{prop_name|snake_case}}_getter, {%if not prop.read_only%}setter=property_access.{{prop_name|snake_case}}_setter, {%endif%}{%if config.properties.version_tracking%}version=1{%endif%})
         {%endif-%}
         {%if not prop.read_only-%}
-        self._conn.subscribe("{{prop.update_topic()}}".format(**self._topic_template_kwargs), self._receive_{{prop_name|snake_case}}_update_request_message) # type: ignore[str-format]
+        self._subscribe("{{prop.update_topic()}}".format(**self._topic_template_kwargs), self._receive_{{prop_name|snake_case}}_update_request_message) # type: ignore[str-format]
         {%endif%}{# end read_only prop -#}
         {%endfor-%}
         {%-for method_name, method in stinger.methods.items()%}
-        self._conn.subscribe("{{method.request_topic()}}".format(**self._topic_template_kwargs), self._enqueue_method_request(self._process_{{method_name | snake_case}}_call)) # type: ignore[str-format]
+        self._subscribe("{{method.request_topic()}}".format(**self._topic_template_kwargs), self._enqueue_method_request(self._process_{{method_name | snake_case}}_call)) # type: ignore[str-format]
         self._method_{{method_name|snake_case}}_handler = None # type: Optional[{{method_type_annotation(method)}}]
         {%endfor%}
         {%-for command_name, command in stinger.commands.items()%}
@@ -148,7 +149,7 @@ class {{stinger.python.server_class_name}}:
         {%- if not command.payload.is_protobuf %}
         self._command_payload_callbacks_for_{{command_name|snake_case}}: List[Callable[[{{command.python.payload_class_name}}], None]] = []
         {%- endif %}
-        self._conn.subscribe("{{command.topic()}}".format(**self._topic_template_kwargs), self._receive_{{command_name | snake_case}}_command_message) # type: ignore[str-format]
+        self._subscribe("{{command.topic()}}".format(**self._topic_template_kwargs), self._receive_{{command_name | snake_case}}_command_message) # type: ignore[str-format]
         {%endfor%}
         {%-if stinger.properties|length > 0 %}
         self._publish_all_properties()
@@ -161,6 +162,20 @@ class {{stinger.python.server_class_name}}:
 
     def __del__(self):
         self.shutdown()
+
+    def _subscribe(self, topic: str, callback: Callable[[Message], None]) -> int:
+        """ Subscribes to a topic and remembers it, so that `shutdown()` can unsubscribe. """
+        self._subscribed_topics.append(topic)
+        return self._conn.subscribe(topic, callback)
+
+    def _unsubscribe_all(self):
+        """ Unsubscribes from every topic this server subscribed to. """
+        topics, self._subscribed_topics = getattr(self, '_subscribed_topics', []), []
+        for topic in topics:
+            try:
+                self._conn.unsubscribe(topic)
+            except Exception:
+                self._logger.exception("Failed to unsubscribe from %s", topic)
 
     def _signal_handler(self, signum, frame):
         self.shutdown()
@@ -216,6 +231,7 @@ class {{stinger.python.server_class_name}}:
             self._method_request_accepting = False
         self._method_request_queue.put(None)
         {%-endif%}
+        self._unsubscribe_all()
         self._conn.unpublish_retained(self._service_advert_topic)
         {%-if stinger.properties|length > 0 %}
         self._unpublish_all_properties()

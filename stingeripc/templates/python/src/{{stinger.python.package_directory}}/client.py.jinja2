@@ -82,6 +82,7 @@ class {{stinger.python.client_class_name}}:
         self._logger.setLevel(logging.DEBUG)
         self._logger.debug("Initializing {{stinger.python.client_class_name}} with %s", instance_info)
         self._conn = connection
+        self._subscribed_topics: List[str] = []
         self._conn.add_message_callback(self._receive_message)
         self._service_id = instance_info.instance_id
         self._topic_template_kwargs = {
@@ -124,7 +125,7 @@ class {{stinger.python.client_class_name}}:
         {%if stinger.methods|length > 0%}
         self._all_methods_response_topic = "{{stinger.all_methods_response_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
         self._logger.debug("Subscribing to method response topic %s", self._all_methods_response_topic)
-        self._conn.subscribe(self._all_methods_response_topic, self._receive_any_method_response_message)
+        self._subscribe(self._all_methods_response_topic, self._receive_any_method_response_message)
         {%endif%}
         # The exact response topic of each property, so a response arriving on the wildcard
         # subscription below can be checked against the content type that property uses.
@@ -141,8 +142,32 @@ class {{stinger.python.client_class_name}}:
         {%if stinger.properties.values()|rejectattr('read_only')|list|length > 0%}
         self._all_properties_response_topic = "{{stinger.all_properties_response_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
         self._logger.debug("Subscribing to property response topic %s", self._all_properties_response_topic)
-        self._conn.subscribe(self._all_properties_response_topic, self._receive_any_property_response_message)
+        self._subscribe(self._all_properties_response_topic, self._receive_any_property_response_message)
         {%endif%}
+
+    def _subscribe(self, topic: str, callback: Callable[[Message], None]) -> int:
+        """ Subscribes to a topic and remembers it, so the subscription can be removed later. """
+        self._subscribed_topics.append(topic)
+        return self._conn.subscribe(topic, callback)
+
+    def unsubscribe_all(self):
+        """ Unsubscribes from every topic this client subscribed to.  Called when the client is deleted. """
+        topics, self._subscribed_topics = getattr(self, '_subscribed_topics', []), []
+        for topic in topics:
+            try:
+                self._conn.unsubscribe(topic)
+            except Exception:
+                self._logger.exception("Failed to unsubscribe from %s", topic)
+        self._all_signals_subscription_id = UNINITIALIZED_SUBSCRIPTION_ID
+        {%- for prop_name in stinger.properties %}
+        self._property_{{prop_name|snake_case}}_subscription_id = UNINITIALIZED_SUBSCRIPTION_ID
+        {%- endfor %}
+
+    def __del__(self):
+        try:
+            self.unsubscribe_all()
+        except Exception:
+            pass
 
     @property
     def service_id(self) -> str:
@@ -163,7 +188,7 @@ class {{stinger.python.client_class_name}}:
                 return
             {{prop_name|snake_case}}_topic = "{{prop_spec.value_topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format]
             self._logger.debug("Subscribing to '{{prop_name}}' property value topic %s", {{prop_name|snake_case}}_topic)
-            self._property_{{prop_name|snake_case}}_subscription_id = self._conn.subscribe({{prop_name|snake_case}}_topic, self._receive_{{prop_name | snake_case}}_property_update_message)
+            self._property_{{prop_name|snake_case}}_subscription_id = self._subscribe({{prop_name|snake_case}}_topic, self._receive_{{prop_name | snake_case}}_property_update_message)
 
     def _await_{{prop_name|snake_case}}_property(self, timeout: Optional[float]=None):
         """ Subscribes to the '{{prop_name}}' property if it is not subscribed yet, then
@@ -320,7 +345,7 @@ class {{stinger.python.client_class_name}}:
         if len(self._signal_recv_callbacks_for_{{sig_name | snake_case}}){% if not sig.payload.is_protobuf %} + len(self._signal_payload_callbacks_for_{{sig_name | snake_case}}){% endif %} == 1:
             {{sig_name|snake_case}}_topic = "{{sig.topic()}}".format(**self._topic_template_kwargs) # type: ignore[str-format] 
             self._logger.debug("Subscribing to '{{sig_name}}' signal topic %s", {{sig_name|snake_case}}_topic)
-            self._conn.subscribe({{sig_name|snake_case}}_topic, self._receive_{{sig_name|snake_case}}_signal_message)
+            self._subscribe({{sig_name|snake_case}}_topic, self._receive_{{sig_name|snake_case}}_signal_message)
     {%endfor%}
 
     def unmatched_signal_handler(self, handler: UnmatchedSignalCallbackType):
@@ -329,7 +354,7 @@ class {{stinger.python.client_class_name}}:
         """
         self._unmatched_signal_callbacks.append(handler)
         if self._all_signals_subscription_id == UNINITIALIZED_SUBSCRIPTION_ID:
-            self._all_signals_subscription_id = self._conn.subscribe("{{stinger.all_signals_topic()}}".format(**self._topic_template_kwargs), self._receive_unmatched_signal_message) # type: ignore[str-format]
+            self._all_signals_subscription_id = self._subscribe("{{stinger.all_signals_topic()}}".format(**self._topic_template_kwargs), self._receive_unmatched_signal_message) # type: ignore[str-format]
         return handler
 
     # METHODS
