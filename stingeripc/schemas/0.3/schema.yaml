@@ -225,6 +225,8 @@ properties:
 
   sigs: false # Use 'signals' instead
   signal: false # Use 'signals' instead
+  event: false # Use 'signals' instead
+  events: false # Use 'signals' instead
 
   properties:
     type: object

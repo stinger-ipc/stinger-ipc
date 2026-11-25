@@ -2,6 +2,7 @@
 name = "{{stinger.rust.package_name}}"
 version = "{{stinger.version}}"
 edition = "2021"
+rust-version = "1.88"
 
 # Nothing is enabled by default, so docs must be built with every feature on to
 # include the client and server pages.
@@ -34,7 +35,7 @@ stinger-rwlock-watch = "0.3.7"
 strfmt = "0.2.5"
 jsonpath-rust = { version = "0.7", optional = true }
 {%- if stinger.uses_schemas() %}
-jsonschema = "0.46" # Only needed because this interface declares JSON schema constraints.
+jsonschema = { version = "0.60", default-features = false } # Only needed because this interface declares JSON schema constraints.
 {%- endif %}
 {%- if stinger.uses_protobuf() %}
 prost = "0.13" # Only needed because this interface carries protobuf payloads.

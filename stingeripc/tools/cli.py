@@ -12,7 +12,7 @@ import jsonschema_rs
 import typer
 from stingeripc.loading import parse_yaml_file
 
-from stingeripc import filtering
+from stingeripc import __version__, filtering
 from stingeripc.asyncapi import stinger_to_asyncapi
 from stingeripc.tools.generic_generator import resolve_protobuf_messages
 from stingeripc.config import StingerConfig, load_configs
@@ -21,6 +21,22 @@ from stingeripc.interface import StingerInterface
 from . import generic_generator
 
 app = typer.Typer(help="Stinger-IPC Tool")
+
+
+def _version_callback(value: bool):
+    if value:
+        typer.echo(f"stinger-ipc {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    version: Annotated[
+        Optional[bool],
+        typer.Option("--version", "-v", callback=_version_callback, is_eager=True, help="Show the version and exit."),
+    ] = None,
+):
+    pass
 
 
 @app.command()
@@ -169,11 +185,6 @@ def validate(
     if error_count == 0:
         print(f"✅  [bold green]No validation errors found in {input_file}[/bold green]")
     sys.exit(error_count)
-
-
-@app.command()
-def hello():
-    print("Hello world")
 
 
 def run():
